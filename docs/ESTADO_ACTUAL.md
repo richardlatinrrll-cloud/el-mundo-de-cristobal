@@ -147,9 +147,10 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
   figura está bien aparece "Fabricar". Entrena paciencia y "ver" cada
   herramienta. La lista de recetas normal sigue disponible.
 - **Mini-mapa** (`src/ui/gemas.js` → `dibujarMiniMapa`): el botón 🔮 del HUD
-  (tecla G) ahora abre un **mini-mapa transparente en la esquina** que no pausa
-  el juego, con los sitios de las gemas y tu posición. La pantalla completa de
-  Búsqueda de Gemas sigue en el menú.
+  (tecla G) abre un **mini-mapa chico y transparente justo debajo de la línea
+  de vida** (arriba a la izquierda), que no pausa el juego, con los sitios de
+  las gemas y tu posición. La pantalla completa de Búsqueda de Gemas sigue en
+  el menú.
 - **Jefes rediseñados** (`src/game/bosses.js`): ahora son **Trol de las Rocas**,
   **Dragón Tormenta**, **Titán Ardiente** y **Elfo Oscuro** (formas propias con
   cuernos, alas, capa, puños ardientes…). **~3× más vida** (95–210) y **ataques
