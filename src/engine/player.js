@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { isSolid } from './blocks.js';
+import { isSolid, esEscalera } from './blocks.js';
 import { SX, SY, SZ } from './world.js';
 
 // Jugador en primera persona: física AABB simple contra el mundo de voxels.
@@ -43,6 +43,13 @@ export class Player {
     this.pitch = Math.max(-lim, Math.min(lim, this.pitch));
   }
 
+  _enEscalera() {
+    const p = this.pos;
+    for (let y = Math.floor(p.y); y <= Math.floor(p.y + this.height); y++)
+      if (esEscalera(this.world.get(Math.floor(p.x), y, Math.floor(p.z)))) return true;
+    return false;
+  }
+
   // input: {forward, right, jump, sprint} con forward/right en [-1,1]
   update(dt, input) {
     const sinY = Math.sin(this.yaw), cosY = Math.cos(this.yaw);
@@ -55,11 +62,22 @@ export class Player {
 
     const spd = this.speed * (input.sprint ? 1.6 : 1) * this.sprintMul;
 
+    // ¿tocando una escalera?
+    const enEscalera = !this.flying && this._enEscalera();
+
     if (this.flying) {
       this.vel.x = mx * spd;
       this.vel.z = mz * spd;
       this.vel.y = (input.jump ? 1 : 0) * spd - (input.crouch ? spd : 0);
       if (!input.jump && !input.crouch) this.vel.y *= 0.6;
+    } else if (enEscalera) {
+      this.vel.x = mx * spd * 0.7;
+      this.vel.z = mz * spd * 0.7;
+      // subir/bajar con salto/agacharse o con mirar arriba/abajo mientras avanzas
+      let sube = (input.jump ? 1 : 0) - (input.crouch ? 1 : 0);
+      if (sube === 0 && (input.forward > 0.1)) sube = this.pitch > 0.2 ? 1 : this.pitch < -0.2 ? -1 : 0.4;
+      this.vel.y = sube * 3.4 - 0.6;
+      this.onGround = true;
     } else {
       this.vel.x = mx * spd;
       this.vel.z = mz * spd;
@@ -142,7 +160,9 @@ export class Player {
     let px = x, py = y, pz = z;
     let t = 0;
     for (let i = 0; i < 200; i++) {
-      if (isSolid(this.world.get(x, y, z))) {
+      const bid = this.world.get(x, y, z);
+      // paramos también en puertas abiertas para poder cerrarlas
+      if (isSolid(bid) || bid === 20 || bid === 21) {
         return { hit: { x, y, z }, place: { x: px, y: py, z: pz } };
       }
       px = x; py = y; pz = z;

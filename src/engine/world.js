@@ -52,6 +52,7 @@ export class World {
 
     const gen = GENERADORES[this.tipo] || GENERADORES.llanuras;
     gen(this);
+    if (this.tipo !== 'plano' && this.tipo !== 'flotante') this.vetas();
 
     // superponer lo que el jugador ya había construido
     if (config.edits) {
@@ -224,6 +225,32 @@ export class World {
           }
           break;
         }
+  }
+
+  // vetas de minerales dentro de la piedra
+  vetas() {
+    // [id, cantidad de vetas, tamaño, yMin, yMax(frac de la superficie)]
+    const tipos = [
+      [16, Math.round(SX * SZ / 900), 6, 3, 0.95],  // carbón: común, cualquier profundidad
+      [17, Math.round(SX * SZ / 1600), 5, 3, 0.75],  // hierro: medio
+      [18, Math.round(SX * SZ / 4200), 3, 2, 0.35],  // oro: raro y hondo
+      [19, Math.round(SX * SZ / 6000), 3, 2, 0.30],  // cristal: muy raro y hondo
+    ];
+    for (const [id, n, tam, yMin, yMaxFrac] of tipos) {
+      for (let v = 0; v < n; v++) {
+        const x0 = 2 + ((this.rnd() * (SX - 4)) | 0);
+        const z0 = 2 + ((this.rnd() * (SZ - 4)) | 0);
+        const sup = this.topeSolido(x0, z0);
+        if (sup < 6) continue;
+        const y0 = yMin + ((this.rnd() * Math.max(1, sup * yMaxFrac - yMin)) | 0);
+        for (let b = 0; b < tam; b++) {
+          const x = x0 + ((this.rnd() * 3 - 1) | 0);
+          const y = y0 + ((this.rnd() * 3 - 1) | 0);
+          const z = z0 + ((this.rnd() * 3 - 1) | 0);
+          if (this.inside(x, y, z) && this.data[this.idx(x, y, z)] === 3) this.data[this.idx(x, y, z)] = id;
+        }
+      }
+    }
   }
 }
 

@@ -1,6 +1,6 @@
 # Estado actual — El Mundo de Cristóbal
 
-_Actualizado: 2026-09-08_
+_Actualizado: 2026-09-09_
 
 **Publicado en GitHub Pages** (repo público, sitio `noindex` + pantalla de clave
 para "solo para Cristóbal"). El deploy es automático: `git push` a `main` →
@@ -13,6 +13,31 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
   (fuera de git).
 
 ## Hecho (funcional, verificado en navegador)
+
+- **Naturaleza (Parte 1)** (`src/engine/world.js`): ríos, lagos y mar, cascadas
+  y **volcanes** con lava (bloque que brilla y te empuja si lo tocas). Los tipos
+  de mundo Llanuras/Bosque/Montañas/Desierto generan agua y relieve; Montañas
+  trae 1–2 volcanes; Desierto trae oasis. Mundo **×20 más grande** que antes.
+- **Animales (Parte 1)** (`src/game/animals.js`): 9 especies (conejo, ciervo,
+  zorro, oveja, vaca, jabalí, oso, tortuga, pájaro) que aparecen según el bioma
+  (agua/arena/bosque/pasto), pastan, caminan, y **huyen o embisten** según la
+  especie. Aparecen cerca del jugador y se van si te alejas.
+- **Crafteo (Parte 2)** (`src/game/recetas.js`, `src/ui/crafteo.js`, pantalla
+  🔨 Crafteo / botón 🔨 en el HUD / tecla `Q`): juntas materiales del mundo y
+  **fabricas cosas**. 4 categorías:
+  - **Básico**: tablas, palos, vidrio, ladrillo, antorcha (da luz).
+  - **Construir**: puerta (se abre/cierra al tocarla, ocupa 2 de alto y se
+    coloca sola), ventana, valla, escalera (se trepa).
+  - **Herramientas**: pico de piedra/hierro/cristal (el de cristal rompe 3×3),
+    hacha (corta madera rápido), pala (cava tierra/arena rápido).
+  - **Armas**: espada de piedra/hierro/cristal (más daño), arco + flechas
+    (dispara a distancia con el botón de poner).
+  Las tarjetas en **verde** son las que ya puedes fabricar; abajo ves lo que
+  tienes y una guía de "dónde conseguir lo que te falta". Al fabricar una
+  herramienta/arma se agrega a tus herramientas y queda activa.
+- **Minerales en el mundo** (`vetas()` en `world.js`): vetas de carbón, hierro,
+  oro y cristal en la piedra (más raras y hondas mientras mejor el material).
+  Al minarlas sueltan el material para craftear.
 
 - **Mundo jugable**: voxels con **malla por chunks** (`src/engine/mesher.js`) —
   editar un bloque solo re-genera su chunk, así construir no da tirones ni en
@@ -123,7 +148,8 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
 
 - El progreso es **por dispositivo** (localStorage). No se sincroniza entre el
   teléfono y el PC. (Futura fase: API mínima en el servidor ARGOS.)
-- El mundo tiene bordes (no es infinito). "Grande" = 176×176.
+- El mundo tiene bordes (no es infinito), pero ahora es ×20 más grande y con
+  streaming de chunks. Tamaños en `TAMANOS` (`world.js`).
 - Solo se guarda **un** mundo a la vez: crear otro con distinto tipo/tamaño/
   semilla borra las construcciones del anterior (aviso en pantalla).
 - Los jefes son visualmente simples (cubos grandes con ojos). Funcionan, pero
@@ -135,7 +161,17 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
   manifest). El aviso "gira el teléfono" cubre el caso vertical.
 - Iconos PWA: solo SVG. Para icono perfecto en iOS, agregar PNG 192/512 en
   `public/icons/` y listarlos en el manifest.
-- Sin sonido ni música.
+
+## Roadmap pedido por Richard (partes)
+
+- **Parte 1 — Naturaleza y animales**: ✅ hecho.
+- **Parte 2 — Crafteo**: ✅ hecho.
+- **Parte 3 — Objetos legendarios + búsqueda de gemas**: pendiente. Ítems
+  originales (martillo del trueno, guante de gemas de poder — nombres y arte
+  propios, sin copiar a Marvel/otros) y una misión de gemas con mapa y
+  guardianes cada vez más difíciles.
+- **Parte 4 — Más enemigos originales + texturas/luz más realistas**: pendiente.
+  Acechadores de pasillo, gigantes, y mejor iluminación/materiales.
 
 ## Ideas para siguientes iteraciones
 
@@ -144,4 +180,3 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
 - Guardar varios mundos con nombre (hoy solo uno a la vez).
 - Recompensas visibles por derrotar jefes (skins, trofeos en un menú).
 - Sincronización de progreso entre dispositivos vía servidor casero.
-- Sonido y música.

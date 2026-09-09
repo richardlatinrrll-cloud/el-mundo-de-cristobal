@@ -18,10 +18,11 @@ import { BossArena } from './game/bosses.js';
 import { AnimalField } from './game/animals.js';
 import { mountMundos } from './ui/mundos.js';
 import { mountAjustes } from './ui/ajustes.js';
+import { mountCrafteo } from './ui/crafteo.js';
 import { mountClave, claveDesbloqueada } from './ui/clave.js';
 import { audio } from './game/audio.js';
 import { DayNight } from './game/daynight.js';
-import { TOOLS, tool, tiempoRomper } from './game/tools.js';
+import { TOOLS, tool, tiempoRomper, danoGolpe } from './game/tools.js';
 import { toast } from './ui/toast.js';
 
 const app = document.getElementById('app');
@@ -197,12 +198,56 @@ const grieta = new THREE.Mesh(
 grieta.visible = false;
 scene.add(grieta);
 
+// ---------- flechas (arco) ----------
+const flechas = [];
+const flechaGeo = new THREE.BoxGeometry(0.08, 0.08, 0.6);
+const flechaMat = new THREE.MeshBasicMaterial({ color: 0x6b4a2f });
+let _disparoCd = 0;
+function disparar() {
+  if (_disparoCd > 0) return;
+  if (!state.mundo.creador) {
+    if ((state.inventario.flecha || 0) <= 0) { toast('Sin flechas. Fabrica más 🏹', 1100); return; }
+    state.inventario.flecha--;
+    if (state.inventario.flecha <= 0) delete state.inventario.flecha;
+  }
+  _disparoCd = 0.5;
+  const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
+  const m = new THREE.Mesh(flechaGeo, flechaMat);
+  m.position.copy(camera.position).addScaledVector(dir, 0.6);
+  m.quaternion.copy(camera.quaternion);
+  scene.add(m);
+  flechas.push({ mesh: m, vel: dir.clone().multiplyScalar(38), vida: 3 });
+  audio.sfx('poder');
+}
+function actualizarFlechas(dt) {
+  for (let i = flechas.length - 1; i >= 0; i--) {
+    const a = flechas[i];
+    a.vida -= dt;
+    a.vel.y -= 22 * dt;
+    a.mesh.position.addScaledVector(a.vel, dt);
+    a.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, -1), a.vel.clone().normalize());
+    const p = a.mesh.position;
+    let quitar = a.vida <= 0;
+    // choque con bloque
+    const bx = Math.floor(p.x), by = Math.floor(p.y), bz = Math.floor(p.z);
+    if (BLOCKS[world.get(bx, by, bz)] && world.get(bx, by, bz) !== 10) quitar = true;
+    // choque con enemigo / jefe (mira desde la punta de la flecha)
+    if (!quitar) {
+      const fakeCam = { position: p, quaternion: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, -1), a.vel.clone().normalize()) };
+      if (bosses.golpear(fakeCam, 1.6, 6) || mobs.golpear(fakeCam, 1.6, 5)) { quitar = true; audio.sfx('golpe'); }
+    }
+    if (quitar) { scene.remove(a.mesh); flechas.splice(i, 1); }
+  }
+  _disparoCd = Math.max(0, _disparoCd - dt);
+}
+
 // ---------- HUD (debe existir antes de crear los controles táctiles) ----------
 const hud = document.createElement('div');
 hud.id = 'hud';
 hud.innerHTML = `
   <div class="crosshair"></div>
   <button class="btn-back">☰ Menú</button>
+  <button class="btn-craft" title="Crafteo (Q)">🔨</button>
   <div class="power-picker">
     <button class="power-badge"><span class="dot"></span><span class="pb-name">Sin poder</span><span class="pb-arrow">▾</span></button>
     <div class="power-list" hidden></div>
@@ -251,6 +296,7 @@ touch.querySelector('.t-view').addEventListener('touchstart', (e) => {
 }, { passive: false });
 
 hud.querySelector('.btn-back').addEventListener('click', () => showMenu());
+hud.querySelector('.btn-craft').addEventListener('click', () => abrirCrafteoEnJuego());
 
 // ---------- Inventario ----------
 function darKitInicial() {
@@ -274,10 +320,12 @@ function invTake(id) {
   return true;
 }
 
-// bloques que se muestran en la barra ahora mismo
+// bloques colocables que se muestran en la barra ahora mismo
 function slotsActuales() {
   if (state.mundo.creador) return PLACEABLES.slice();
-  return Object.keys(state.inventario).map(Number).filter((id) => state.inventario[id] > 0)
+  return Object.keys(state.inventario)
+    .map(Number)
+    .filter((id) => Number.isInteger(id) && id > 0 && BLOCKS[id] && state.inventario[id] > 0)
     .sort((a, b) => a - b);
 }
 function bloqueSeleccionado() {
@@ -322,6 +370,7 @@ function cambiarHerramienta() {
 }
 toolChip.addEventListener('click', cambiarHerramienta);
 addEventListener('keydown', (e) => { if (mode === 'jugar' && e.code === 'KeyT') cambiarHerramienta(); });
+addEventListener('keydown', (e) => { if (mode === 'jugar' && e.code === 'KeyQ' && hud.style.display === 'block') abrirCrafteoEnJuego(); });
 
 const mobBadge = hud.querySelector('.mob-badge');
 function updateMobBadge() {
@@ -414,8 +463,9 @@ function quitarBloque(x, y, z) {
 // se llama al pulsar (tap/clic): pega a enemigos; el minado por tiempo va en frame()
 function breakBlock() {
   const reach = player.reach || 6;
-  if (bosses.golpear(camera, reach, 4)) { audio.sfx('golpe'); return; }
-  if (mobs.golpear(camera, reach, player.instaBreak ? 3 : 2)) { audio.sfx('golpe'); return; }
+  const dano = player.instaBreak ? 6 : danoGolpe(state.herramienta);
+  if (bosses.golpear(camera, reach, dano)) { audio.sfx('golpe'); return; }
+  if (mobs.golpear(camera, reach, dano)) { audio.sfx('golpe'); return; }
 }
 
 // minado por tiempo mientras se mantiene pulsado (llamado desde frame)
@@ -431,7 +481,7 @@ function actualizarMinado(dt) {
   }
   const key = x + ',' + y + ',' + z;
   if (key !== _minKey) { _minKey = key; _minProg = 0; }
-  const total = player.instaBreak ? 0 : tiempoRomper(BLOCKS[id]?.hard ?? 1, state.herramienta);
+  const total = player.instaBreak ? 0 : tiempoRomper(id, state.herramienta);
   _minProg += dt;
   const frac = total ? Math.min(1, _minProg / total) : 1;
   // grieta visible sobre el bloque
@@ -453,8 +503,23 @@ function actualizarMinado(dt) {
 }
 
 function placeBlock() {
+  // arco equipado: disparar en vez de poner
+  if (tool(state.herramienta).arco) { disparar(); return; }
+
   const r = currentRay();
   if (!r) return;
+  // ¿estoy apuntando a una puerta? -> abrir/cerrar las dos mitades
+  const ap = world.get(r.hit.x, r.hit.y, r.hit.z);
+  if (ap === 20 || ap === 21) {
+    const nuevo = ap === 20 ? 21 : 20;
+    for (const dy of [0, 1, -1]) {
+      const cy = r.hit.y + dy;
+      const b = world.get(r.hit.x, cy, r.hit.z);
+      if (b === 20 || b === 21) { world.set(r.hit.x, cy, r.hit.z, nuevo); registrarEdit(r.hit.x, cy, r.hit.z, nuevo); }
+    }
+    audio.sfx('poner');
+    return;
+  }
   const { x, y, z } = r.place;
   // no colocar dentro del jugador
   const px = Math.floor(player.pos.x), pz = Math.floor(player.pos.z);
@@ -463,9 +528,12 @@ function placeBlock() {
   if (world.get(x, y, z) !== AIR) return;
   const id = bloqueSeleccionado();
   if (!id) { toast('No tienes bloques. Rompe algunos primero.', 1200); return; }
+  // la puerta ocupa 2 de alto
+  if (id === 20 && world.get(x, y + 1, z) !== AIR) { toast('Falta espacio para la puerta (2 de alto)', 1100); return; }
   if (!state.mundo.creador && !invTake(id)) { toast(`Se te acabó el bloque ${blockName(id)}`, 1200); updateHotbar(); return; }
   world.set(x, y, z, id);
   registrarEdit(x, y, z, id);
+  if (id === 20) { world.set(x, y + 1, z, 20); registrarEdit(x, y + 1, z, 20); }
   audio.sfx('poner');
   updateHotbar();
 }
@@ -553,6 +621,7 @@ function frame(dt) {
     updateMobBadge();
     streamChunks();
     actualizarMinado(dt);
+    actualizarFlechas(dt);
     const r = currentRay();
     if (r) { highlight.visible = true; highlight.position.set(r.hit.x + 0.5, r.hit.y + 0.5, r.hit.z + 0.5); }
     else highlight.visible = false;
@@ -649,6 +718,25 @@ export function jugar() {
   last = performance.now();
 }
 
+// abrir el crafteo sin salir del juego (pausa los controles)
+function abrirCrafteoEnJuego() {
+  controls.disable();
+  hud.style.display = 'none';
+  touch.classList.remove('on');
+  openScreen('crafteo');
+}
+function volverAlJuego() {
+  closeAllScreens();
+  menuScreen.classList.add('hidden');
+  hud.style.display = 'block';
+  if (controls.isTouch) touch.classList.add('on');
+  aplicarPoderEquipado();
+  updateHotbar();
+  updateToolChip();
+  controls.enable();
+  last = performance.now();
+}
+
 function pedirPantallaCompleta() {
   if (!state.ajustes.pantallaCompleta) return;
   const el = document.documentElement;
@@ -667,6 +755,7 @@ const menuScreen = mountMenu({
   onPoderes: () => openScreen('poderes'),
   onMundos: () => openScreen('mundos'),
   onAjustes: () => openScreen('ajustes'),
+  onCrafteo: () => openScreen('crafteo'),
 });
 app.appendChild(menuScreen);
 
@@ -704,6 +793,11 @@ function openScreen(name) {
         onCambio: (k) => {
           if (k === 'stickIzquierda') controls.applyStickSide();
         },
+      });
+    } else if (name === 'crafteo') {
+      screens[name] = mountCrafteo({
+        onVolver: () => (mode === 'jugar' ? volverAlJuego() : showMenu()),
+        onCambio: () => { updateHotbar(); updateToolChip(); },
       });
     }
     app.appendChild(screens[name]);

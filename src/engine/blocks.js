@@ -19,18 +19,33 @@ export const BLOCKS = {
   13:{ name: 'Roca oscura', all: '#4a4f57', hard: 4 },
   14:{ name: 'Lava',    top: '#ff7a2e', side: '#d24713', hard: 99, liquid: true, glow: true },
   15:{ name: 'Roca volcánica', top: '#41414a', side: '#33333a', bottom: '#2a2a30', hard: 4 },
+  // --- minerales (aparecen dentro de la piedra) ---
+  16:{ name: 'Carbón',  all: '#2c2c30', hard: 3, mineral: 'carbon' },
+  17:{ name: 'Hierro',  all: '#b7a08a', hard: 4, mineral: 'hierro' },
+  18:{ name: 'Oro',     all: '#e8c24a', hard: 4, mineral: 'oro' },
+  19:{ name: 'Cristal', all: '#7ad8e8', hard: 5, mineral: 'cristal', glow: true },
+  // --- bloques que se fabrican ---
+  20:{ name: 'Puerta',        top: '#8a6234', side: '#6b4a2f', hard: 2 },
+  21:{ name: 'Puerta abierta',all: '#6b4a2f', hard: 2, alpha: true, paso: true },
+  22:{ name: 'Ventana',       all: '#cfeef5', hard: 1, alpha: true },
+  23:{ name: 'Antorcha',      all: '#ffcf6a', hard: 1, glow: true, alpha: true, paso: true },
+  24:{ name: 'Valla',         all: '#9a6f3f', hard: 2 },
+  25:{ name: 'Escalera',      all: '#a8813f', hard: 1, alpha: true, paso: true, escalera: true },
 };
 
 export const HOTBAR = [1, 3, 7, 4, 5, 6, 8, 9];
 
 // bloques que el jugador puede colocar (para el modo creador: barra completa)
-export const PLACEABLES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 15];
+export const PLACEABLES = [1, 2, 3, 4, 6, 7, 8, 9, 11, 13, 15, 20, 22, 23, 24, 25];
 
-// qué bloque sueltas al romper `id` (casi todos se sueltan a sí mismos)
+// qué se suelta al romper `id`
 export function dropFor(id) {
   if (id === AIR) return 0;
-  if (id === 10) return 0;      // agua: no se recoge
-  if (id === 1) return 2;       // pasto → tierra (como en Minecraft)
+  if (id === 10) return 0;             // agua: no se recoge
+  if (id === 1) return 2;              // pasto → tierra
+  if (id === 21) return 20;            // puerta abierta → puerta
+  const def = BLOCKS[id];
+  if (def?.mineral) return def.mineral; // mineral → item ('carbon', 'hierro'...)
   return id;
 }
 
@@ -41,19 +56,22 @@ export function blockEmoji(id) {
   return ({
     1: '🌱', 2: '🟫', 3: '🪨', 4: '🪵', 5: '🍃', 6: '🟨',
     7: '🟧', 8: '🧱', 9: '🔷', 11: '⬜', 12: '🌵', 13: '⬛',
-    14: '🔥', 15: '🌑',
+    14: '🔥', 15: '🌑', 16: '⚫', 17: '⚙️', 18: '🟡', 19: '💠',
+    20: '🚪', 21: '🚪', 22: '🪟', 23: '🕯️', 24: '🚧', 25: '🪜',
   })[id] || '⬛';
 }
 export function isSolid(id) {
-  return id !== AIR && !BLOCKS[id]?.liquid;
+  const def = BLOCKS[id];
+  return id !== AIR && !def?.liquid && !def?.paso;
 }
 export function isOpaque(id) {
   return id !== AIR && !BLOCKS[id]?.alpha;
 }
+export function esEscalera(id) { return !!BLOCKS[id]?.escalera; }
 
 // --- Atlas de texturas procedural ---
 const CELL = 16;
-const COLS = 16;
+const COLS = 32;
 
 export function buildAtlas() {
   const canvas = document.createElement('canvas');
@@ -66,19 +84,31 @@ export function buildAtlas() {
     const top = def.top || def.all || '#fff';
     const side = def.side || def.all || '#fff';
     const bottom = def.bottom || def.all || side;
-    paintCell(ctx, id, 0, top);
-    paintCell(ctx, id, 1, side);
-    paintCell(ctx, id, 2, bottom);
+    paintCell(ctx, id, 0, top, def);
+    paintCell(ctx, id, 1, side, def);
+    paintCell(ctx, id, 2, bottom, def);
   }
 
   return { canvas, COLS, CELL, ROWS: 3 };
 }
 
-function paintCell(ctx, col, row, color) {
+function paintCell(ctx, col, row, color, def) {
   const x = col * CELL;
   const y = row * CELL;
-  ctx.fillStyle = color;
-  ctx.fillRect(x, y, CELL, CELL);
+  // los minerales: base de piedra con motas del color
+  if (def?.mineral) {
+    ctx.fillStyle = '#8a8f98';
+    ctx.fillRect(x, y, CELL, CELL);
+    ctx.fillStyle = color;
+    for (let i = 0; i < 10; i++) {
+      const bx = x + 2 + ((Math.random() * (CELL - 4)) | 0);
+      const by = y + 2 + ((Math.random() * (CELL - 4)) | 0);
+      ctx.fillRect(bx, by, 2, 2);
+    }
+  } else {
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, CELL, CELL);
+  }
   ctx.globalAlpha = 0.10;
   for (let i = 0; i < 26; i++) {
     ctx.fillStyle = i % 2 ? '#000' : '#fff';
