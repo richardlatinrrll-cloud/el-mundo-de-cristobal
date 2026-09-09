@@ -6,7 +6,7 @@ import { buildAtlas, BLOCKS, PLACEABLES, blockName, blockEmoji, dropFor, AIR } f
 import { Player } from './engine/player.js';
 import { Controls } from './engine/controls.js';
 import { state, save, LIMITE_EDITS } from './game/state.js';
-import { POWERS, powerById, cumpleRequisito, poderDesbloqueado } from './game/powers/registry.js';
+import { POWERS, powerById, poderDesbloqueado } from './game/powers/registry.js';
 import { mountMenu } from './ui/menu.js';
 import { openQuiz } from './quiz/quiz-ui.js';
 import { mountAprender } from './quiz/progress-ui.js';
@@ -22,7 +22,7 @@ import { mountCrafteo } from './ui/crafteo.js';
 import { mountTablero } from './ui/tablero.js';
 import { mountPruebas } from './ui/pruebas.js';
 import { mountGemas, dibujarMiniMapa } from './ui/gemas.js';
-import { GemQuest, GEMAS, aplicarGemas, guanteCompleto } from './game/gemas.js';
+import { GemQuest, GEMAS, aplicarGemas } from './game/gemas.js';
 import { COMIDA, reduccionArmadura, ARMADURA_JEFE } from './game/recetas.js';
 import { mountClave, claveDesbloqueada } from './ui/clave.js';
 import { audio } from './game/audio.js';
@@ -221,7 +221,7 @@ const grieta = new THREE.Mesh(
 grieta.visible = false;
 
 // Rayos de la Visión láser: dos haces rojos SÓLIDOS desde los ojos hacia la mira.
-// Solo mientras usas el poder (mantener pulsado). Se ven también en 3ª persona.
+// Solo un instante al pulsar ✨ (no en el botón de la herramienta). En 1ª y 3ª persona.
 const laserMat = new THREE.MeshBasicMaterial({ color: 0xff1a10, depthWrite: false });
 function mkBeam() {
   const g = new THREE.Group();
@@ -239,9 +239,9 @@ laserPunto.renderOrder = 999; laserPunto.visible = false; scene.add(laserPunto);
 const _lYup = new THREE.Vector3(0, 1, 0);
 
 function actualizarLaser() {
-  const on = mode === 'jugar' && state.poderEquipado === 'laser' && controls.state.breaking;
+  const on = mode === 'jugar' && _laserT > 0;
   if (!on) { laserL.visible = laserR.visible = laserPunto.visible = false; return; }
-  const r = player.raycast(player.reach || 14);
+  const r = player.raycast(16);
   // dirección desde la mirada del jugador (sirve en 1ª y 3ª persona)
   const dirLook = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(player.pitch, player.yaw, 0, 'YXZ'));
   const right = new THREE.Vector3(1, 0, 0).applyEuler(new THREE.Euler(0, player.yaw, 0, 'YXZ'));
@@ -250,13 +250,14 @@ function actualizarLaser() {
     ? new THREE.Vector3(r.hit.x + 0.5, r.hit.y + 0.5, r.hit.z + 0.5)
     : eyeC.clone().addScaledVector(dirLook, 12);
   for (const [beam, s] of [[laserL, -1], [laserR, 1]]) {
-    const eye = eyeC.clone().addScaledVector(dirLook, 0.28).addScaledVector(right, 0.12 * s).addScaledVector(_lYup, -0.03);
+    // arranca bien adelante del ojo para que no se vea gigante pegado a la cámara
+    const eye = eyeC.clone().addScaledVector(dirLook, 0.9).addScaledVector(right, 0.14 * s).addScaledVector(_lYup, -0.04);
     const dir = target.clone().sub(eye);
     const len = dir.length();
     dir.normalize();
     beam.position.copy(eye).addScaledVector(dir, len / 2);
     beam.quaternion.setFromUnitVectors(_lYup, dir);
-    beam.scale.set(0.03, len, 0.03);
+    beam.scale.set(0.035, len, 0.035);
     beam.visible = true;
   }
   laserPunto.position.copy(target);
@@ -728,20 +729,111 @@ function placeBlock() {
   updateHotbar();
 }
 
-let _poderCd = 0;   // enfriamiento de las acciones legendarias (rayo / prisma)
+let _poderCd = 0;      // enfriamiento de la acción de poder
+let _laserT = 0;       // tiempo que el rayo láser sigue visible
 
-// ¿el poder equipado se activa con el botón ✨? (para mostrar/ocultar el botón)
+// El botón ✨ aparece si tienes CUALQUIER poder equipado.
 function tieneAccionPoder() {
-  const p = state.poderEquipado && powerById(state.poderEquipado);
-  return !!(p && p.accion);
+  return !!state.poderEquipado;
 }
-// El botón ✨ activa la ACCIÓN del poder seleccionado.
+// El botón ✨ activa el poder seleccionado, sea cual sea.
 function activarPoderAccion() {
-  const power = state.poderEquipado && powerById(state.poderEquipado);
-  if (!power || !power.accion) return;
-  if (power.accion === 'sonico') sonicBlast();
-  else if (power.accion === 'rayo') rayoMartillo();
-  else if (power.accion === 'prisma') ondaPrisma();
+  const id = state.poderEquipado;
+  if (!id) return;
+  if (_poderCd > 0) { toast(`⏳ Poder listo en ${Math.ceil(_poderCd)}s`, 800); return; }
+  // el botón ✨ NO mueve la herramienta (eso es solo del botón ⛏️)
+  switch (id) {
+    case 'sonico':        sonicBlast(); break;
+    case 'rayo_martillo': rayoMartillo(); break;
+    case 'onda_prisma':   ondaPrisma(); break;
+    case 'laser':         rayoLaser(); break;
+    case 'fuerza':        puñetazoFuerza(); break;
+    case 'velocidad':     rafagaVelocidad(); break;
+    case 'salto':         saltoColosal(); break;
+    case 'invisible':     mantoSombra(); break;
+    case 'volar':         impulsoVuelo(); break;
+  }
+}
+
+// --- acciones de cada poder ---
+function _enemigosEnCono(o, dir, range, dano) {
+  let n = mobs.dañoEnCono(o, dir, range, dano);
+  bosses.dañoEnCono(o, dir, range, dano * 2);
+  gemas.dañoEnCono(o, dir, range, dano * 2);
+  animals.dañoEnCono?.(o, dir, range, Math.round(dano * 0.6));
+  for (const m of mobs.mobs) {
+    const to = new THREE.Vector3(m.pos.x - o.x, 0, m.pos.z - o.z);
+    if (to.length() < range && to.clone().normalize().dot(dir) > 0.55) {
+      m.pos.x += dir.x * 5; m.pos.z += dir.z * 5; m.vel.y = 6;
+    }
+  }
+  return n;
+}
+function _dirMirada() {
+  const d = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+  return d;
+}
+
+function puñetazoFuerza() {
+  _poderCd = 3;
+  const dir = _dirMirada(); dir.y = 0; dir.normalize();
+  const o = new THREE.Vector3(player.pos.x, player.pos.y + 1, player.pos.z);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.6, 0.2, 8, 20),
+    new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, depthWrite: false }));
+  ring.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
+  addFx(ring, 0.4, (m, k) => { m.position.copy(o).addScaledVector(dir, 0.5 + k * 4); m.scale.setScalar(1 + k * 3); m.material.opacity = 0.9 * (1 - k); });
+  const n = _enemigosEnCono(o, dir, 6, 10);
+  audio.sfx('golpe');
+  toast(n ? `👊 ¡GOLPE DE FUERZA! ${n}` : '👊 ¡GOLPE DE FUERZA!');
+}
+function rafagaVelocidad() {
+  _poderCd = 2.5;
+  const dir = _dirMirada(); dir.y = 0; dir.normalize();
+  // avanzar en pasos chicos respetando las colisiones
+  for (let i = 0; i < 7; i++) { player.moveAxis('x', dir.x * 0.85); player.moveAxis('z', dir.z * 0.85); }
+  player.vel.y = Math.max(player.vel.y, 2);
+  const tr = new THREE.Mesh(new THREE.SphereGeometry(0.5, 10, 8),
+    new THREE.MeshBasicMaterial({ color: 0x9fd0ef, transparent: true, depthWrite: false }));
+  tr.position.copy(player.pos).add(new THREE.Vector3(0, 1, 0));
+  addFx(tr, 0.35, (m, k) => { m.scale.setScalar(1 + k * 3); m.material.opacity = 0.5 * (1 - k); });
+  audio.sfx('saltar');
+  toast('💨 ¡RÁFAGA!');
+}
+function saltoColosal() {
+  _poderCd = 2.5;
+  player.vel.y = 20;
+  player.onGround = false;
+  audio.sfx('saltar');
+  toast('🦿 ¡SALTO COLOSAL!');
+}
+function rayoLaser() {
+  _poderCd = 1.2;
+  _laserT = 0.35;
+  const r = player.raycast(16);
+  if (r) {
+    // rompe el bloque apuntado (y 1 detrás para "perforar")
+    if (quitarBloque(r.hit.x, r.hit.y, r.hit.z)) audio.sfx('romper');
+  }
+  const o = new THREE.Vector3(player.pos.x, player.pos.y + player.eye, player.pos.z);
+  const dir = _dirMirada();
+  const n = _enemigosEnCono(o, dir, 16, 8);
+  audio.sfx('golpe');
+  toast(n ? `🔴 ¡LÁSER! ${n}` : '🔴 ¡LÁSER!');
+}
+function mantoSombra() {
+  _poderCd = 8;
+  player._mantoT = 6;   // 6 s de invisibilidad reforzada
+  const puf = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 10),
+    new THREE.MeshBasicMaterial({ color: 0x2b1e3a, transparent: true, depthWrite: false }));
+  puf.position.copy(player.pos).add(new THREE.Vector3(0, 1, 0));
+  addFx(puf, 0.5, (m, k) => { m.scale.setScalar(1 + k * 5); m.material.opacity = 0.5 * (1 - k); });
+  audio.sfx('menu');
+  toast('👻 ¡MANTO DE SOMBRA! (6 s)');
+}
+function impulsoVuelo() {
+  _poderCd = 0.6;
+  player.vel.y = 12;
+  audio.sfx('saltar');
 }
 
 // ---------- efectos visuales cortos ----------
@@ -753,6 +845,7 @@ function addFx(mesh, vida, fn, delay = 0) {
 }
 function updateFx(dt) {
   _poderCd = Math.max(0, _poderCd - dt);
+  _laserT = Math.max(0, _laserT - dt);
   for (let i = fx.length - 1; i >= 0; i--) {
     const m = fx[i];
     m.userData.t += dt;
@@ -917,6 +1010,12 @@ let _wasGround = true, _pasoT = 0, _lavaCd = 0;
 function frame(dt) {
   if (mode === 'jugar') {
     player.update(dt, controls.state);
+    // Manto de sombra (acción del poder invisibilidad)
+    if (player._mantoT > 0) {
+      player._mantoT -= dt;
+      player.invisible = true;
+      player.sprintMul = Math.max(player.sprintMul, 1.7);
+    }
     const moving = Math.abs(controls.state.forward) + Math.abs(controls.state.right) > 0.1;
     // sonido de salto y de pisadas
     if (_wasGround && !player.onGround && player.vel.y > 1) audio.sfx('saltar');
@@ -953,7 +1052,7 @@ function frame(dt) {
     actualizarMinado(dt);
     actualizarFlechas(dt);
     actualizarLaser();
-    viewModel.update(dt, player._thirdPerson);
+    viewModel.update(dt, player._thirdPerson || _laserT > 0);   // oculta la herramienta mientras lanzas el láser
     updateFx(dt);
     const r = currentRay();
     if (r) { highlight.visible = true; highlight.position.set(r.hit.x + 0.5, r.hit.y + 0.5, r.hit.z + 0.5); }

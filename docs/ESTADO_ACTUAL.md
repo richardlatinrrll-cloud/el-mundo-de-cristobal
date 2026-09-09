@@ -179,12 +179,18 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
   anillos cian que viajan al frente. **Onda Prisma = 360°** (cráter esférico),
   con **efecto visual**: domo que crece + 3 anillos de colores en el suelo.
   `addFx` ahora acepta `delay` para escalonar los anillos.
-- **Botón ✨ = activa el poder SELECCIONADO**. El Rayo del Martillo y la Onda
-  Prisma ahora son **poderes de la lista** (`powers/registry.js`, campo `gema`:
-  centella / TODAS) — se eligen como cualquier poder y el ✨ los dispara. El
-  botón solo aparece si el poder equipado tiene acción (sónico / rayo / prisma).
-  El botón ⛏️ es solo para pegar/usar la herramienta o arma en la mano.
-  `poderDesbloqueado(power, state)` unifica el chequeo (medallas o gemas).
+- **Botón ✨ = activa el poder SELECCIONADO** (cualquiera). Aparece si tienes
+  un poder equipado y **no mueve la herramienta** (eso es solo el botón ⛏️).
+  Cada poder tiene su acción con ✨:
+  - Súper fuerza → golpe de fuerza (cono, empuja) · Súper velocidad → ráfaga
+    hacia adelante · Súper salto → salto colosal · Visión láser → **rayo** que
+    rompe el bloque + golpea en línea (la herramienta se oculta un instante) ·
+    Invisibilidad → manto de sombra 6 s · Volar → impulso arriba · Grito sónico
+    → onda hacia adelante · Rayo del Martillo · Onda Prisma (360°).
+  - La **Visión láser ya no rompe bloques pasivamente** ni dispara al minar —
+    solo con ✨ (`_laserT` en main.js). Rayo del Martillo y Onda Prisma son
+    poderes de la lista (`powers/registry.js` campo `gema`: centella / TODAS).
+  - `poderDesbloqueado(power, state)` unifica el chequeo (medallas o gemas).
 - **Bug corregido**: los enemigos ya **no te "aplastan" si pasas por encima**
   (plataforma) — el golpe cuerpo a cuerpo ahora comprueba que estés a su altura.
 - **El Gigante** tiene brazos y **pisotea**: onda telegrafiada que te golpea y
@@ -270,7 +276,7 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
   reproducción de Spotify DENTRO del juego no es posible en móvil (limitación
   del SDK de Spotify), por eso es "aparte".
 - **PWA**: manifest + service worker **network-first** (`public/sw.js`, caché
-  `mundo-cristobal-v11`). `npm run build` OK (bundle ~630 KB / 172 KB gzip;
+  `mundo-cristobal-v12`). `npm run build` OK (bundle ~630 KB / 172 KB gzip;
   bancos de preguntas en chunks aparte).
 
 ## Limitaciones conocidas / pendiente

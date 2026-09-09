@@ -4,31 +4,31 @@
 export const POWERS = [
   {
     id: 'fuerza', nombre: 'Súper fuerza', emoji: '💪',
-    desc: 'Rompes cualquier bloque de un golpe.',
+    desc: 'Rompes cualquier bloque de un golpe. Botón ✨: golpe de fuerza que empuja a los enemigos.',
     req: { bronce: 1 },
     aplica(p) { p.instaBreak = true; },
   },
   {
     id: 'velocidad', nombre: 'Súper velocidad', emoji: '⚡',
-    desc: 'Corres mucho más rápido: deja atrás a las Sombras.',
+    desc: 'Corres mucho más rápido. Botón ✨: ráfaga hacia adelante.',
     req: { bronce: 2 },
     aplica(p) { p.sprintMul = 2.2; },
   },
   {
     id: 'salto', nombre: 'Súper salto', emoji: '🦿',
-    desc: 'Saltas altísimo.',
+    desc: 'Saltas altísimo. Botón ✨: salto colosal.',
     req: { bronce: 3 },
     aplica(p) { p.jumpV = 14; },
   },
   {
     id: 'laser', nombre: 'Visión láser', emoji: '🔴',
-    desc: 'Rompes bloques a distancia con la mirada.',
+    desc: 'Botón ✨: lanza un rayo que rompe el bloque y golpea a los enemigos en línea.',
     req: { plata: 1 },
-    aplica(p) { p.reach = 14; p.instaBreak = true; },
+    accion: 'laser',
   },
   {
     id: 'invisible', nombre: 'Invisibilidad', emoji: '👻',
-    desc: 'Te vuelves casi invisible: las Sombras no te detectan.',
+    desc: 'Casi invisible: las Sombras no te detectan. Botón ✨: manto de sombra (6 s).',
     req: { plata: 2 },
     aplica(p) { p.invisible = true; },
   },
@@ -40,7 +40,7 @@ export const POWERS = [
   },
   {
     id: 'volar', nombre: 'Volar', emoji: '🕊️',
-    desc: 'Vuelo libre. Salta para subir, agáchate para bajar.',
+    desc: 'Vuelo libre. Salta para subir, agáchate para bajar. Botón ✨: impulso hacia arriba.',
     req: { oro: 2 },
     aplica(p) { p.flying = true; },
   },
