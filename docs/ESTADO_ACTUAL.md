@@ -8,7 +8,7 @@ cambios** por tandas.
 
 Publicado en **GitHub Pages** (deploy automático al hacer `git push`) y en el
 **servidor casero ARGOS** por Tailscale (`http://100.111.194.61:8082`).
-Caché del service worker: `mundo-cristobal-v17`.
+Caché del service worker: `mundo-cristobal-v18`.
 
 ---
 
@@ -20,8 +20,9 @@ Caché del service worker: `mundo-cristobal-v17`.
   Semilla reproducible. **Modo creador**: vuelas, rompes al toque, sin enemigos,
   hotbar infinita.
 - **Naturaleza**: ríos, lagos, mar, cascadas y **volcanes** con lava (brilla y
-  empuja al tocarla). **Agua y lava corren** (`fluidos.js`): caen, se extienden
-  desde una fuente, se derraman por los bordes; agua + lava = roca.
+  empuja al tocarla). Los fluidos quedan **como los genera el mundo** (estáticos);
+  el "agua que corre" de la Parte 8 se desactivó porque inundaba el mapa
+  (`fluidos.js` quedó sin usar, ver su cabecera).
 - **Malla por chunks** (`mesher.js`): editar un bloque solo re-genera su chunk.
   **Streaming**: solo se mallan los chunks cercanos (radio 7 móvil / 10 PC),
   mundos enormes jugables. Oclusión ambiental + sombreado por cara → profundidad.
@@ -153,7 +154,8 @@ una lista de phonk (se deja sonando aparte).
 
 `pruebas.js`, en el menú. Toca un enemigo, jefe, dinosaurio o animal y apareces
 en una arena plana con él enfrente para verlo y pelear. La arena solo tiene lo
-que invocas (no repuebla). Botón "Limpiar arena".
+que invocas (no repuebla). En la arena la vida **nunca baja de 1 corazón** (es
+para observar, no para morir mirando). Botón "Limpiar arena".
 
 ---
 
@@ -205,3 +207,9 @@ que invocas (no repuebla). Botón "Limpiar arena".
 - **Parte 9** — 4 dinosaurios + El Autómata + Modo Súper Saya (pelo dorado, pose
   de grito, aura amarilla); modelos de animales de 11–18 piezas; Sala de pruebas
   ampliada con secciones Dinosaurios y Animales.
+- **Revisión general** — 3 arreglos: (1) el "agua que corre" de la Parte 8
+  inundaba el mapa (un balde llenaba toda la zona) → desactivado, los fluidos
+  quedan como los genera el mundo; (2) los 28 modelos de enemigos se dibujaban
+  aunque estuvieran lejísimos → se ocultan a >64 bloques; (3) en la Sala de
+  pruebas te morías en ~10 s mirando a un jefe → la vida no baja de 1 corazón
+  ahí.

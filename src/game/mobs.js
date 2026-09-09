@@ -367,6 +367,13 @@ export class MobField {
       if (mob.dead) { this._kill(i); continue; }
       const mesh = this.meshes[i];
       if (!mesh) continue;
+      // no dibujar ni animar los que están lejos (rendimiento en el teléfono)
+      const lejos = Math.hypot(mob.pos.x - player.pos.x, mob.pos.z - player.pos.z) > 64;
+      if (lejos) {
+        if (mesh.visible) mesh.visible = false;
+        continue;
+      }
+      mesh.visible = true;
       mesh.position.set(mob.pos.x, mob.pos.y, mob.pos.z);
       mesh.rotation.y = mob.face;
       // el Larguirucho casi no se balancea; los demás sí

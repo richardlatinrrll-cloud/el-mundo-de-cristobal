@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import './style.css';
 import { World, CHUNK, TIPOS } from './engine/world.js';
 import { buildChunkGeometry } from './engine/mesher.js';
-import { tickFluidos } from './engine/fluidos.js';
 import { buildAtlas, BLOCKS, PLACEABLES, blockName, blockEmoji, dropFor, AIR } from './engine/blocks.js';
 import { Player } from './engine/player.js';
 import { Controls } from './engine/controls.js';
@@ -497,7 +496,10 @@ function dañarJugador(n, motivo) {
   if (state.mundo.creador) return;   // en modo creador no te hacen daño
   const red = reduccionArmadura(state.armadura || []);
   n = Math.max(1, Math.round(n * (1 - red)));
-  state.salud = Math.max(0, state.salud - n);
+  // Sala de pruebas: los golpes se ven en la barra de vida pero nunca te
+  // desmayas (es para observar a la criatura, no para morir mirándola).
+  const piso = mobs.arenaMode ? 10 : 0;
+  state.salud = Math.max(piso, state.salud - n);
   _regenCd = 5;
   _invulnCd = 0.5;
   audio.sfx('dano');
@@ -1076,7 +1078,7 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
-let _wasGround = true, _pasoT = 0, _lavaCd = 0, _fluidoT = 0.5;
+let _wasGround = true, _pasoT = 0, _lavaCd = 0;
 function frame(dt) {
   if (mode === 'jugar') {
     player.update(dt, controls.state);
@@ -1148,11 +1150,8 @@ function frame(dt) {
     animals.update(dt, player);
     updateMobBadge();
     updateMiniMapa(dt);
-    _fluidoT -= dt;
-    if (_fluidoT <= 0) {
-      _fluidoT = 0.35;
-      tickFluidos(world, Math.floor(player.pos.x), Math.floor(player.pos.y), Math.floor(player.pos.z));
-    }
+    // (el agua/lava que "corría" se desactivó: inundaba el mapa. Los ríos, lagos,
+    //  cascadas y la lava de los volcanes quedan como los genera el mundo.)
     streamChunks();
     actualizarMinado(dt);
     actualizarFlechas(dt);
