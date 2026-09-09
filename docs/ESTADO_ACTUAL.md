@@ -8,7 +8,7 @@ cambios** por tandas.
 
 Publicado en **GitHub Pages** (deploy automático al hacer `git push`) y en el
 **servidor casero ARGOS** por Tailscale (`http://100.111.194.61:8082`).
-Caché del service worker: `mundo-cristobal-v20`.
+Caché del service worker: `mundo-cristobal-v21`.
 
 ---
 
@@ -19,10 +19,16 @@ Caché del service worker: `mundo-cristobal-v20`.
   Tamaños Pequeño 192³ · Mediano 384² · Grande 576×112×576 · Gigante 768×120×768.
   Semilla reproducible. **Modo creador**: vuelas, rompes al toque, sin enemigos,
   hotbar infinita.
-- **Naturaleza**: ríos, lagos, mar, cascadas y **volcanes** con lava (brilla y
-  empuja al tocarla). Los fluidos quedan **como los genera el mundo** (estáticos);
-  el "agua que corre" de la Parte 8 se desactivó porque inundaba el mapa
-  (`fluidos.js` quedó sin usar, ver su cabecera).
+- **Naturaleza**: ríos, lagos, mar, cascadas y **volcanes**. El interior del
+  volcán está **relleno de lava** (chimenea desde muy hondo hasta el cráter).
+- **Fluidos con niveles** (`fluidos.js`, sim estilo Minecraft, solo cerca del
+  jugador): FUENTE (llena) vs CORRIENTE (se debilita 1 por casilla, agua hasta 6,
+  lava hasta 5). El agua **rellena huecos** (si cavas bajo un lago se llena
+  solo; 2+ fuentes juntas hacen fuente nueva). La corriente que nadie alimenta
+  **se seca**. La **lava corre** al abrir el volcán y **se enfría** con agua
+  (→ roca) o sola con el tiempo (deja un río de roca). Acotado y barato
+  (~0,5 ms/tick cada 0,25 s); no inunda el mapa (verificado: 1 fuente → poza
+  13×13 y para).
 - **Malla por chunks** (`mesher.js`): editar un bloque solo re-genera su chunk.
   **Streaming**: solo se mallan los chunks cercanos (radio 7 móvil / 10 PC),
   mundos enormes jugables. Oclusión ambiental + sombreado por cara → profundidad.
@@ -233,3 +239,9 @@ para observar, no para morir mirando). Botón "Limpiar arena".
   escalón de terreno (solo el jugador subía). Ahora suben 1 bloque igual que el
   jugador (verificado: bajan y suben escaleras enteras persiguiéndote); los
   muros de 2+ siguen frenándolos.
+- **Fluidos de verdad (con niveles)** — reemplaza al `fluidos.js` desactivado.
+  El agua rellena huecos y pozas, la corriente se debilita con la distancia y
+  se seca si nadie la alimenta; NO inunda el mapa. El volcán ahora está lleno
+  de lava por dentro y, si lo abres por un costado, **la lava corre y se
+  enfría** (con agua → roca al toque; sola → río de roca con el tiempo). El
+  mesher baja la superficie del fluido según su nivel (se ve el declive).

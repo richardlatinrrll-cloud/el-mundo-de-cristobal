@@ -47,6 +47,9 @@ export class World {
 
     this.SX = SX; this.SY = SY; this.SZ = SZ;
     this.data = new Uint8Array(SX * SY * SZ);
+    // nivel de fluido por celda: sin entrada = FUENTE (nivel 0, llena);
+    // 1..7 (agua) / 1..3 (lava) = fluido que "corre" y se debilita con la distancia.
+    this.fluid = new Map();
     this.dirtyChunks = new Set();   // "cx,cz"
     this.rnd = mulberry32(this.semilla);
 
@@ -74,8 +77,21 @@ export class World {
   set(x, y, z, id) {
     if (!this.inside(x, y, z)) return false;
     this.data[this.idx(x, y, z)] = id;
+    // al cambiar de bloque se pierde el nivel de fluido (queda como FUENTE si
+    // vuelve a ser fluido, sin nivel si deja de serlo)
+    if (id !== 10 && id !== 14) this.fluid.delete(this.idx(x, y, z));
     this.markDirtyAround(x, z);
     return true;
+  }
+  // nivel de fluido en la celda (0 = fuente / llena). El sim lo escribe.
+  fluidLevel(x, y, z) {
+    if (!this.inside(x, y, z)) return 0;
+    return this.fluid.get(this.idx(x, y, z)) || 0;
+  }
+  setFluidLevel(x, y, z, lvl) {
+    const k = this.idx(x, y, z);
+    if (lvl <= 0) this.fluid.delete(k);
+    else this.fluid.set(k, lvl);
   }
   isOpaqueAt(x, y, z) { return isOpaque(this.get(x, y, z)); }
 
@@ -181,11 +197,13 @@ export class World {
     }
   }
 
-  // un volcán: cono de roca volcánica con cráter de lava y un río de lava
+  // un volcán: cono de roca volcánica RELLENO DE LAVA por dentro (chimenea +
+  // cámara) y un cráter con lava arriba. Si lo abres por un lado, la lava corre.
   volcan(cx, cz) {
     const R = 16;
     const baseY = Math.max(4, this.topeSolido(cx, cz));
     const altura = Math.min(SY - 4, baseY + 26 + ((this.rnd() * 8) | 0));
+    // 1) cono sólido de roca volcánica
     for (let x = cx - R; x <= cx + R; x++)
       for (let z = cz - R; z <= cz + R; z++) {
         if (!this.inside(x, 0, z)) continue;
@@ -197,17 +215,26 @@ export class World {
           if (y > this.topeSolido(x, z) || cur === AIR || cur === 10) this.data[this.idx(x, y, z)] = 15;
         }
       }
-    // cráter
+    // 2) chimenea de lava: columna ancha por el centro, desde bien hondo hasta
+    //    el cráter. Todo LAVA-FUENTE (sin entrada en this.fluid = nivel 0).
+    const chimR = 3;
+    const fondo = Math.max(2, baseY - 12);
+    for (let x = cx - chimR; x <= cx + chimR; x++)
+      for (let z = cz - chimR; z <= cz + chimR; z++) {
+        if (!this.inside(x, 0, z)) continue;
+        const d = Math.hypot(x - cx, z - cz);
+        if (d > chimR + 0.3) continue;
+        for (let y = fondo; y <= altura - 2; y++) this.data[this.idx(x, y, z)] = 14;
+      }
+    // 3) cráter abierto arriba con lava a ras
     const craterR = 5;
     for (let x = cx - craterR; x <= cx + craterR; x++)
       for (let z = cz - craterR; z <= cz + craterR; z++) {
         if (!this.inside(x, 0, z)) continue;
         const d = Math.hypot(x - cx, z - cz);
         if (d > craterR) continue;
-        for (let y = altura; y > altura - 5; y--) this.data[this.idx(x, y, z)] = AIR;
-        // fondo de lava
-        this.data[this.idx(x, altura - 5, z)] = 14;
-        this.data[this.idx(x, altura - 4, z)] = d < craterR - 1 ? 14 : 15;
+        for (let y = altura; y > altura - 2; y--) this.data[this.idx(x, y, z)] = AIR;
+        this.data[this.idx(x, altura - 2, z)] = d < craterR - 1 ? 14 : 15;   // lava a ras
       }
   }
 

@@ -74,7 +74,7 @@ La clave se pide **cada vez** que se abre el juego. Solo se guardan los hashes.
 | `player.js` | física AABB, salto, auto-step, raycast DDA, respawn si te sales del mapa |
 | `controls.js` | teclado+ratón (pointer lock) y táctil (joystick dinámico + botones) |
 | `blocks.js` | catálogo de bloques + atlas de texturas procedurales |
-| `fluidos.js` | **sin usar** (el "agua que corre" inundaba el mapa; ver cabecera del archivo). Los fluidos quedan como los genera `world.js` |
+| `fluidos.js` | **fluidos con niveles** (sim tipo Minecraft): FUENTE vs CORRIENTE, agua rellena huecos, lava corre y se enfría, no inunda. `world.fluid` = Map de niveles. Tick cada 0,25 s cerca del jugador |
 
 ### `game/` — lógica del juego
 | archivo | qué hace |

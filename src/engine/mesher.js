@@ -44,6 +44,13 @@ export function buildChunkGeometry(world, cx, cz) {
         if (id === AIR) continue;
         const def = BLOCKS[id];
         const target = def?.glow ? glow : def?.alpha ? trans : opaque;
+        // altura de la superficie del fluido según su nivel (0 = lleno)
+        let topH = 1;
+        if (def?.liquid) {
+          const nivel = world.fluidLevel ? world.fluidLevel(x, y, z) : 0;
+          // si arriba hay el mismo fluido, este bloque va lleno (columna)
+          if (nivel > 0 && world.get(x, y + 1, z) !== id) topH = 1 - nivel * 0.13;
+        }
         for (const f of FACES) {
           const nId = world.get(x + f.dir[0], y + f.dir[1], z + f.dir[2]);
           if (nId !== AIR) {
@@ -51,7 +58,7 @@ export function buildChunkGeometry(world, cx, cz) {
             if (!nDef?.alpha && !nDef?.glow) continue;
             if (nId === id) continue;
           }
-          addFace(target, occ, x, y, z, f, id, !!def?.glow);
+          addFace(target, occ, x, y, z, f, id, !!def?.glow, topH);
         }
       }
     }
@@ -59,7 +66,7 @@ export function buildChunkGeometry(world, cx, cz) {
   return { opaque: toGeometry(opaque), trans: toGeometry(trans), glow: toGeometry(glow) };
 }
 
-function addFace(t, occ, x, y, z, f, id, noAO) {
+function addFace(t, occ, x, y, z, f, id, noAO, topH = 1) {
   const base = t.pos.length / 3;
   const { u0, u1, v0, v1 } = faceUV(id, f.face);
   const uvs = [[u0, v1], [u0, v0], [u1, v0], [u1, v1]];
@@ -70,7 +77,8 @@ function addFace(t, occ, x, y, z, f, id, noAO) {
 
   for (let i = 0; i < 4; i++) {
     const c = f.corners[i];
-    t.pos.push(x + c[0], y + c[1], z + c[2]);
+    const cy = c[1] === 1 ? topH : c[1];   // baja la superficie del fluido
+    t.pos.push(x + c[0], y + cy, z + c[2]);
     t.norm.push(f.dir[0], f.dir[1], f.dir[2]);
     t.uv.push(uvs[i][0], uvs[i][1]);
 

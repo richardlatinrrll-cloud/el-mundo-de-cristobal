@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import './style.css';
 import { World, CHUNK, TIPOS } from './engine/world.js';
 import { buildChunkGeometry } from './engine/mesher.js';
+import { tickFluidos } from './engine/fluidos.js';
 import { buildAtlas, BLOCKS, PLACEABLES, blockName, blockEmoji, dropFor, AIR } from './engine/blocks.js';
 import { Player } from './engine/player.js';
 import { Controls } from './engine/controls.js';
@@ -1082,7 +1083,7 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
-let _wasGround = true, _pasoT = 0, _lavaCd = 0, _eraNoche = false;
+let _wasGround = true, _pasoT = 0, _lavaCd = 0, _eraNoche = false, _fluidoT = 0.3;
 function frame(dt) {
   if (mode === 'jugar') {
     player.update(dt, controls.state);
@@ -1171,8 +1172,12 @@ function frame(dt) {
     animals.update(dt, player);
     updateMobBadge();
     updateMiniMapa(dt);
-    // (el agua/lava que "corría" se desactivó: inundaba el mapa. Los ríos, lagos,
-    //  cascadas y la lava de los volcanes quedan como los genera el mundo.)
+    // fluidos con niveles: agua rellena huecos, lava corre y se enfría
+    _fluidoT -= dt;
+    if (_fluidoT <= 0) {
+      _fluidoT = 0.25;
+      tickFluidos(world, Math.floor(player.pos.x), Math.floor(player.pos.y), Math.floor(player.pos.z));
+    }
     streamChunks();
     actualizarMinado(dt);
     actualizarFlechas(dt);
