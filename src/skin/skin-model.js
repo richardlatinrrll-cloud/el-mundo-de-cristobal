@@ -211,23 +211,19 @@ export function applySkinToPlayer(player, scene) {
 
 export function updateAvatar(player, dt, moving) {
   if (!avatar) return;
-  avatar.visible = player._thirdPerson === true;
-  if (!avatar.visible) return;
-  avatar.position.set(player.pos.x, player.pos.y, player.pos.z);
-  // el monigote mira hacia donde camina (su cara está en +z, así que +PI)
-  avatar.rotation.y = player.yaw + Math.PI;
   const p = avatar.userData;
   const t = performance.now() / 140;
   const saya = (player._furiaT || 0) > 0;
-  const arranque = (player._sayaStartT || 0) > 0;   // animación de transformación
+  const arranque = (player._sayaStartT || 0) > 0;   // solo mientras dura la transformación
 
+  // rasgos de Súper Saya: pelo dorado + brillo (se mantienen los 15 s)
   p.peloSaya.visible = saya;
-  // brillo dorado en piel y ropa mientras dura el Súper Saya
   if (p.mat.emissive) {
-    const glow = arranque ? 0x8a6b00 : saya ? 0x3a2d00 : 0x000000;
-    p.mat.emissive.setHex(glow);
+    p.mat.emissive.setHex(arranque ? 0x8a6b00 : saya ? 0x3a2d00 : 0x000000);
   }
 
+  // La pose se actualiza SIEMPRE (aunque no se vea) para que quede limpia al
+  // volver a tercera persona: gesto de grito solo en `arranque`, luego normal.
   if (arranque) {
     // pose de carga: mira al cielo, brazos abajo y afuera, temblando por el esfuerzo
     const tr = Math.sin(performance.now() / 35) * 0.06;
@@ -240,11 +236,17 @@ export function updateAvatar(player, dt, moving) {
     const sw = moving ? Math.sin(t) * 0.5 : 0;
     p.head.rotation.x = 0;
     p.body.rotation.x = 0;
-    p.armR.rotation.set(sw, 0, saya ? 0.14 : 0);
+    p.armR.rotation.set(sw, 0, saya ? 0.14 : 0);   // en Saya, brazos un pelín abiertos
     p.armL.rotation.set(-sw, 0, saya ? -0.14 : 0);
     p.legR.rotation.x = -sw; p.legL.rotation.x = sw;
   }
 
+  avatar.visible = player._thirdPerson === true;
+  if (!avatar.visible) return;   // el resto (posición, opacidad) solo si se ve
+
+  avatar.position.set(player.pos.x, player.pos.y, player.pos.z);
+  // el monigote mira hacia donde camina (su cara está en +z, así que +PI)
+  avatar.rotation.y = player.yaw + Math.PI;
   const opacity = player.invisible ? 0.15 : 1;
   p.mat.opacity = opacity; p.mat.transparent = opacity < 1 ? true : p.mat.transparent;
 }

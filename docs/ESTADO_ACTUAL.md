@@ -2,7 +2,7 @@
 
 _Actualizado: 2026-09-09 (Parte 9)_
 
-## Parte 9 — Dinosaurios, El Autómata y Modo Furia
+## Parte 9 — Dinosaurios, El Autómata y Modo Súper Saya
 
 - **Dinosaurios** (`src/game/animals.js`): 4 especies nuevas con modelo propio
   voxel — **T-Rex** (depredador grande, te caza de lejos y pega durísimo),
@@ -29,6 +29,10 @@ _Actualizado: 2026-09-09 (Parte 9)_
   Buffs: +velocidad (sprint ×2,4), +salto, **daño ×2,2** y casi no te empujan.
   Enfriamiento 24 s. Avisa cuando se está por acabar y vuelve a la vista que
   tenías. Grito propio generado con Web Audio (`audio.sfx('grito')`).
+  El **gesto de gritar con los brazos arriba es SOLO al activar** (~1,7 s);
+  después se mueve normal pero conserva el pelo dorado y el aura
+  (`updateAvatar` en `skin-model.js` actualiza la pose siempre, aun en 1ª
+  persona, para que no quede "congelada").
 - **Sobre "achicar los cubos"**: no se cambió la resolución de los bloques (más
   cubos = riesgo de que vaya lento en el teléfono de Cristóbal). La mejora
   "casi realista sin perder la noción de los bloques" se hizo con **modelos de
@@ -325,7 +329,7 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
   reproducción de Spotify DENTRO del juego no es posible en móvil (limitación
   del SDK de Spotify), por eso es "aparte".
 - **PWA**: manifest + service worker **network-first** (`public/sw.js`, caché
-  `mundo-cristobal-v15`). `npm run build` OK (bundle ~650 KB / 179 KB gzip;
+  `mundo-cristobal-v16`). `npm run build` OK (bundle ~650 KB / 179 KB gzip;
   bancos de preguntas en chunks aparte).
 
 ## Limitaciones conocidas / pendiente
