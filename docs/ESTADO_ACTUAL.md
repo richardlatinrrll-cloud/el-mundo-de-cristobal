@@ -1,6 +1,6 @@
 # Estado actual — El Mundo de Cristóbal
 
-_Actualizado: 2026-09-09 (Parte 3)_
+_Actualizado: 2026-09-09 (Parte 4)_
 
 **Publicado en GitHub Pages** (repo público, sitio `noindex` + pantalla de clave
 para "solo para Cristóbal"). El deploy es automático: `git push` a `main` →
@@ -106,11 +106,22 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
   sónico, volar. Se equipan en "Mis poderes" y se aplican al entrar a Jugar.
 - **Enemigos por tipo** (`src/game/mobs.js`): Sombra, Espectro (rápido),
   Brincón (salta), Bruto (tanque), Acechador (ve lejos y detecta parcialmente
-  la invisibilidad). Aparecen **más y más difíciles según el nivel** (total de
-  medallas): de 4 hasta 20, con tipos nuevos que se suman al subir. Invisible o
-  volando casi nadie te ve; súper velocidad te salva. Se les pega con ⛏️/clic
-  apuntándoles o con el grito sónico en área. HUD: cuántos te persiguen.
-  Verificado: escalado por nivel, tipos, invisibilidad, combate, muerte.
+  la invisibilidad), **El Larguirucho** y **El Gigante** (Parte 4). Aparecen
+  **más y más difíciles según el nivel** (total de medallas): de 4 hasta 20, con
+  tipos nuevos que se suman al subir. Invisible o volando casi nadie te ve;
+  súper velocidad te salva. Se les pega con ⛏️/clic apuntándoles o con el grito
+  sónico en área. HUD: cuántos te persiguen.
+  - **El Larguirucho** (acechador de pasillos, nivel 9+): altísimo y flaco, ojos
+    que brillan. **Se congela mientras lo miras** y avanza rapidísimo cuando le
+    quitas la vista de encima. Siempre sabe dónde estás.
+  - **El Gigante** (nivel 14+): enorme, mucha vida, muy lento pero te manda a
+    volar de un golpe. Corre lejos: no te alcanza si sigues moviéndote.
+- **Texturas y luz más realistas (Parte 4)**: texturas procedurales con más
+  detalle (piedra con grietas, ladrillo con juntas, tablas con vetas, pasto con
+  matices, arena, ladrillo…), **oclusión ambiental** por vértice (los rincones
+  y la base de árboles/muros se oscurecen → se ve profundidad) y sombreado por
+  cara (arriba más claro, abajo más oscuro). Luz ambiente un poco más cálida y
+  fuerte para que la sombra no ensucie.
 - **Jefes y zonas** (`src/game/bosses.js`): 4 torres-baliza de colores aparecen
   en el mapa al desbloquear el poder de cada jefe.
   - Gólem de Piedra (poder: súper fuerza) — HP 42
@@ -155,8 +166,9 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
   **En el teléfono funcionan la música phonk y los efectos**; el control de
   reproducción de Spotify DENTRO del juego no es posible en móvil (limitación
   del SDK de Spotify), por eso es "aparte".
-- **PWA**: manifest + service worker (cache-first). `npm run build` OK
-  (bundle ~515 KB / 135 KB gzip; bancos de preguntas en chunks aparte).
+- **PWA**: manifest + service worker **network-first** (`public/sw.js`, caché
+  `mundo-cristobal-v4`). `npm run build` OK (bundle ~600 KB / 162 KB gzip;
+  bancos de preguntas en chunks aparte).
 
 ## Limitaciones conocidas / pendiente
 
@@ -181,8 +193,9 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
 - **Parte 1 — Naturaleza y animales**: ✅ hecho.
 - **Parte 2 — Crafteo**: ✅ hecho.
 - **Parte 3 — Objetos legendarios + búsqueda de gemas**: ✅ hecho.
-- **Parte 4 — Más enemigos originales + texturas/luz más realistas**: pendiente.
-  Acechadores de pasillo, gigantes, y mejor iluminación/materiales.
+- **Parte 4 — Más enemigos originales + texturas/luz más realistas**: ✅ hecho.
+
+El roadmap de 4 partes que pidió Richard está **completo**.
 
 ## Ideas para siguientes iteraciones
 

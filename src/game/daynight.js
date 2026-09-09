@@ -7,11 +7,11 @@ import * as THREE from 'three';
 const CIELO = [
   [0,  0x0b1330, 0.05, 0.16],  // medianoche
   [5,  0x1b2350, 0.06, 0.18],  // antes del alba
-  [6.5,0xf2a15a, 0.55, 0.40],  // amanecer
-  [8,  0x9fd0ef, 1.05, 0.75],  // mañana
-  [13, 0x8fc7ff, 1.20, 0.85],  // mediodía
-  [17, 0x9fc4e8, 1.00, 0.72],  // tarde
-  [19, 0xef8a4a, 0.50, 0.38],  // atardecer
+  [6.5,0xf2a15a, 0.55, 0.46],  // amanecer
+  [8,  0x9fd0ef, 1.05, 0.82],  // mañana
+  [13, 0x8fc7ff, 1.20, 0.95],  // mediodía
+  [17, 0x9fc4e8, 1.00, 0.80],  // tarde
+  [19, 0xef8a4a, 0.50, 0.44],  // atardecer
   [20.5,0x33306a, 0.12, 0.22], // anochecer
   [24, 0x0b1330, 0.05, 0.16],
 ];
@@ -39,7 +39,7 @@ export class DayNight {
     this.scene = scene;
     this.renderer = renderer;
     this.sun = new THREE.DirectionalLight(0xffffff, 1.1);
-    this.hemi = new THREE.HemisphereLight(0xbfe0ff, 0x4a5a3a, 0.75);
+    this.hemi = new THREE.HemisphereLight(0xbfe0ff, 0x8b7f63, 0.75); // suelo cálido claro: caras verticales menos apagadas
     scene.add(this.sun, this.hemi);
 
     // estrellas (visibles de noche)

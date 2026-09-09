@@ -65,9 +65,9 @@ atlasTex.magFilter = THREE.NearestFilter;
 atlasTex.minFilter = THREE.NearestFilter;
 atlasTex.colorSpace = THREE.SRGBColorSpace;
 
-const matOpaque = new THREE.MeshLambertMaterial({ map: atlasTex });
-const matTrans = new THREE.MeshLambertMaterial({ map: atlasTex, transparent: true, opacity: 0.82, depthWrite: false, side: THREE.DoubleSide });
-const matGlow = new THREE.MeshBasicMaterial({ map: atlasTex }); // lava: brilla siempre
+const matOpaque = new THREE.MeshLambertMaterial({ map: atlasTex, vertexColors: true });
+const matTrans = new THREE.MeshLambertMaterial({ map: atlasTex, vertexColors: true, transparent: true, opacity: 0.82, depthWrite: false, side: THREE.DoubleSide });
+const matGlow = new THREE.MeshBasicMaterial({ map: atlasTex, vertexColors: true }); // lava: brilla siempre
 
 // ---------- Mundo (malla por chunks) ----------
 let world;

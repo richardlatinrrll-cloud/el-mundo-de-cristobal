@@ -18,6 +18,19 @@ const TYPES = {
   saltarin:  { nombre: 'Brincón',   hp: 2, speed: 3.1, view: 12, lose: 20, knock: 4,  color: 0x143a1e, eye: 0xa8e10c, size: 0.95, minNivel: 6, peso: 3, salta: true },
   bruto:     { nombre: 'Bruto',     hp: 4, speed: 2.3, view: 14, lose: 20, knock: 9,  color: 0x3a1e1e, eye: 0xff8a3d, size: 1.35, minNivel: 10, peso: 2 },
   acechador: { nombre: 'Acechador', hp: 3, speed: 3.9, view: 19, lose: 28, knock: 5,  color: 0x241a2e, eye: 0xff2bd0, size: 1.05, minNivel: 15, peso: 2, verInvisible: true },
+  // --- Parte 4: enemigos originales grandes ---
+  larguirucho: {
+    nombre: 'El Larguirucho', hp: 5, speed: 7.4, view: 26, lose: 46, knock: 5,
+    color: 0xe9e5da, eye: 0x4be0ff, size: 1.2, minNivel: 9, peso: 1,
+    verInvisible: true, forma: 'alto', congelaConMirada: true,
+    grito: '👁️ El Larguirucho te atrapó. No le quites la vista de encima.',
+  },
+  gigante: {
+    nombre: 'El Gigante', hp: 14, speed: 1.8, view: 17, lose: 26, knock: 15,
+    color: 0x8a7357, eye: 0xffcf6a, size: 3.1, minNivel: 14, peso: 1,
+    forma: 'gigante',
+    grito: '🦶 ¡EL GIGANTE te aplastó! Es lento: corre lejos.',
+  },
 };
 
 const CATCH_DIST = 1.15;
@@ -93,14 +106,21 @@ class Mob {
       speed = t.speed;
       const d = dist || 1;
       mx = dx / d; mz = dz / d;
-      if (dist < CATCH_DIST && this.catchCooldown === 0) {
-        this.catchCooldown = 2.2;
+      // El Larguirucho se congela mientras lo miras; avanza cuando le quitas la vista
+      this._mirado = false;
+      if (t.congelaConMirada) {
+        // cámara-adelante del jugador = (-sinY, -cosY); ¿apunta hacia el mob?
+        const fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw);
+        if ((-dx / d) * fx + (-dz / d) * fz > 0.42) { this._mirado = true; speed = 0.2; mx = 0; mz = 0; }
+      }
+      if (dist < CATCH_DIST && this.catchCooldown === 0 && !this._mirado) {
+        this.catchCooldown = t.forma === 'gigante' ? 1.6 : 2.2;
         const k = player._empuje ?? 1;   // Gema Vital reduce el empujón
         player.pos.x -= (dx / d) * (t.knock * 0.5) * k;
         player.pos.z -= (dz / d) * (t.knock * 0.5) * k;
         player.vel.y = (6 + t.knock * 0.4) * k;
         audio.sfx('dano');
-        toast(`👤 ¡Un ${t.nombre} te golpeó! Usa 👻 o ⚡, o pega tú (⛏️ / 💥)`);
+        toast(t.grito || `👤 ¡Un ${t.nombre} te golpeó! Usa 👻 o ⚡, o pega tú (⛏️ / 💥)`);
       }
     } else {
       this.wanderTimer -= dt;
@@ -180,17 +200,44 @@ function randomSpot(world) {
 function makeMesh(def) {
   const g = new THREE.Group();
   const s = def.size;
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.7 * s, 0.9 * s, 0.5 * s),
-    new THREE.MeshLambertMaterial({ color: def.color }));
-  body.position.y = 0.75 * s;
-  const head = new THREE.Mesh(new THREE.BoxGeometry(0.55 * s, 0.5 * s, 0.5 * s),
-    new THREE.MeshLambertMaterial({ color: def.color }));
-  head.position.y = 1.45 * s;
+  const mat = () => new THREE.MeshLambertMaterial({ color: def.color });
+  let body, head, eLpos, eRpos, eSize;
+
+  if (def.forma === 'alto') {
+    // El Larguirucho: altísimo y flaco, brazos largos
+    body = new THREE.Mesh(new THREE.BoxGeometry(0.5 * s, 3.0 * s, 0.42 * s), mat());
+    body.position.y = 1.8 * s;
+    head = new THREE.Mesh(new THREE.BoxGeometry(0.6 * s, 0.55 * s, 0.55 * s), mat());
+    head.position.y = 3.5 * s;
+    const armGeo = new THREE.BoxGeometry(0.16 * s, 2.0 * s, 0.16 * s);
+    const aL = new THREE.Mesh(armGeo, mat()); aL.position.set(-0.38 * s, 2.0 * s, 0);
+    const aR = new THREE.Mesh(armGeo, mat()); aR.position.set(0.38 * s, 2.0 * s, 0);
+    g.add(aL, aR);
+    eSize = 0.2 * s; eLpos = [-0.14 * s, 3.55 * s, 0.28 * s]; eRpos = [0.14 * s, 3.55 * s, 0.28 * s];
+  } else if (def.forma === 'gigante') {
+    // El Gigante: enorme y macizo, con piernas
+    body = new THREE.Mesh(new THREE.BoxGeometry(1.3 * s, 1.5 * s, 0.9 * s), mat());
+    body.position.y = 1.15 * s;
+    head = new THREE.Mesh(new THREE.BoxGeometry(0.9 * s, 0.8 * s, 0.8 * s), mat());
+    head.position.y = 2.25 * s;
+    const legGeo = new THREE.BoxGeometry(0.5 * s, 1.0 * s, 0.5 * s);
+    const lL = new THREE.Mesh(legGeo, mat()); lL.position.set(-0.34 * s, 0.5 * s, 0);
+    const lR = new THREE.Mesh(legGeo, mat()); lR.position.set(0.34 * s, 0.5 * s, 0);
+    g.add(lL, lR);
+    eSize = 0.16 * s; eLpos = [-0.2 * s, 2.35 * s, 0.42 * s]; eRpos = [0.2 * s, 2.35 * s, 0.42 * s];
+  } else {
+    body = new THREE.Mesh(new THREE.BoxGeometry(0.7 * s, 0.9 * s, 0.5 * s), mat());
+    body.position.y = 0.75 * s;
+    head = new THREE.Mesh(new THREE.BoxGeometry(0.55 * s, 0.5 * s, 0.5 * s), mat());
+    head.position.y = 1.45 * s;
+    eSize = 0.12 * s; eLpos = [-0.13 * s, 1.5 * s, 0.26 * s]; eRpos = [0.13 * s, 1.5 * s, 0.26 * s];
+  }
+
   const eyeMat = new THREE.MeshBasicMaterial({ color: def.eye });
-  const eL = new THREE.Mesh(new THREE.BoxGeometry(0.12 * s, 0.12 * s, 0.06), eyeMat);
+  const eL = new THREE.Mesh(new THREE.BoxGeometry(eSize, eSize, 0.06), eyeMat);
   const eR = eL.clone();
-  eL.position.set(-0.13 * s, 1.5 * s, 0.26 * s);
-  eR.position.set(0.13 * s, 1.5 * s, 0.26 * s);
+  eL.position.set(...eLpos);
+  eR.position.set(...eRpos);
   g.add(body, head, eL, eR);
   g.userData = { body, mats: [body.material, head.material] };
   return g;
@@ -248,7 +295,10 @@ export class MobField {
       const mesh = this.meshes[i];
       mesh.position.set(mob.pos.x, mob.pos.y, mob.pos.z);
       mesh.rotation.y = mob.face;
-      mesh.userData.body.rotation.x = Math.sin(t + i) * (mob.state === 'chase' ? 0.35 : 0.12);
+      // el Larguirucho se queda quieto mientras lo miras
+      mesh.userData.body.rotation.x = mob._mirado
+        ? 0
+        : Math.sin(t + i) * (mob.state === 'chase' ? 0.35 : 0.12);
       const flash = mob.hurt > 0;
       mesh.userData.mats.forEach((m) => m.emissive?.setHex(flash ? 0xff0000 : 0x000000));
     }
