@@ -104,17 +104,26 @@ export class World {
     return 1;
   }
 
-  // deja una plataforma plana y despejada en el centro para aparecer
+  // aplana suavemente una zona de aparición que se funde con el terreno vecino
   plataformaCentral(topId = 1) {
     const cx = (SX / 2) | 0, cz = (SZ / 2) | 0;
-    const platY = Math.max(4, Math.min(SY - 6, this.surfaceY(cx, cz) + 1, 26));
-    for (let x = cx - 4; x <= cx + 4; x++)
-      for (let z = cz - 4; z <= cz + 4; z++) {
-        for (let y = 0; y <= platY; y++)
-          this.data[this.idx(x, y, z)] = y < platY - 3 ? 3 : y < platY ? 2 : topId;
-        for (let y = platY + 1; y < SY; y++) this.data[this.idx(x, y, z)] = AIR;
+    const R = 6;
+    const baseY = this.surfaceY(cx, cz) - 1; // bloque de superficie
+    for (let x = cx - R; x <= cx + R; x++)
+      for (let z = cz - R; z <= cz + R; z++) {
+        const d = Math.max(Math.abs(x - cx), Math.abs(z - cz));
+        // altura objetivo: plano en el centro, transición hacia el terreno real en el borde
+        const real = this.surfaceY(x, z) - 1;
+        const t = Math.min(1, Math.max(0, (d - 2) / (R - 2)));
+        const objetivo = Math.round(baseY * (1 - t) + real * t);
+        for (let y = 0; y <= objetivo; y++)
+          this.data[this.idx(x, y, z)] = y < objetivo - 3 ? 3 : y < objetivo ? 2 : topId;
+        for (let y = objetivo + 1; y < SY; y++) {
+          const cur = this.data[this.idx(x, y, z)];
+          if (cur !== 10) this.data[this.idx(x, y, z)] = AIR; // deja el agua
+        }
       }
-    return platY;
+    return baseY + 1;
   }
 }
 

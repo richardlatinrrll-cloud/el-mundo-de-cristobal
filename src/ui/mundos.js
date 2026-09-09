@@ -72,8 +72,10 @@ export function mountMundos({ onVolver, onCrear }) {
     }
     semillaEl.value = sel.semilla;
     creadorEl.checked = !!sel.creador;
-    avisoEl.textContent = sel.tamano === 'grande'
-      ? '“Grande” puede ir un poco lento en teléfonos antiguos.'
+    avisoEl.textContent = sel.tamano === 'gigante'
+      ? '“Gigante” solo en teléfonos/PC potentes: usa mucha memoria y tarda ~2 s en crearse.'
+      : sel.tamano === 'grande'
+      ? '“Grande” puede ir algo lento en teléfonos antiguos.'
       : '';
   }
 

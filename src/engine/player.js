@@ -99,12 +99,24 @@ export class Player {
           if (axis === 'y') {
             if (amount > 0) { p.y = y - this.height - 0.0001; this.vel.y = 0; }
             else { p.y = y + 1 + 0.0001; this.vel.y = 0; this.onGround = true; }
-          } else if (axis === 'x') {
-            if (amount > 0) p.x = x - r - 0.0001; else p.x = x + 1 + r + 0.0001;
-            this.vel.x = 0;
           } else {
-            if (amount > 0) p.z = z - r - 0.0001; else p.z = z + 1 + r + 0.0001;
-            this.vel.z = 0;
+            // ¿puedo subir un escalón de 1 bloque? (auto-step para terreno con bultos)
+            if (!this.flying && this.onGround && this.vel.y <= 0.1) {
+              const topY = y + 1;
+              let libre = true;
+              for (let hy = topY; hy <= topY + Math.ceil(this.height); hy++)
+                for (let hz = minZ; hz <= maxZ && libre; hz++)
+                  for (let hx = minX; hx <= maxX && libre; hx++)
+                    if (isSolid(this.world.get(hx, hy, hz))) libre = false;
+              if (libre) { p.y = topY + 0.02; return; }
+            }
+            if (axis === 'x') {
+              if (amount > 0) p.x = x - r - 0.0001; else p.x = x + 1 + r + 0.0001;
+              this.vel.x = 0;
+            } else {
+              if (amount > 0) p.z = z - r - 0.0001; else p.z = z + 1 + r + 0.0001;
+              this.vel.z = 0;
+            }
           }
           return;
         }
