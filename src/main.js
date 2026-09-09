@@ -6,7 +6,7 @@ import { buildAtlas, BLOCKS, PLACEABLES, blockName, blockEmoji, dropFor, AIR } f
 import { Player } from './engine/player.js';
 import { Controls } from './engine/controls.js';
 import { state, save, LIMITE_EDITS } from './game/state.js';
-import { POWERS, powerById } from './game/powers/registry.js';
+import { POWERS, powerById, cumpleRequisito } from './game/powers/registry.js';
 import { mountMenu } from './ui/menu.js';
 import { openQuiz } from './quiz/quiz-ui.js';
 import { mountAprender } from './quiz/progress-ui.js';
@@ -19,6 +19,8 @@ import { mountMundos } from './ui/mundos.js';
 import { mountAjustes } from './ui/ajustes.js';
 import { mountClave, claveDesbloqueada } from './ui/clave.js';
 import { audio } from './game/audio.js';
+import { DayNight } from './game/daynight.js';
+import { TOOLS, tool, tiempoRomper } from './game/tools.js';
 import { toast } from './ui/toast.js';
 
 const app = document.getElementById('app');
@@ -49,10 +51,7 @@ const scene = new THREE.Scene();
 scene.fog = new THREE.Fog(0x8fc7ff, 40, 110);
 const camera = new THREE.PerspectiveCamera(72, 1, 0.1, 400);
 
-const sun = new THREE.DirectionalLight(0xffffff, 1.15);
-sun.position.set(60, 120, 30);
-scene.add(sun);
-scene.add(new THREE.HemisphereLight(0xbfe0ff, 0x4a5a3a, 0.75));
+const dayNight = new DayNight(scene, renderer);
 
 // Atlas de texturas
 const atlas = buildAtlas();
@@ -94,13 +93,41 @@ function buildChunk(key) {
   } else trans.dispose();
   chunkMeshes.set(key, rec);
 }
-function processDirtyChunks(budget = 3) {
-  if (!world.dirtyChunks.size) return;
-  let n = 0;
-  for (const key of world.dirtyChunks) { buildChunk(key); if (++n >= budget) break; }
-}
-function buildAllChunksNow() {
-  for (const key of [...world.dirtyChunks]) buildChunk(key);
+// distancia de render en chunks (menos en móvil)
+const RENDER_DIST = matchMedia('(pointer: coarse)').matches ? 7 : 10;
+const KEEP_DIST = RENDER_DIST + 2;
+let _lastPcx = -999, _lastPcz = -999;
+
+// Malla solo los chunks cercanos al jugador; descarga los lejanos.
+function streamChunks(force = false) {
+  if (!world || !player) return;
+  const pcx = Math.floor(player.pos.x / CHUNK);
+  const pcz = Math.floor(player.pos.z / CHUNK);
+  const movió = pcx !== _lastPcx || pcz !== _lastPcz;
+  if (!force && !movió && !world.dirtyChunks.size) return;
+  _lastPcx = pcx; _lastPcz = pcz;
+
+  const maxCx = Math.ceil(world.SX / CHUNK), maxCz = Math.ceil(world.SZ / CHUNK);
+
+  // descargar lejanos
+  for (const key of [...chunkMeshes.keys()]) {
+    const [cx, cz] = key.split(',').map(Number);
+    if (Math.abs(cx - pcx) > KEEP_DIST || Math.abs(cz - pcz) > KEEP_DIST) disposeChunk(key);
+  }
+
+  // construir cercanos que falten (de dentro hacia afuera)
+  const faltan = [];
+  for (let r = 0; r <= RENDER_DIST; r++) {
+    for (let cx = pcx - r; cx <= pcx + r; cx++)
+      for (let cz = pcz - r; cz <= pcz + r; cz++) {
+        if (Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz)) !== r) continue;
+        if (cx < 0 || cz < 0 || cx >= maxCx || cz >= maxCz) continue;
+        const key = cx + ',' + cz;
+        if (!chunkMeshes.has(key) || world.dirtyChunks.has(key)) faltan.push(key);
+      }
+  }
+  const budget = force ? Math.min(faltan.length, 170) : 4;
+  for (let i = 0; i < Math.min(budget, faltan.length); i++) buildChunk(faltan[i]);
 }
 
 let worldSig = '';
@@ -114,11 +141,9 @@ function crearMundo() {
   if (player) player.world = world;
   if (mobs) mobs.world = world;
   if (bosses) bosses.world = world;
-  const sky = TIPOS[world.tipo]?.cielo ?? 0x8fc7ff;
-  renderer.setClearColor(sky);
-  scene.fog.color.setHex(sky);
-  scene.fog.far = Math.max(110, Math.min(280, world.SX * 0.85));
-  buildAllChunksNow();
+  scene.fog.far = Math.max(120, Math.min(320, world.SX * 0.7));
+  dayNight._apply();          // el color de cielo lo maneja el ciclo día/noche
+  streamChunks(true);         // mallar solo lo cercano al jugador
   // mundo nuevo normal sin bloques todavía => dar un kit para empezar
   if (!state.mundo.creador &&
       Object.keys(state.inventario).length === 0 &&
@@ -160,19 +185,31 @@ const highlight = new THREE.LineSegments(
 highlight.visible = false;
 scene.add(highlight);
 
+// "grieta" que crece mientras minas un bloque
+const grieta = new THREE.Mesh(
+  new THREE.BoxGeometry(1.04, 1.04, 1.04),
+  new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false })
+);
+grieta.visible = false;
+scene.add(grieta);
+
 // ---------- HUD (debe existir antes de crear los controles táctiles) ----------
 const hud = document.createElement('div');
 hud.id = 'hud';
 hud.innerHTML = `
   <div class="crosshair"></div>
   <button class="btn-back">☰ Menú</button>
-  <div class="power-badge"><span class="dot"></span><span class="pb-name">Sin poder</span></div>
+  <div class="power-picker">
+    <button class="power-badge"><span class="dot"></span><span class="pb-name">Sin poder</span><span class="pb-arrow">▾</span></button>
+    <div class="power-list" hidden></div>
+  </div>
   <div class="mob-badge" hidden>👤 <span class="mb-n">0</span> enemigo(s) persiguiéndote</div>
   <div class="modo-badge" hidden>🎨 Modo creador</div>
   <div class="boss-bar" hidden>
     <div class="boss-name">Jefe</div>
     <div class="boss-hp"><i></i></div>
   </div>
+  <button class="tool-chip" title="Cambiar herramienta (T)">✋ <span class="tc-name">Mano</span></button>
   <div class="hotbar"></div>
 `;
 app.appendChild(hud);
@@ -214,6 +251,8 @@ hud.querySelector('.btn-back').addEventListener('click', () => showMenu());
 // ---------- Inventario ----------
 function darKitInicial() {
   state.inventario = { ...KIT_INICIAL };
+  if (!state.herramientas.includes('pico_madera')) state.herramientas.push('pico_madera');
+  state.herramienta = 'pico_madera';
 }
 function invAdd(id, n = 1) {
   if (!id) return;
@@ -261,6 +300,25 @@ updateHotbar();
 const modoBadge = hud.querySelector('.modo-badge');
 function updateModoBadge() { modoBadge.hidden = !state.mundo.creador; }
 
+const toolChip = hud.querySelector('.tool-chip');
+function updateToolChip() {
+  const t = tool(state.herramienta);
+  toolChip.querySelector('.tc-name').textContent = t.nombre;
+  toolChip.firstChild.textContent = t.emoji + ' ';
+  toolChip.hidden = state.herramientas.length <= 1 && state.herramienta === 'mano';
+}
+function cambiarHerramienta() {
+  const tengo = ['mano', ...state.herramientas.filter((h) => h !== 'mano')];
+  const i = tengo.indexOf(state.herramienta);
+  state.herramienta = tengo[(i + 1) % tengo.length];
+  save();
+  updateToolChip();
+  audio.sfx('menu');
+  toast(`${tool(state.herramienta).emoji} ${tool(state.herramienta).nombre}`, 900);
+}
+toolChip.addEventListener('click', cambiarHerramienta);
+addEventListener('keydown', (e) => { if (mode === 'jugar' && e.code === 'KeyT') cambiarHerramienta(); });
+
 const mobBadge = hud.querySelector('.mob-badge');
 function updateMobBadge() {
   const n = mobs.chasing();
@@ -278,12 +336,43 @@ function updateBossBar() {
   }
 }
 
+const powerPicker = hud.querySelector('.power-picker');
+const powerBadgeBtn = powerPicker.querySelector('.power-badge');
+const powerListEl = powerPicker.querySelector('.power-list');
+
 function updatePowerBadge() {
-  const badge = hud.querySelector('.power-badge');
   const power = state.poderEquipado && powerById(state.poderEquipado);
-  badge.querySelector('.pb-name').textContent = power ? `${power.emoji} ${power.nombre}` : 'Sin poder';
-  badge.classList.toggle('on', !!power);
+  powerBadgeBtn.querySelector('.pb-name').textContent = power ? `${power.emoji} ${power.nombre}` : 'Sin poder';
+  powerBadgeBtn.classList.toggle('on', !!power);
 }
+
+function poderesDisponibles() {
+  return POWERS.filter((p) => cumpleRequisito(p, state.medallas));
+}
+function renderPowerList() {
+  const disp = poderesDisponibles();
+  const filas = [`<button data-p="" class="${state.poderEquipado ? '' : 'sel'}">🚫 Sin poder</button>`];
+  for (const p of disp) {
+    filas.push(`<button data-p="${p.id}" class="${state.poderEquipado === p.id ? 'sel' : ''}">${p.emoji} ${p.nombre}</button>`);
+  }
+  if (!disp.length) filas.push(`<div class="pl-hint">Estudia para desbloquear poderes 📚</div>`);
+  powerListEl.innerHTML = filas.join('');
+  powerListEl.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
+    state.poderEquipado = b.dataset.p || null;
+    save();
+    aplicarPoderEquipado();
+    powerListEl.hidden = true;
+    audio.sfx('menu');
+  }));
+}
+powerBadgeBtn.addEventListener('click', () => {
+  const abrir = powerListEl.hidden;
+  if (abrir) renderPowerList();
+  powerListEl.hidden = !abrir;
+});
+addEventListener('pointerdown', (e) => {
+  if (!powerPicker.contains(e.target)) powerListEl.hidden = true;
+});
 
 // ---------- Controles ----------
 const controls = new Controls(canvas, {
@@ -304,24 +393,58 @@ addEventListener('keydown', (e) => {
   if (mode === 'jugar' && e.code === 'KeyV') player._thirdPerson = !player._thirdPerson;
 });
 
+// quita un bloque en (x,y,z), lo recoge y suena. Devuelve true si rompió algo.
+function quitarBloque(x, y, z) {
+  const id = world.get(x, y, z);
+  if (id === AIR) return false;
+  if ((BLOCKS[id]?.hard ?? 1) >= 99 && !player.instaBreak) return false;
+  world.set(x, y, z, AIR);
+  registrarEdit(x, y, z, AIR);
+  if (!state.mundo.creador) {
+    const drop = dropFor(id);
+    if (drop) invAdd(drop, 1);
+  }
+  return true;
+}
+
+// se llama al pulsar (tap/clic): pega a enemigos; el minado por tiempo va en frame()
 function breakBlock() {
-  // 1º: ¿le estoy pegando a un jefe o a un enemigo?
   const reach = player.reach || 6;
   if (bosses.golpear(camera, reach, 4)) { audio.sfx('golpe'); return; }
   if (mobs.golpear(camera, reach, player.instaBreak ? 3 : 2)) { audio.sfx('golpe'); return; }
-  // 2º: romper bloque
+}
+
+// minado por tiempo mientras se mantiene pulsado (llamado desde frame)
+let _minKey = null, _minProg = 0;
+function actualizarMinado(dt) {
+  if (!controls.state.breaking) { _minKey = null; _minProg = 0; grieta.visible = false; return; }
   const r = currentRay();
-  if (!r) return;
-  const id = world.get(r.hit.x, r.hit.y, r.hit.z);
-  if (id === AIR) return;
-  if (BLOCKS[id]?.hard >= 99 && !player.instaBreak) return; // agua/indestructible
-  world.set(r.hit.x, r.hit.y, r.hit.z, AIR);
-  registrarEdit(r.hit.x, r.hit.y, r.hit.z, AIR);
-  audio.sfx('romper');
-  // recoger el bloque roto (en modo creador no hace falta juntar)
-  if (!state.mundo.creador) {
-    const drop = dropFor(id);
-    if (drop) { invAdd(drop, 1); toast(`+1 ${blockName(drop)}`, 900); }
+  if (!r) { _minKey = null; _minProg = 0; grieta.visible = false; return; }
+  const { x, y, z } = r.hit;
+  const id = world.get(x, y, z);
+  if (id === AIR || ((BLOCKS[id]?.hard ?? 1) >= 99 && !player.instaBreak)) {
+    _minKey = null; _minProg = 0; grieta.visible = false; return;
+  }
+  const key = x + ',' + y + ',' + z;
+  if (key !== _minKey) { _minKey = key; _minProg = 0; }
+  const total = player.instaBreak ? 0 : tiempoRomper(BLOCKS[id]?.hard ?? 1, state.herramienta);
+  _minProg += dt;
+  const frac = total ? Math.min(1, _minProg / total) : 1;
+  // grieta visible sobre el bloque
+  grieta.visible = true;
+  grieta.position.set(x + 0.5, y + 0.5, z + 0.5);
+  grieta.scale.setScalar(0.15 + frac * 0.9);
+  grieta.material.opacity = 0.15 + frac * 0.5;
+
+  if (_minProg >= total) {
+    const area = tool(state.herramienta).area || 0;
+    let rotos = 0;
+    for (let dx = -area; dx <= area; dx++)
+      for (let dy = -area; dy <= area; dy++)
+        for (let dz = -area; dz <= area; dz++)
+          if (quitarBloque(x + dx, y + dy, z + dz)) rotos++;
+    if (rotos) audio.sfx('romper');
+    _minKey = null; _minProg = 0; grieta.visible = false;
   }
 }
 
@@ -413,6 +536,8 @@ function frame(dt) {
     mobs.update(dt, player);
     bosses.update(dt, player);
     updateMobBadge();
+    streamChunks();
+    actualizarMinado(dt);
     const r = currentRay();
     if (r) { highlight.visible = true; highlight.position.set(r.hit.x + 0.5, r.hit.y + 0.5, r.hit.z + 0.5); }
     else highlight.visible = false;
@@ -431,7 +556,8 @@ function frame(dt) {
       camera.position.copy(eye).addScaledVector(back, dist).add(new THREE.Vector3(0, 0.5, 0));
     }
   }
-  if (world) processDirtyChunks(mode === 'jugar' ? 3 : 8);
+  dayNight.update(dt, camera);
+  if (world && mode !== 'jugar') streamChunks();
   renderer.render(scene, camera);
 }
 
@@ -499,6 +625,7 @@ export function jugar() {
   updateMobBadge();
   updateBossBar();
   updateModoBadge();
+  updateToolChip();
   hotIndex = 0;
   updateHotbar();
   controls.enable();
@@ -594,7 +721,7 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
 
 // exponer para debug
 window.__game = {
-  state, POWERS, jugar, crearMundo,
+  state, POWERS, jugar, crearMundo, dayNight, controls,
   get world() { return world; },
   get player() { return player; },
   get mobs() { return mobs; },

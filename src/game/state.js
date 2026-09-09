@@ -22,6 +22,9 @@ const DEFAULT = {
   mundoEdits: {},
   // bloques que el jugador tiene recogidos para construir: { "idBloque": cantidad }
   inventario: {},
+  // herramientas que tiene y cuál usa
+  herramientas: ['mano'],
+  herramienta: 'mano',
   // ajustes de control / pantalla
   ajustes: {
     invJoyX: false,        // invertir joystick izquierda/derecha
@@ -53,6 +56,8 @@ function load() {
       mundo: { ...DEFAULT.mundo, ...(parsed.mundo || {}) },
       mundoEdits: parsed.mundoEdits || {},
       inventario: parsed.inventario || {},
+      herramientas: parsed.herramientas || ['mano'],
+      herramienta: parsed.herramienta || 'mano',
       ajustes: { ...DEFAULT.ajustes, ...(parsed.ajustes || {}) },
       stats: { ...DEFAULT.stats, ...(parsed.stats || {}) } };
   } catch {

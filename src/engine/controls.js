@@ -25,7 +25,7 @@ export class Controls {
   disable() {
     this.enabled = false;
     this.state.forward = this.state.right = 0;
-    this.state.jump = this.state.sprint = this.state.crouch = false;
+    this.state.jump = this.state.sprint = this.state.crouch = this.state.breaking = false;
     if (document.pointerLockElement) document.exitPointerLock();
   }
 
@@ -64,9 +64,10 @@ export class Controls {
     });
     addEventListener('mousedown', (e) => {
       if (!this.enabled || !this.pointerLocked) return;
-      if (e.button === 0) this.onBreak();
+      if (e.button === 0) { this.state.breaking = true; this.onBreak(); }
       if (e.button === 2) this.onPlace();
     });
+    addEventListener('mouseup', (e) => { if (e.button === 0) this.state.breaking = false; });
     this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 
@@ -156,7 +157,7 @@ export class Controls {
       el.addEventListener('touchend', (e) => { off && off(); e.preventDefault(); }, { passive: false });
     };
     hold('.t-jump', () => { this.state.jump = true; }, () => { this.state.jump = false; });
-    hold('.t-break', () => this.onBreak());
+    hold('.t-break', () => { this.state.breaking = true; this.onBreak(); }, () => { this.state.breaking = false; });
     hold('.t-place', () => this.onPlace());
     hold('.t-power', () => this.onPower());
   }

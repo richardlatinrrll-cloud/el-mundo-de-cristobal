@@ -6,9 +6,10 @@ export let SX = 96, SY = 64, SZ = 96;
 export let CHUNK = 16;
 
 export const TAMANOS = {
-  pequeno: { SX: 96,  SY: 64, SZ: 96,  label: 'Pequeño' },
-  mediano: { SX: 128, SY: 64, SZ: 128, label: 'Mediano' },
-  grande:  { SX: 176, SY: 80, SZ: 176, label: 'Grande' },
+  pequeno: { SX: 192, SY: 80,  SZ: 192, label: 'Pequeño' },
+  mediano: { SX: 384, SY: 96,  SZ: 384, label: 'Mediano' },
+  grande:  { SX: 576, SY: 112, SZ: 576, label: 'Grande' },
+  gigante: { SX: 768, SY: 120, SZ: 768, label: 'Gigante' },
 };
 
 export const TIPOS = {
