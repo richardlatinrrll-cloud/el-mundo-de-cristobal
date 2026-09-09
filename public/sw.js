@@ -1,6 +1,6 @@
 // Service worker: RED PRIMERO (network-first) para que cada versión nueva cargue
 // siempre. La caché solo se usa como respaldo si no hay conexión.
-const CACHE = 'mundo-cristobal-v13';
+const CACHE = 'mundo-cristobal-v14';
 
 self.addEventListener('install', () => self.skipWaiting());
 

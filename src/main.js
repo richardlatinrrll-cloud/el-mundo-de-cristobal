@@ -779,7 +779,27 @@ function activarPoderAccion() {
     case 'salto':         saltoColosal(); break;
     case 'invisible':     mantoSombra(); break;
     case 'volar':         impulsoVuelo(); break;
+    case 'furia':         modoFuria(); break;
   }
+}
+
+// aura del Modo Furia (sigue al jugador)
+const auraFuria = new THREE.Mesh(
+  new THREE.SphereGeometry(1, 16, 12),
+  new THREE.MeshBasicMaterial({ color: 0xffc23a, transparent: true, opacity: 0.22, depthWrite: false, side: THREE.BackSide })
+);
+auraFuria.visible = false; auraFuria.renderOrder = 2; scene.add(auraFuria);
+
+function modoFuria() {
+  _poderCd = 24;
+  player._furiaT = 15;
+  aplicarPoderEquipado();     // recalcula stats con la furia activa
+  const flash = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12),
+    new THREE.MeshBasicMaterial({ color: 0xfff2a0, transparent: true, depthWrite: false }));
+  flash.position.copy(player.pos).add(new THREE.Vector3(0, 1, 0));
+  addFx(flash, 0.5, (m, k) => { m.scale.setScalar(1 + k * 6); m.material.opacity = 0.6 * (1 - k); });
+  audio.sfx('jefe');
+  toast('🔥 ¡MODO FURIA! (15 s)');
 }
 
 // --- acciones de cada poder ---
@@ -1014,6 +1034,12 @@ export function aplicarPoderEquipado() {
   const power = id && powerById(id);
   if (power && power.aplica) power.aplica(player);
   aplicarGemas(player);               // dones pasivos de las gemas (encima del poder)
+  if (player._furiaT > 0) {           // Modo Furia activo
+    player.sprintMul = Math.max(player.sprintMul, 2.4);
+    player.jumpV = Math.max(player.jumpV, 15);
+    player._gemDano = Math.max(player._gemDano || 1, 2.2);
+    player._empuje = Math.min(player._empuje ?? 1, 0.5);
+  }
   if (state.mundo.creador) {          // modo creador: vuelas y rompes al toque
     player.flying = true; player.instaBreak = true; player.reach = 8;
   }
@@ -1043,6 +1069,21 @@ function frame(dt) {
       player.invisible = true;
       player.sprintMul = Math.max(player.sprintMul, 1.7);
     }
+    // Modo Furia: aura + buff mientras dure
+    if (player._furiaT > 0) {
+      const antes = player._furiaT;
+      player._furiaT -= dt;
+      player.sprintMul = Math.max(player.sprintMul, 2.4);
+      player.jumpV = Math.max(player.jumpV, 15);
+      player._gemDano = Math.max(player._gemDano || 1, 2.2);
+      auraFuria.visible = true;
+      auraFuria.position.set(player.pos.x, player.pos.y + 0.9, player.pos.z);
+      const pulso = 1.05 + Math.sin(performance.now() / 90) * 0.12;
+      auraFuria.scale.setScalar(1.0 * pulso);
+      auraFuria.material.opacity = 0.18 + Math.sin(performance.now() / 70) * 0.06;
+      if (antes > 3 && player._furiaT <= 3) toast('🔥 El Modo Furia se acaba…', 900);
+      if (player._furiaT <= 0) { auraFuria.visible = false; aplicarPoderEquipado(); }
+    } else if (auraFuria.visible) auraFuria.visible = false;
     const moving = Math.abs(controls.state.forward) + Math.abs(controls.state.right) > 0.1;
     // sonido de salto y de pisadas
     if (_wasGround && !player.onGround && player.vel.y > 1) audio.sfx('saltar');

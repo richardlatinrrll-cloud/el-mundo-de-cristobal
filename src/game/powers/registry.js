@@ -44,6 +44,12 @@ export const POWERS = [
     req: { oro: 2 },
     aplica(p) { p.flying = true; },
   },
+  {
+    id: 'furia', nombre: 'Modo Furia', emoji: '🔥',
+    desc: 'Botón ✨: te transformas ~15 s con un aura — más fuerza, velocidad y salto.',
+    req: { plata: 3 },
+    accion: 'furia',
+  },
   // --- poderes de las gemas: se activan con el botón ✨ ---
   {
     id: 'rayo_martillo', nombre: 'Rayo del Martillo', emoji: '⚡',

@@ -7,16 +7,30 @@ import { SX, SZ, SY } from '../engine/world.js';
 
 // bioma: 1=pasto, 5=cerca de árboles/bosque, 6=arena, 10=agua/orilla
 export const ESPECIES = {
-  conejo:   { nombre: 'Conejo',   emoji: '🐇', color: 0xe8e2d8, size: 0.5, vel: 3.8, huye: 14, salta: true,  bioma: ['pasto'], hp: 2, botin: { carne: 1, cuero: 1 } },
-  ciervo:   { nombre: 'Ciervo',   emoji: '🦌', color: 0x9c6b3f, size: 1.3, vel: 4.4, huye: 16,               bioma: ['pasto', 'bosque'], hp: 4, botin: { carne: 2, cuero: 2 } },
-  zorro:    { nombre: 'Zorro',    emoji: '🦊', color: 0xd9702e, size: 0.8, vel: 4.0, huye: 10,               bioma: ['pasto', 'bosque'], hp: 3, botin: { carne: 1, cuero: 1 } },
-  oveja:    { nombre: 'Oveja',    emoji: '🐑', color: 0xf1eee6, size: 1.0, vel: 2.2, huye: 7,                bioma: ['pasto'], hp: 3, botin: { carne: 1, lana: 2 } },
-  vaca:     { nombre: 'Vaca',     emoji: '🐄', color: 0x4a4038, size: 1.3, vel: 2.0, huye: 6,                bioma: ['pasto'], hp: 5, botin: { carne: 3, cuero: 3 } },
-  jabali:   { nombre: 'Jabalí',   emoji: '🐗', color: 0x5a4636, size: 1.1, vel: 3.4, huye: 8,  carga: true,  bioma: ['bosque', 'pasto'], hp: 4, botin: { carne: 2, cuero: 1 } },
-  oso:      { nombre: 'Oso',      emoji: '🐻', color: 0x6b4a2f, size: 1.7, vel: 3.0, huye: 0,  carga: true,  bioma: ['bosque'], hp: 7, botin: { carne: 3, cuero: 2 } },
-  tortuga:  { nombre: 'Tortuga',  emoji: '🐢', color: 0x3f7d4a, size: 0.7, vel: 0.9, huye: 5,                bioma: ['arena', 'agua'], hp: 3, botin: { carne: 1, cuero: 1 } },
-  pajaro:   { nombre: 'Pájaro',   emoji: '🐦', color: 0x3a6bd0, size: 0.4, vel: 5.5, huye: 12, vuela: true,  bioma: ['pasto', 'bosque', 'arena'], hp: 1, botin: { carne: 1, pluma: 2 } },
+  conejo:   { nombre: 'Conejo',   emoji: '🐇', color: 0xe8e2d8, size: 0.5, vel: 3.8, huye: 14, salta: true,  bioma: ['pasto'], hp: 2, botin: { carne: 1, cuero: 1 }, forma: 'peludo' },
+  ciervo:   { nombre: 'Ciervo',   emoji: '🦌', color: 0x9c6b3f, size: 1.3, vel: 4.4, huye: 16,               bioma: ['pasto', 'bosque'], hp: 4, botin: { carne: 2, cuero: 2 }, forma: 'ciervo' },
+  zorro:    { nombre: 'Zorro',    emoji: '🦊', color: 0xd9702e, size: 0.8, vel: 4.0, huye: 10,               bioma: ['pasto', 'bosque'], hp: 3, botin: { carne: 1, cuero: 1 }, forma: 'canido' },
+  oveja:    { nombre: 'Oveja',    emoji: '🐑', color: 0xf1eee6, size: 1.0, vel: 2.2, huye: 7,                bioma: ['pasto'], hp: 3, botin: { carne: 1, lana: 2 }, forma: 'peludo' },
+  vaca:     { nombre: 'Vaca',     emoji: '🐄', color: 0x4a4038, size: 1.3, vel: 2.0, huye: 6,                bioma: ['pasto'], hp: 5, botin: { carne: 3, cuero: 3 }, forma: 'bovino' },
+  jabali:   { nombre: 'Jabalí',   emoji: '🐗', color: 0x5a4636, size: 1.1, vel: 3.4, huye: 8,  carga: true,  bioma: ['bosque', 'pasto'], hp: 4, botin: { carne: 2, cuero: 1 }, forma: 'jabali' },
+  oso:      { nombre: 'Oso',      emoji: '🐻', color: 0x6b4a2f, size: 1.7, vel: 3.0, huye: 0,  carga: true,  bioma: ['bosque'], hp: 7, botin: { carne: 3, cuero: 2 }, forma: 'oso' },
+  tortuga:  { nombre: 'Tortuga',  emoji: '🐢', color: 0x3f7d4a, size: 0.7, vel: 0.9, huye: 5,                bioma: ['arena', 'agua'], hp: 3, botin: { carne: 1, cuero: 1 }, forma: 'caparazon' },
+  pajaro:   { nombre: 'Pájaro',   emoji: '🐦', color: 0x3a6bd0, size: 0.4, vel: 5.5, huye: 12, vuela: true,  bioma: ['pasto', 'bosque', 'arena'], hp: 1, botin: { carne: 1, pluma: 2 }, forma: 'ave' },
+  // --- Dinosaurios (Parte 9) ---
+  trex:          { nombre: 'T-Rex',        emoji: '🦖', color: 0x5f6b3a, size: 3.2, vel: 4.6, huye: 0,  carga: true, cargaFuerte: true, bioma: ['bosque', 'pasto'], hp: 40, botin: { carne: 8, cuero: 5 }, forma: 'trex', peso: 1 },
+  braquiosaurio: { nombre: 'Braquiosaurio',emoji: '🦕', color: 0x6a7d8f, size: 4.2, vel: 1.7, huye: 4,               bioma: ['pasto', 'bosque'], hp: 55, botin: { carne: 12, cuero: 8 }, forma: 'cuellolargo', peso: 1 },
+  triceratops:   { nombre: 'Triceratops',  emoji: '🦏', color: 0x7a6a54, size: 2.6, vel: 2.6, huye: 0,  carga: true, bioma: ['pasto'], hp: 34, botin: { carne: 6, cuero: 6 }, forma: 'trike', peso: 1 },
+  raptor:        { nombre: 'Raptor',       emoji: '🦎', color: 0x8a6a3a, size: 1.3, vel: 6.4, huye: 0,  carga: true, bioma: ['bosque', 'pasto'], hp: 12, botin: { carne: 2, cuero: 1 }, forma: 'raptor', peso: 2 },
 };
+
+// elige una especie con peso (los dinos son raros)
+function eligeEspecie() {
+  const ents = Object.entries(ESPECIES);
+  const total = ents.reduce((s, [, d]) => s + (d.peso ?? 3), 0);
+  let r = Math.random() * total;
+  for (const [id, d] of ents) { r -= (d.peso ?? 3); if (r <= 0) return id; }
+  return 'conejo';
+}
 
 function biomaDe(world, x, z) {
   const y = world.surfaceY(x, z) - 1;
@@ -80,9 +94,14 @@ class Animal {
     this.timer -= dt;
     this.hurt = Math.max(0, this.hurt - dt);
 
+    // los depredadores (huye 0 + carga) CAZAN al jugador de lejos
+    const depredador = d.carga && d.huye === 0;
+
     // decidir estado
-    if (d.carga && dist < 2.4 && this.cargaCd === 0 && Math.random() < 0.02) {
-      this.estado = 'carga'; this.timer = 0.8; this.cargaCd = 4;
+    if (depredador && dist < (d.forma === 'raptor' ? 22 : 16) && this.estado !== 'carga') {
+      this.estado = 'carga'; this.timer = 3;
+    } else if (d.carga && !depredador && dist < 2.8 && this.cargaCd === 0 && Math.random() < 0.03) {
+      this.estado = 'carga'; this.timer = 0.9; this.cargaCd = 4;
     } else if (d.huye && dist < d.huye && this.estado !== 'carga') {
       this.estado = 'huye'; this.timer = Math.max(this.timer, 1.5);
     } else if (this.timer <= 0) {
@@ -95,8 +114,16 @@ class Animal {
     let mx = 0, mz = 0, speed = 0;
     const dd = dist || 1;
     if (this.estado === 'huye') { mx = -dx / dd; mz = -dz / dd; speed = d.vel; }
-    else if (this.estado === 'carga') { mx = dx / dd; mz = dz / dd; speed = d.vel * 1.6;
-      if (dist < 1.3) { player.pos.x -= mx * 3; player.pos.z -= mz * 3; player.vel.y = 5; this.estado = 'huye'; this.timer = 2; }
+    else if (this.estado === 'carga') {
+      mx = dx / dd; mz = dz / dd; speed = d.vel * (depredador ? 1.15 : 1.6);
+      const alcance = 1.2 + this.def.size * 0.4;
+      if (dist < alcance && this.cargaCd === 0) {
+        this.cargaCd = depredador ? 1.4 : 3;
+        const k = player._empuje ?? 1;
+        player.pos.x -= mx * 4 * k; player.pos.z -= mz * 4 * k; player.vel.y = 6 * k;
+        player.onDañar?.(d.cargaFuerte ? 32 : d.forma === 'trike' ? 20 : depredador ? 14 : 8, d.nombre);
+        if (!depredador) { this.estado = 'huye'; this.timer = 2; }
+      }
     }
     else if (this.estado === 'camina') { mx = this.dir.x; mz = this.dir.z; speed = d.vel * 0.4; }
     // 'pasta' = quieto
@@ -148,30 +175,114 @@ class Animal {
   }
 }
 
+function _sh(hex, f) {
+  const r = Math.max(0, Math.min(255, ((hex >> 16 & 255) * f) | 0));
+  const g = Math.max(0, Math.min(255, ((hex >> 8 & 255) * f) | 0));
+  const b = Math.max(0, Math.min(255, ((hex & 255) * f) | 0));
+  return (r << 16) | (g << 8) | b;
+}
+
+// Modelos con más partes: cuerpo, cabeza, hocico, patas, cola, orejas…
 function makeMesh(def) {
   const s = def.size;
   const g = new THREE.Group();
-  const mat = new THREE.MeshLambertMaterial({ color: def.color });
-  const cuerpo = new THREE.Mesh(new THREE.BoxGeometry(0.5 * s, 0.45 * s, 0.85 * s), mat);
-  cuerpo.position.y = 0.45 * s;
-  const cabeza = new THREE.Mesh(new THREE.BoxGeometry(0.38 * s, 0.38 * s, 0.38 * s), mat);
-  cabeza.position.set(0, 0.55 * s, 0.5 * s);
-  g.add(cuerpo, cabeza);
-  g.userData.mats = [cuerpo.material, cabeza.material];
-  if (!def.vuela) {
-    for (const [px, pz] of [[-0.18, 0.3], [0.18, 0.3], [-0.18, -0.3], [0.18, -0.3]]) {
-      const pata = new THREE.Mesh(new THREE.BoxGeometry(0.12 * s, 0.35 * s, 0.12 * s), mat);
-      pata.position.set(px * s, 0.17 * s, pz * s);
-      g.add(pata);
+  const c = def.color, cD = _sh(c, 0.78), cL = _sh(c, 1.15);
+  const mats = [];
+  const box = (w, h, d, col, x, y, z, rot) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w * s, h * s, d * s),
+      new THREE.MeshLambertMaterial({ color: col }));
+    m.position.set(x * s, y * s, z * s);
+    if (rot) m.rotation.set(rot[0] || 0, rot[1] || 0, rot[2] || 0);
+    g.add(m); mats.push(m.material); return m;
+  };
+  const ojo = (x, y, z) => { const e = new THREE.Mesh(new THREE.BoxGeometry(0.07 * s, 0.07 * s, 0.05), new THREE.MeshBasicMaterial({ color: 0x101010 })); e.position.set(x * s, y * s, z * s); g.add(e); };
+  const f = def.forma || 'peludo';
+  let cuerpo;
+  const patas = (bw, y, cols) => {
+    for (const [px, pz] of [[-0.2, 0.3], [0.2, 0.3], [-0.2, -0.3], [0.2, -0.3]]) {
+      box(bw, y * 2, bw, cols || cD, px, y, pz);
     }
+  };
+
+  if (f === 'ave') {
+    cuerpo = box(0.34, 0.34, 0.5, c, 0, 0.45, 0);
+    box(0.28, 0.28, 0.28, cL, 0, 0.62, 0.28);        // cabeza
+    box(0.1, 0.08, 0.16, 0xffb020, 0, 0.6, 0.46);    // pico
+    const aL = box(0.5, 0.06, 0.32, c, -0.32, 0.46, 0);
+    const aR = box(0.5, 0.06, 0.32, c, 0.32, 0.46, 0);
+    box(0.12, 0.1, 0.3, cD, 0, 0.42, -0.3);          // cola
+    g.userData.alas = [aL, aR];
+    ojo(-0.09, 0.65, 0.4); ojo(0.09, 0.65, 0.4);
+  } else if (f === 'caparazon') {
+    cuerpo = box(0.7, 0.4, 0.85, cD, 0, 0.32, 0);
+    box(0.62, 0.28, 0.78, cL, 0, 0.5, 0);            // caparazón
+    box(0.26, 0.24, 0.26, c, 0, 0.36, 0.5);          // cabeza
+    for (const [px, pz] of [[-0.32, 0.32], [0.32, 0.32], [-0.32, -0.32], [0.32, -0.32]]) box(0.16, 0.16, 0.2, c, px, 0.14, pz);
+    ojo(-0.07, 0.4, 0.6); ojo(0.07, 0.4, 0.6);
+  } else if (f === 'trex') {
+    cuerpo = box(0.75, 0.9, 1.7, c, 0, 1.6, 0);
+    box(0.6, 0.45, 1.5, cL, 0, 1.3, 0.05);           // vientre claro
+    box(0.65, 0.7, 0.9, c, 0, 2.15, 1.05);           // cabeza grande
+    box(0.55, 0.25, 0.55, cD, 0, 1.92, 1.5);         // mandíbula
+    for (let i = 0; i < 4; i++) box(0.06, 0.14, 0.06, 0xf2ead6, -0.15 + i * 0.1, 1.86, 1.62); // dientes
+    box(0.26, 0.22, 1.7, c, 0, 1.5, -1.35);          // cola gruesa
+    box(0.12, 0.12, 0.7, cD, 0, 1.4, -2.4, [0.25, 0, 0]);
+    box(0.18, 0.55, 0.18, cD, -0.4, 1.55, 0.5); box(0.18, 0.55, 0.18, cD, 0.4, 1.55, 0.5); // bracitos
+    box(0.42, 1.3, 0.42, cD, -0.42, 0.65, -0.1); box(0.42, 1.3, 0.42, cD, 0.42, 0.65, -0.1); // patotas
+    box(0.5, 0.12, 0.7, cD, -0.42, 0.06, 0.1); box(0.5, 0.12, 0.7, cD, 0.42, 0.06, 0.1);     // pies
+    ojo(-0.2, 2.35, 1.45); ojo(0.2, 2.35, 1.45);
+  } else if (f === 'cuellolargo') {
+    cuerpo = box(1.0, 1.1, 2.0, c, 0, 1.5, 0);
+    box(0.4, 0.4, 1.6, c, 0, 2.3, 1.0, [-0.5, 0, 0]); // cuello inclinado
+    box(0.42, 0.4, 1.3, c, 0, 3.1, 1.7, [-0.7, 0, 0]);
+    box(0.5, 0.45, 0.6, cL, 0, 3.8, 2.2);            // cabecita
+    box(0.24, 0.24, 2.4, c, 0, 1.2, -1.7);           // cola larga
+    box(0.14, 0.14, 1.0, cD, 0, 1.1, -3.2, [0.2, 0, 0]);
+    for (const [px, pz] of [[-0.4, 0.55], [0.4, 0.55], [-0.4, -0.55], [0.4, -0.55]]) box(0.42, 1.5, 0.42, cD, px, 0.75, pz);
+    ojo(-0.16, 3.9, 2.4); ojo(0.16, 3.9, 2.4);
+  } else if (f === 'trike') {
+    cuerpo = box(1.1, 1.0, 1.7, c, 0, 1.0, 0);
+    box(0.9, 0.5, 1.5, cL, 0, 0.7, 0);
+    box(0.75, 0.7, 0.7, c, 0, 1.0, 1.0);             // cabeza
+    box(1.15, 0.9, 0.25, cD, 0, 1.25, 0.65);         // gola/escudo
+    box(0.12, 0.5, 0.12, 0xf2ead6, -0.28, 1.35, 1.3, [0.5, 0, 0]); // 2 cuernos frente
+    box(0.12, 0.5, 0.12, 0xf2ead6, 0.28, 1.35, 1.3, [0.5, 0, 0]);
+    box(0.12, 0.35, 0.12, 0xf2ead6, 0, 1.0, 1.45, [0.9, 0, 0]);    // cuerno nariz
+    box(0.22, 0.2, 1.3, c, 0, 0.9, -1.3);            // cola
+    for (const [px, pz] of [[-0.42, 0.5], [0.42, 0.5], [-0.42, -0.5], [0.42, -0.5]]) box(0.36, 1.0, 0.36, cD, px, 0.5, pz);
+    ojo(-0.22, 1.15, 1.3); ojo(0.22, 1.15, 1.3);
+  } else if (f === 'raptor') {
+    cuerpo = box(0.42, 0.5, 1.1, c, 0, 0.95, 0);
+    box(0.34, 0.4, 0.9, cL, 0, 0.75, 0.05);
+    box(0.34, 0.36, 0.55, c, 0, 1.15, 0.75);         // cabeza
+    box(0.3, 0.16, 0.32, cD, 0, 1.0, 1.0);           // hocico
+    box(0.16, 0.14, 1.3, c, 0, 0.95, -0.9, [0.1, 0, 0]);  // cola rígida
+    box(0.12, 0.3, 0.12, cD, -0.22, 0.85, 0.35); box(0.12, 0.3, 0.12, cD, 0.22, 0.85, 0.35); // brazos
+    box(0.2, 0.85, 0.2, cD, -0.24, 0.42, -0.1); box(0.2, 0.85, 0.2, cD, 0.24, 0.42, -0.1);   // patas
+    ojo(-0.12, 1.22, 0.95); ojo(0.12, 1.22, 0.95);
   } else {
-    const alaMat = new THREE.MeshLambertMaterial({ color: def.color });
-    const aL = new THREE.Mesh(new THREE.BoxGeometry(0.5 * s, 0.06 * s, 0.3 * s), alaMat);
-    const aR = aL.clone();
-    aL.position.set(-0.35 * s, 0.45 * s, 0); aR.position.set(0.35 * s, 0.45 * s, 0);
-    g.add(aL, aR); g.userData.alas = [aL, aR];
+    // cuadrúpedos: peludo / ciervo / canido / bovino / jabali / oso
+    const bodyH = f === 'oso' ? 0.65 : f === 'bovino' ? 0.55 : 0.45;
+    cuerpo = box(0.55, bodyH, 0.95, c, 0, 0.55, 0);
+    box(0.5, bodyH * 0.7, 0.9, cL, 0, 0.42, 0);
+    box(0.4, 0.4, 0.42, c, 0, 0.75, 0.55);           // cabeza
+    box(0.26, 0.2, 0.28, cD, 0, 0.66, 0.78);         // hocico
+    patas(f === 'oso' ? 0.16 : 0.12, f === 'oso' ? 0.32 : 0.26);
+    box(0.14, 0.14, f === 'canido' ? 0.5 : 0.3, c, 0, 0.6, -0.5, f === 'peludo' ? [0.9, 0, 0] : [0.3, 0, 0]); // cola
+    if (f === 'ciervo') {
+      box(0.06, 0.3, 0.06, cD, -0.13, 1.0, 0.5); box(0.06, 0.3, 0.06, cD, 0.13, 1.0, 0.5);   // cornamenta
+      box(0.16, 0.06, 0.06, cD, -0.2, 1.12, 0.5); box(0.16, 0.06, 0.06, cD, 0.2, 1.12, 0.5);
+    } else if (f !== 'bovino') {
+      box(0.1, 0.14, 0.06, cD, -0.14, 0.95, 0.5); box(0.1, 0.14, 0.06, cD, 0.14, 0.95, 0.5); // orejas
+    } else {
+      box(0.12, 0.28, 0.08, cL, -0.16, 0.9, 0.55, [0, 0, -0.5]); box(0.12, 0.28, 0.08, cL, 0.16, 0.9, 0.55, [0, 0, 0.5]); // cuernos vaca
+    }
+    if (f === 'jabali') { box(0.06, 0.06, 0.14, 0xf2ead6, -0.1, 0.62, 0.85); box(0.06, 0.06, 0.14, 0xf2ead6, 0.1, 0.62, 0.85); }
+    ojo(-0.13, 0.82, 0.68); ojo(0.13, 0.82, 0.68);
   }
+
   g.userData.cuerpo = cuerpo;
+  g.userData.mats = mats;
   return g;
 }
 
@@ -188,9 +299,8 @@ export class AnimalField {
 
   spawn(n = this.cantidad()) {
     this.clear();
-    const ids = Object.keys(ESPECIES);
     for (let i = 0; i < n; i++) {
-      const id = ids[(Math.random() * ids.length) | 0];
+      const id = eligeEspecie();
       const s = spot(this.world, ESPECIES[id].bioma);
       if (!s) continue;
       const a = new Animal(this.world, s.x, s.y, s.z, id);
@@ -290,9 +400,7 @@ export class AnimalField {
       if (!this.world.inside(x, 0, z)) continue;
       const y = this.world.surfaceY(x, z);
       if (y <= 2 || y >= SY - 3) continue;
-      const ids = Object.keys(ESPECIES);
-      const id = ids[(Math.random() * ids.length) | 0];
-      const a = new Animal(this.world, x, y, z, id);
+      const a = new Animal(this.world, x, y, z, eligeEspecie());
       const mesh = makeMesh(a.def);
       this.animals.push(a); this.meshes.push(mesh); this.scene.add(mesh);
       return;

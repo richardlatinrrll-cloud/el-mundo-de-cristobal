@@ -33,6 +33,12 @@ const TYPES = {
     forma: 'gigante',
     grito: '🦶 ¡EL GIGANTE te aplastó! Es lento: corre lejos.',
   },
+  automata: {
+    nombre: 'El Autómata', hp: 70, speed: 3.0, view: 22, lose: 36, knock: 12, dano: 24,
+    color: 0x6b7280, eye: 0x35f0ff, size: 1.9, minNivel: 12, peso: 1,
+    forma: 'automata', verInvisible: true,
+    grito: '🤖 ¡EL AUTÓMATA te barrió con sus brazos!',
+  },
 };
 
 const CATCH_DIST = 1.2;
@@ -116,8 +122,10 @@ class Mob {
       }
       // ¿está a la misma altura? (no "atrapa" si pasas por encima o por debajo)
       const dyOk = Math.abs(player.pos.y - this.pos.y) < this.height * 0.7 + 0.9;
-      if (dist < CATCH_DIST && dyOk && this.catchCooldown === 0 && !this._mirado) {
-        this.catchCooldown = t.forma === 'gigante' ? 1.4 : 1.4;
+      // el Autómata tiene brazos largos: alcanza más lejos
+      const alcance = t.forma === 'automata' ? CATCH_DIST + 1.6 : CATCH_DIST;
+      if (dist < alcance && dyOk && this.catchCooldown === 0 && !this._mirado) {
+        this.catchCooldown = t.forma === 'automata' ? 0.9 : 1.4;
         const k = player._empuje ?? 1;   // Gema Vital reduce el empujón
         player.pos.x -= (dx / d) * (t.knock * 0.5) * k;
         player.pos.z -= (dz / d) * (t.knock * 0.5) * k;
@@ -260,6 +268,36 @@ function makeMesh(def) {
     g.add(pecho, mand, lL, lR, brazoIzq, brazoDer);
     brazos = [brazoIzq, brazoDer];
     eSize = 0.16 * s; eLpos = [-0.2 * s, 2.38 * s, 0.42 * s]; eRpos = [0.2 * s, 2.38 * s, 0.42 * s];
+  } else if (def.forma === 'automata') {
+    // El Autómata: núcleo metálico + 4 brazos-hoja que giran
+    body = new THREE.Mesh(new THREE.BoxGeometry(1.0 * s, 1.0 * s, 1.0 * s), mat());
+    body.position.y = 1.0 * s;
+    const nucleo = new THREE.Mesh(new THREE.OctahedronGeometry(0.4 * s),
+      new THREE.MeshBasicMaterial({ color: def.eye }));
+    nucleo.position.y = 1.0 * s;
+    head = new THREE.Mesh(new THREE.BoxGeometry(0.55 * s, 0.45 * s, 0.5 * s), mat());
+    head.position.set(0, 1.5 * s, 0.15 * s);
+    const brazos4 = new THREE.Group();
+    for (let i = 0; i < 4; i++) {
+      const b = new THREE.Mesh(new THREE.BoxGeometry(1.5 * s, 0.12 * s, 0.28 * s),
+        new THREE.MeshLambertMaterial({ color: 0x9aa3ad }));
+      b.position.x = 0.75 * s * (i % 2 ? 1 : -1);
+      b.rotation.y = (i * Math.PI) / 2;
+      const wrap = new THREE.Group(); wrap.rotation.y = (i * Math.PI) / 2;
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(1.5 * s, 0.12 * s, 0.26 * s),
+        new THREE.MeshLambertMaterial({ color: 0x9aa3ad }));
+      arm.position.x = 0.85 * s;
+      wrap.add(arm); brazos4.add(wrap);
+    }
+    brazos4.position.y = 1.0 * s;
+    const patG = new THREE.BoxGeometry(0.14 * s, 0.7 * s, 0.14 * s);
+    for (const [px, pz] of [[-0.35, 0.35], [0.35, 0.35], [-0.35, -0.35], [0.35, -0.35]]) {
+      const l = new THREE.Mesh(patG, new THREE.MeshLambertMaterial({ color: 0x565d66 }));
+      l.position.set(px * s, 0.35 * s, pz * s); g.add(l);
+    }
+    g.add(nucleo, brazos4);
+    g.userData.brazos4 = brazos4;
+    eSize = 0.16 * s; eLpos = [-0.14 * s, 1.55 * s, 0.4 * s]; eRpos = [0.14 * s, 1.55 * s, 0.4 * s];
   } else {
     body = new THREE.Mesh(new THREE.BoxGeometry(0.7 * s, 0.9 * s, 0.5 * s), mat());
     body.position.y = 0.75 * s;
@@ -274,7 +312,7 @@ function makeMesh(def) {
   eL.position.set(...eLpos);
   eR.position.set(...eRpos);
   g.add(body, head, eL, eR);
-  g.userData = { body, mats: partesMat, brazos };
+  g.userData = { body, mats: partesMat, brazos, brazos4: g.userData.brazos4 };
   return g;
 }
 
@@ -335,6 +373,8 @@ export class MobField {
       mesh.userData.body.rotation.x = mob._mirado
         ? Math.sin(t * 0.5 + i) * 0.04
         : Math.sin(t + i) * (mob.state === 'chase' ? 0.35 : 0.12);
+      // El Autómata: brazos-hoja girando
+      if (mesh.userData.brazos4) mesh.userData.brazos4.rotation.y += dt * (mob.state === 'chase' ? 9 : 3);
       // El Gigante: brazos arriba y golpe abajo al pisotear
       if (mesh.userData.brazos) {
         const st = mob._stompT || 0;

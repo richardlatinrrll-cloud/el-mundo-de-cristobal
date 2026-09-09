@@ -1,6 +1,34 @@
 # Estado actual — El Mundo de Cristóbal
 
-_Actualizado: 2026-09-09 (Parte 8)_
+_Actualizado: 2026-09-09 (Parte 9)_
+
+## Parte 9 — Dinosaurios, El Autómata y Modo Furia
+
+- **Dinosaurios** (`src/game/animals.js`): 4 especies nuevas con modelo propio
+  voxel — **T-Rex** (depredador grande, te caza de lejos y pega durísimo),
+  **Braquiosaurio** (enorme, cuello largo, pacífico pero embiste si lo
+  molestas), **Triceratops** (con gola y 3 cuernos, embiste con fuerza) y
+  **Raptor** (chico, rapidísimo, caza en grupo). Son **raros** de ver: el
+  spawn ahora es ponderado (`eligeEspecie`, campo `peso`), los dinos aparecen
+  mucho menos que los animales comunes.
+- **Seres vivos con mejor modelo**: todos los animales pasaron de 2-6 cubos a
+  **11-18 piezas** (cabeza, hocico, patas, cola, orejas/cuernos, ojos, vientre
+  claro). Cada `forma` (peludo/ciervo/canido/bovino/jabalí/oso/ave/caparazón +
+  dinos) tiene su silueta. Los depredadores (T-Rex, Raptor, Oso, Jabalí)
+  persiguen y hacen daño real al embestir; te empujan.
+- **El Autómata** (`src/game/mobs.js`, enemigo original tipo "omnidroide"):
+  robot de combate con núcleo brillante, cabeza y **4 brazos-cuchilla que
+  giran**. Mucha vida (70), ve lejos, **detecta la invisibilidad**, tiene más
+  alcance de golpe y pega fuerte. Aparece a partir de nivel 12. Probable en la
+  🧪 Sala de pruebas.
+- **Modo Furia** (`src/game/powers/registry.js`, poder tipo "sayayin"):
+  requisito 3 medallas plata. Botón ✨: te transformas ~15 s con un **aura
+  dorada** — +velocidad (sprint ×2,4), +salto, **daño ×2,2** y casi no te
+  empujan. Enfriamiento largo (24 s). Avisa cuando se está por acabar.
+- **Sobre "achicar los cubos"**: no se cambió la resolución de los bloques (más
+  cubos = riesgo de que vaya lento en el teléfono de Cristóbal). La mejora
+  "casi realista sin perder la noción de los bloques" se hizo con **modelos de
+  más piezas, texturas y luz**, no achicando el mundo.
 
 ## Parte 8 — Más difícil, curación con trivia, fluidos
 
@@ -293,7 +321,7 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
   reproducción de Spotify DENTRO del juego no es posible en móvil (limitación
   del SDK de Spotify), por eso es "aparte".
 - **PWA**: manifest + service worker **network-first** (`public/sw.js`, caché
-  `mundo-cristobal-v13`). `npm run build` OK (bundle ~630 KB / 172 KB gzip;
+  `mundo-cristobal-v14`). `npm run build` OK (bundle ~650 KB / 179 KB gzip;
   bancos de preguntas en chunks aparte).
 
 ## Limitaciones conocidas / pendiente
@@ -324,6 +352,11 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
   ataques + clave maestra**: ✅ hecho.
 - **Parte 6 — Armado guiado (guía fantasma), sala de pruebas, respawn al salir
   del mapa, rayos láser**: ✅ hecho.
+- **Parte 7 — Combate con emoción, arma a la vista, jefes con más detalle**: ✅ hecho.
+- **Parte 8 — Enemigos mucho más duros, curación con trivia, fluidos que
+  corren**: ✅ hecho.
+- **Parte 9 — Dinosaurios, El Autómata, Modo Furia, mejores modelos de seres
+  vivos**: ✅ hecho.
 
 ## Ideas para siguientes iteraciones
 

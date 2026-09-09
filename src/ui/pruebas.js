@@ -5,6 +5,7 @@ const ENEMIGOS = [
   ['sombra', 'Sombra'], ['veloz', 'Espectro'], ['saltarin', 'Brincón'],
   ['bruto', 'Bruto'], ['acechador', 'Acechador'],
   ['larguirucho', 'El Larguirucho'], ['gigante', 'El Gigante'],
+  ['automata', 'El Autómata'],
 ];
 const JEFES = [
   ['golem', 'Trol de las Rocas'], ['rayo', 'Dragón Tormenta'],
