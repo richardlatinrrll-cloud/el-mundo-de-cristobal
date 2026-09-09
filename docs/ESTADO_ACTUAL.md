@@ -8,7 +8,7 @@ cambios** por tandas.
 
 Publicado en **GitHub Pages** (deploy automático al hacer `git push`) y en el
 **servidor casero ARGOS** por Tailscale (`http://100.111.194.61:8082`).
-Caché del service worker: `mundo-cristobal-v19`.
+Caché del service worker: `mundo-cristobal-v20`.
 
 ---
 
@@ -35,7 +35,9 @@ Caché del service worker: `mundo-cristobal-v19`.
 - **Ciclo día/noche** por la hora real del dispositivo (`daynight.js`).
   **De noche** (20:00–06:00) los monstruos **se triplican** (hasta 48) y el
   mundo se oscurece — conviene llevar antorcha.
-- Caminar por terreno irregular (auto-step de 1 bloque); zona de aparición
+- Caminar por terreno irregular (auto-step de 1 bloque) — **también lo tienen
+  los enemigos y animales**, así ya no se quedan pegados en escalones. Los
+  muros de 2+ bloques sí los frenan (sirven de defensa). Zona de aparición
   fundida con el terreno. Respawn si te caes del mapa.
 
 ## Crafteo
@@ -227,3 +229,7 @@ para observar, no para morir mirando). Botón "Limpiar arena".
   culling de distancia para el teléfono) y, si llevas la antorcha encendida,
   te persiguen desde muy lejos. El mundo de noche se aclaró un poco para poder
   caminar sin antorcha, pero apenas.
+- **Auto-step de enemigos/animales** — antes se quedaban pegados en cualquier
+  escalón de terreno (solo el jugador subía). Ahora suben 1 bloque igual que el
+  jugador (verificado: bajan y suben escaleras enteras persiguiéndote); los
+  muros de 2+ siguen frenándolos.

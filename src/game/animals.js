@@ -160,15 +160,29 @@ class Animal {
     if (!amount) return;
     this.pos[axis] += amount;
     const p = this.pos, r = this.radius;
+    const minX = Math.floor(p.x - r), maxX = Math.floor(p.x + r);
+    const minZ = Math.floor(p.z - r), maxZ = Math.floor(p.z + r);
     for (let y = Math.floor(p.y); y <= Math.floor(p.y + this.height); y++)
-      for (let z = Math.floor(p.z - r); z <= Math.floor(p.z + r); z++)
-        for (let x = Math.floor(p.x - r); x <= Math.floor(p.x + r); x++) {
+      for (let z = minZ; z <= maxZ; z++)
+        for (let x = minX; x <= maxX; x++) {
           if (!isSolid(this.world.get(x, y, z))) continue;
           if (axis === 'y') {
             if (amount > 0) { p.y = y - this.height - 0.001; this.vel.y = 0; }
             else { p.y = y + 1.001; this.vel.y = 0; this.onGround = true; }
-          } else if (axis === 'x') { p.x = amount > 0 ? x - r - 0.001 : x + 1 + r + 0.001; this.vel.x = 0; }
-          else { p.z = amount > 0 ? z - r - 0.001 : z + 1 + r + 0.001; this.vel.z = 0; }
+          } else {
+            // auto-step: subir un escalón de 1 bloque si arriba está libre
+            if (this.onGround && this.vel.y <= 0.1) {
+              const topY = y + 1;
+              let libre = true;
+              for (let hy = topY; hy <= topY + Math.ceil(this.height) && libre; hy++)
+                for (let hz = minZ; hz <= maxZ && libre; hz++)
+                  for (let hx = minX; hx <= maxX && libre; hx++)
+                    if (isSolid(this.world.get(hx, hy, hz))) libre = false;
+              if (libre) { p.y = topY + 0.02; return; }
+            }
+            if (axis === 'x') { p.x = amount > 0 ? x - r - 0.001 : x + 1 + r + 0.001; this.vel.x = 0; }
+            else { p.z = amount > 0 ? z - r - 0.001 : z + 1 + r + 0.001; this.vel.z = 0; }
+          }
           return;
         }
     if (axis === 'y' && amount > 0) this.onGround = false;

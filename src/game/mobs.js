@@ -174,10 +174,13 @@ class Mob {
     if (this.vel.y < -35) this.vel.y = -35;
 
     const blocked = this._blockedAhead(mx, mz);
+    this._stepped = false;
     this._move('x', this.vel.x * dt);
     this._move('z', this.vel.z * dt);
     this._move('y', this.vel.y * dt);
-    if (blocked && this.onGround) this.vel.y = t.salta ? 9 : 6.5;
+    // el auto-step de _move ya sube los escalones de 1 bloque sin rebote; el
+    // salto solo si NO pudo subir (muro de 2+) — el Brincón salta más alto
+    if (blocked && this.onGround && !this._stepped) this.vel.y = t.salta ? 9 : 5;
 
     if (this.pos.y < -6) this.respawn();
   }
@@ -203,10 +206,20 @@ class Mob {
           if (axis === 'y') {
             if (amount > 0) { p.y = y - this.height - 0.001; this.vel.y = 0; }
             else { p.y = y + 1 + 0.001; this.vel.y = 0; this.onGround = true; }
-          } else if (axis === 'x') {
-            p.x = amount > 0 ? x - r - 0.001 : x + 1 + r + 0.001; this.vel.x = 0;
           } else {
-            p.z = amount > 0 ? z - r - 0.001 : z + 1 + r + 0.001; this.vel.z = 0;
+            // AUTO-STEP: subir un escalón de 1 bloque si arriba está libre
+            // (igual que el jugador) → los enemigos no se quedan pegados.
+            if (this.onGround && this.vel.y <= 0.1) {
+              const topY = y + 1;
+              let libre = true;
+              for (let hy = topY; hy <= topY + Math.ceil(this.height) && libre; hy++)
+                for (let hz = minZ; hz <= maxZ && libre; hz++)
+                  for (let hx = minX; hx <= maxX && libre; hx++)
+                    if (isSolid(this.world.get(hx, hy, hz))) libre = false;
+              if (libre) { p.y = topY + 0.02; this._stepped = true; return; }
+            }
+            if (axis === 'x') { p.x = amount > 0 ? x - r - 0.001 : x + 1 + r + 0.001; this.vel.x = 0; }
+            else { p.z = amount > 0 ? z - r - 0.001 : z + 1 + r + 0.001; this.vel.z = 0; }
           }
           return;
         }
