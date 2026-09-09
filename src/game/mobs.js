@@ -95,9 +95,10 @@ class Mob {
       mx = dx / d; mz = dz / d;
       if (dist < CATCH_DIST && this.catchCooldown === 0) {
         this.catchCooldown = 2.2;
-        player.pos.x -= (dx / d) * (t.knock * 0.5);
-        player.pos.z -= (dz / d) * (t.knock * 0.5);
-        player.vel.y = 6 + t.knock * 0.4;
+        const k = player._empuje ?? 1;   // Gema Vital reduce el empujón
+        player.pos.x -= (dx / d) * (t.knock * 0.5) * k;
+        player.pos.z -= (dz / d) * (t.knock * 0.5) * k;
+        player.vel.y = (6 + t.knock * 0.4) * k;
         audio.sfx('dano');
         toast(`👤 ¡Un ${t.nombre} te golpeó! Usa 👻 o ⚡, o pega tú (⛏️ / 💥)`);
       }
@@ -298,6 +299,16 @@ export class MobField {
       if (d > range) continue;
       if (to.normalize().dot(dir) < 0.6) continue;
       m.daño(daño); n++;
+    }
+    return n;
+  }
+
+  // Onda Prisma: daño en esfera alrededor de un punto
+  dañoEnRadio(pos, radio, daño) {
+    let n = 0;
+    for (const m of this.mobs) {
+      const d = Math.hypot(m.pos.x - pos.x, m.pos.y - pos.y, m.pos.z - pos.z);
+      if (d <= radio) { m.daño(daño); n++; }
     }
     return n;
   }

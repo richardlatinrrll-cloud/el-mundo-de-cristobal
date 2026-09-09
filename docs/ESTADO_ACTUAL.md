@@ -1,6 +1,6 @@
 # Estado actual — El Mundo de Cristóbal
 
-_Actualizado: 2026-09-09_
+_Actualizado: 2026-09-09 (Parte 3)_
 
 **Publicado en GitHub Pages** (repo público, sitio `noindex` + pantalla de clave
 para "solo para Cristóbal"). El deploy es automático: `git push` a `main` →
@@ -38,6 +38,20 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
 - **Minerales en el mundo** (`vetas()` en `world.js`): vetas de carbón, hierro,
   oro y cristal en la piedra (más raras y hondas mientras mejor el material).
   Al minarlas sueltan el material para craftear.
+- **Búsqueda de Gemas (Parte 3)** (`src/game/gemas.js`, `src/ui/gemas.js`,
+  pantalla 🔮 / botón 🔮 en el HUD / tecla `G`): 6 Gemas de Poder originales
+  (Ígnea, del Brinco, Veloz, Vital, Centella, Prisma). Aparecen **de a una, en
+  orden**, en sitios repartidos del mapa; cada una la cuida un **guardián cada
+  vez más difícil** (HP 24 → 150). Al derrotarlo consigues la gema y su "don"
+  pasivo (más daño, salto, velocidad, menos empujón…). La pantalla del mapa
+  muestra dónde está cada gema, cuál es tu objetivo y cuáles faltan.
+- **Objetos legendarios (Parte 3)**:
+  - **Martillo del Trueno** ⚡ — se **forja al juntar 3 gemas**. Rompe 3×3 y
+    pega durísimo. Con la **Gema Centella**, el botón de poder ✨ lanza un
+    **rayo** donde apuntas (daño en área, enfriamiento 4 s).
+  - **Guante de Gemas** ✊ — con **las 6 gemas**, el botón de poder ✨ hace la
+    **Onda Prisma**: limpia un área enorme alrededor tuyo y barre a los
+    enemigos (enfriamiento 12 s).
 
 - **Mundo jugable**: voxels con **malla por chunks** (`src/engine/mesher.js`) —
   editar un bloque solo re-genera su chunk, así construir no da tirones ni en
@@ -166,10 +180,7 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
 
 - **Parte 1 — Naturaleza y animales**: ✅ hecho.
 - **Parte 2 — Crafteo**: ✅ hecho.
-- **Parte 3 — Objetos legendarios + búsqueda de gemas**: pendiente. Ítems
-  originales (martillo del trueno, guante de gemas de poder — nombres y arte
-  propios, sin copiar a Marvel/otros) y una misión de gemas con mapa y
-  guardianes cada vez más difíciles.
+- **Parte 3 — Objetos legendarios + búsqueda de gemas**: ✅ hecho.
 - **Parte 4 — Más enemigos originales + texturas/luz más realistas**: pendiente.
   Acechadores de pasillo, gigantes, y mejor iluminación/materiales.
 

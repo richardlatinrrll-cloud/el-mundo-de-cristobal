@@ -16,6 +16,8 @@ const DEFAULT = {
   skinActiva: null,
   // jefes derrotados (ids)
   jefesDerrotados: [],
+  // gemas de poder conseguidas (ids) — búsqueda de gemas / Guante
+  gemas: [],
   // mundo actual: { tipo, tamano, semilla, creador }
   mundo: { tipo: 'llanuras', tamano: 'pequeno', semilla: 12345, creador: false },
   // lo que el jugador construyó/rompió en este mundo: { "x,y,z": idBloque }
@@ -58,6 +60,8 @@ function load() {
       inventario: parsed.inventario || {},
       herramientas: parsed.herramientas || ['mano'],
       herramienta: parsed.herramienta || 'mano',
+      gemas: parsed.gemas || [],
+      jefesDerrotados: parsed.jefesDerrotados || [],
       ajustes: { ...DEFAULT.ajustes, ...(parsed.ajustes || {}) },
       stats: { ...DEFAULT.stats, ...(parsed.stats || {}) } };
   } catch {

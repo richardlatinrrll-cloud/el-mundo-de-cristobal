@@ -92,9 +92,10 @@ class BossEntity {
     // golpe cuerpo a cuerpo
     if (dist < CATCH + d.size * 0.5 && this.catchCd === 0) {
       this.catchCd = 1.6;
-      player.pos.x -= mx * 6;
-      player.pos.z -= mz * 6;
-      player.vel.y = 9;
+      const k = player._empuje ?? 1;   // Gema Vital reduce el empujón
+      player.pos.x -= mx * 6 * k;
+      player.pos.z -= mz * 6 * k;
+      player.vel.y = 9 * k;
       audio.sfx('dano');
       toast(`💢 ¡${d.nombre} te golpeó fuerte!`);
     }
@@ -289,6 +290,18 @@ export class BossArena {
     const to = new THREE.Vector3(a.entity.pos.x - origin.x, a.entity.pos.y - origin.y, a.entity.pos.z - origin.z);
     if (to.length() > range * 1.5) return 0;
     if (to.normalize().dot(dir) < 0.5) return 0;
+    const mult = state.poderEquipado === a.def.power ? 3 : 1;
+    a.entity.daño(dañoBase * mult);
+    this.onHud?.();
+    return 1;
+  }
+
+  // Onda Prisma: daño en esfera alrededor de un punto
+  dañoEnRadio(pos, radio, dañoBase) {
+    if (!this.active) return 0;
+    const a = this.active;
+    const d = Math.hypot(a.entity.pos.x - pos.x, a.entity.pos.y - pos.y, a.entity.pos.z - pos.z);
+    if (d > radio + a.def.size) return 0;
     const mult = state.poderEquipado === a.def.power ? 3 : 1;
     a.entity.daño(dañoBase * mult);
     this.onHud?.();

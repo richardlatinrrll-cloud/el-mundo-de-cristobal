@@ -19,6 +19,8 @@ import { AnimalField } from './game/animals.js';
 import { mountMundos } from './ui/mundos.js';
 import { mountAjustes } from './ui/ajustes.js';
 import { mountCrafteo } from './ui/crafteo.js';
+import { mountGemas } from './ui/gemas.js';
+import { GemQuest, GEMAS, aplicarGemas, guanteCompleto } from './game/gemas.js';
 import { mountClave, claveDesbloqueada } from './ui/clave.js';
 import { audio } from './game/audio.js';
 import { DayNight } from './game/daynight.js';
@@ -145,6 +147,7 @@ function crearMundo() {
   if (mobs) mobs.world = world;
   if (bosses) bosses.world = world;
   if (animals) animals.world = world;
+  if (gemas) gemas.world = world;
   scene.fog.far = Math.max(120, Math.min(320, world.SX * 0.7));
   dayNight._apply();          // el color de cielo lo maneja el ciclo día/noche
   streamChunks(true);         // mallar solo lo cercano al jugador
@@ -169,7 +172,7 @@ function registrarEdit(x, y, z, id) {
 }
 
 // ---------- Jugador, enemigos y jefes ----------
-let player, mobs, bosses, animals;
+let player, mobs, bosses, animals, gemas;
 let hotIndex = 0;
 
 crearMundo();                       // crea `world` + malla + color de cielo
@@ -178,8 +181,12 @@ player = new Player(world, camera);
 mobs = new MobField(world, scene);
 bosses = new BossArena(world, scene);
 animals = new AnimalField(world, scene);
+gemas = new GemQuest(world, scene);
 bosses.onMinion = (pos) => mobs.spawnAt(pos, 'sombra');
 bosses.onHud = () => updateBossBar();
+gemas.onMinion = (pos) => mobs.spawnAt(pos, 'sombra');
+gemas.onHud = () => updateBossBar();
+gemas.onCollect = () => { aplicarPoderEquipado(); updateToolChip(); updateHotbar(); };
 player.spawnOnSurface();
 
 // resaltado del bloque apuntado
@@ -234,7 +241,7 @@ function actualizarFlechas(dt) {
     // choque con enemigo / jefe (mira desde la punta de la flecha)
     if (!quitar) {
       const fakeCam = { position: p, quaternion: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, -1), a.vel.clone().normalize()) };
-      if (bosses.golpear(fakeCam, 1.6, 6) || mobs.golpear(fakeCam, 1.6, 5)) { quitar = true; audio.sfx('golpe'); }
+      if (bosses.golpear(fakeCam, 1.6, 6) || gemas.golpear(fakeCam, 1.6, 6) || mobs.golpear(fakeCam, 1.6, 5)) { quitar = true; audio.sfx('golpe'); }
     }
     if (quitar) { scene.remove(a.mesh); flechas.splice(i, 1); }
   }
@@ -248,6 +255,7 @@ hud.innerHTML = `
   <div class="crosshair"></div>
   <button class="btn-back">☰ Menú</button>
   <button class="btn-craft" title="Crafteo (Q)">🔨</button>
+  <button class="btn-gemas" title="Búsqueda de Gemas (G)">🔮</button>
   <div class="power-picker">
     <button class="power-badge"><span class="dot"></span><span class="pb-name">Sin poder</span><span class="pb-arrow">▾</span></button>
     <div class="power-list" hidden></div>
@@ -297,6 +305,7 @@ touch.querySelector('.t-view').addEventListener('touchstart', (e) => {
 
 hud.querySelector('.btn-back').addEventListener('click', () => showMenu());
 hud.querySelector('.btn-craft').addEventListener('click', () => abrirCrafteoEnJuego());
+hud.querySelector('.btn-gemas').addEventListener('click', () => abrirGemasEnJuego());
 
 // ---------- Inventario ----------
 function darKitInicial() {
@@ -371,6 +380,7 @@ function cambiarHerramienta() {
 toolChip.addEventListener('click', cambiarHerramienta);
 addEventListener('keydown', (e) => { if (mode === 'jugar' && e.code === 'KeyT') cambiarHerramienta(); });
 addEventListener('keydown', (e) => { if (mode === 'jugar' && e.code === 'KeyQ' && hud.style.display === 'block') abrirCrafteoEnJuego(); });
+addEventListener('keydown', (e) => { if (mode === 'jugar' && e.code === 'KeyG' && hud.style.display === 'block') abrirGemasEnJuego(); });
 
 const mobBadge = hud.querySelector('.mob-badge');
 function updateMobBadge() {
@@ -381,7 +391,7 @@ function updateMobBadge() {
 
 const bossBar = hud.querySelector('.boss-bar');
 function updateBossBar() {
-  const e = bosses.estado();
+  const e = bosses.estado() || gemas.estado();
   bossBar.hidden = !e;
   if (e) {
     bossBar.querySelector('.boss-name').textContent = e.nombre;
@@ -463,8 +473,9 @@ function quitarBloque(x, y, z) {
 // se llama al pulsar (tap/clic): pega a enemigos; el minado por tiempo va en frame()
 function breakBlock() {
   const reach = player.reach || 6;
-  const dano = player.instaBreak ? 6 : danoGolpe(state.herramienta);
+  const dano = (player.instaBreak ? 6 : danoGolpe(state.herramienta)) * (player._gemDano || 1);
   if (bosses.golpear(camera, reach, dano)) { audio.sfx('golpe'); return; }
+  if (gemas.golpear(camera, reach, dano)) { audio.sfx('golpe'); return; }
   if (mobs.golpear(camera, reach, dano)) { audio.sfx('golpe'); return; }
 }
 
@@ -538,11 +549,87 @@ function placeBlock() {
   updateHotbar();
 }
 
+let _poderCd = 0;   // enfriamiento de las acciones legendarias (rayo / prisma)
+
 function activarPoderAccion() {
+  const g = state.gemas || [];
+  // Guante de Gemas completo → Onda Prisma
+  if (g.length >= GEMAS.length) { ondaPrisma(); return; }
+  // Gema Centella + Martillo del Trueno equipado → rayo
+  if (g.includes('centella') && state.herramienta === 'martillo_trueno') { rayoMartillo(); return; }
+  // si no, el poder equipado (grito sónico)
   const id = state.poderEquipado;
   const power = id && powerById(id);
   if (!power || !power.accion) return;
   if (power.accion === 'sonico') { audio.sfx('sonico'); sonicBlast(); }
+}
+
+// ---------- efectos visuales cortos ----------
+const fx = [];
+function addFx(mesh, vida, fn) {
+  mesh.userData.t = 0; mesh.userData.vida = vida; mesh.userData.fn = fn;
+  scene.add(mesh); fx.push(mesh);
+}
+function updateFx(dt) {
+  _poderCd = Math.max(0, _poderCd - dt);
+  for (let i = fx.length - 1; i >= 0; i--) {
+    const m = fx[i];
+    m.userData.t += dt;
+    const k = m.userData.t / m.userData.vida;
+    if (k >= 1) { scene.remove(m); fx.splice(i, 1); continue; }
+    m.userData.fn?.(m, k);
+  }
+}
+
+// Rayo del Martillo del Trueno: cae un rayo donde apuntas y golpea alrededor.
+function rayoMartillo() {
+  if (_poderCd > 0) { toast(`⚡ El Martillo se recarga (${Math.ceil(_poderCd)}s)`, 900); return; }
+  _poderCd = 4;
+  const r = player.raycast(16);
+  const hit = r
+    ? new THREE.Vector3(r.hit.x + 0.5, r.hit.y + 1, r.hit.z + 0.5)
+    : camera.position.clone().add(new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).multiplyScalar(12));
+  const bolt = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.16, 0.16, 22, 6),
+    new THREE.MeshBasicMaterial({ color: 0xfff2a0, transparent: true })
+  );
+  bolt.position.set(hit.x, hit.y + 11, hit.z);
+  addFx(bolt, 0.4, (m, k) => { m.material.opacity = 1 - k; m.scale.x = m.scale.z = 1 + k * 2.5; });
+  audio.sfx('jefe');
+  const nm = mobs.dañoEnRadio(hit, 4.5, 14);
+  bosses.dañoEnRadio(hit, 4.5, 16);
+  gemas.dañoEnRadio(hit, 4.5, 16);
+  toast(nm ? `⚡ ¡RAYO! Golpeaste a ${nm}` : '⚡ ¡RAYO!');
+}
+
+// Onda Prisma (Guante de Gemas completo): barre un área enorme alrededor tuyo.
+function ondaPrisma() {
+  if (_poderCd > 0) { toast(`✊ Onda Prisma se recarga (${Math.ceil(_poderCd)}s)`, 1000); return; }
+  _poderCd = 12;
+  const c = player.pos.clone();
+  const R = 6;
+  for (let dx = -R; dx <= R; dx++)
+    for (let dy = -R; dy <= R; dy++)
+      for (let dz = -R; dz <= R; dz++) {
+        if (dx * dx + dy * dy + dz * dz > R * R) continue;
+        const bx = Math.floor(c.x + dx), by = Math.floor(c.y + dy), bz = Math.floor(c.z + dz);
+        const bid = world.get(bx, by, bz);
+        if (bid !== AIR && (BLOCKS[bid]?.hard ?? 1) < 99) {
+          world.set(bx, by, bz, AIR); registrarEdit(bx, by, bz, AIR);
+        }
+      }
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(1, 0.28, 8, 28),
+    new THREE.MeshBasicMaterial({ color: 0xdfe6ff, transparent: true })
+  );
+  ring.rotation.x = Math.PI / 2;
+  ring.position.set(c.x, c.y + 0.5, c.z);
+  addFx(ring, 0.7, (m, k) => { m.scale.setScalar(1 + k * 18); m.material.opacity = 0.9 * (1 - k); });
+  const nm = mobs.dañoEnRadio(c, 16, 40);
+  bosses.dañoEnRadio(c, 16, 40);
+  gemas.dañoEnRadio(c, 16, 40);
+  audio.sfx('sonico');
+  toast(nm ? `✊ ¡ONDA PRISMA! ${nm} enemigos barridos` : '✊ ¡ONDA PRISMA!');
 }
 
 function sonicBlast() {
@@ -571,9 +658,11 @@ export function aplicarPoderEquipado() {
   // reset a valores base
   player.speed = 4.6; player.sprintMul = 1; player.jumpV = 8.2;
   player.flying = false; player.instaBreak = false; player.reach = 6; player.invisible = false;
+  player._gemDano = 1; player._empuje = 1;
   const id = state.poderEquipado;
   const power = id && powerById(id);
   if (power && power.aplica) power.aplica(player);
+  aplicarGemas(player);               // dones pasivos de las gemas (encima del poder)
   if (state.mundo.creador) {          // modo creador: vuelas y rompes al toque
     player.flying = true; player.instaBreak = true; player.reach = 8;
   }
@@ -617,11 +706,13 @@ function frame(dt) {
     updateAvatar(player, dt, moving);
     mobs.update(dt, player);
     bosses.update(dt, player);
+    gemas.update(dt, player);
     animals.update(dt, player);
     updateMobBadge();
     streamChunks();
     actualizarMinado(dt);
     actualizarFlechas(dt);
+    updateFx(dt);
     const r = currentRay();
     if (r) { highlight.visible = true; highlight.position.set(r.hit.x + 0.5, r.hit.y + 0.5, r.hit.z + 0.5); }
     else highlight.visible = false;
@@ -675,6 +766,7 @@ function showMenu() {
   controls.disable();
   mobs.clear();
   bosses.clear();
+  gemas.clear();
   animals.clear();
   hud.style.display = 'none';
   touch.classList.remove('on');
@@ -702,10 +794,12 @@ export function jugar() {
   if (state.mundo.creador) {
     mobs.clear(); mobs.enabled = false;
     bosses.clear();
+    gemas.clear();
   } else {
     mobs.enabled = true;
     mobs.spawn();
     bosses.refreshBeacons();
+    gemas.refreshShrines();
   }
   animals.spawn();   // los animales están siempre (también en modo creador)
   updateMobBadge();
@@ -724,6 +818,12 @@ function abrirCrafteoEnJuego() {
   hud.style.display = 'none';
   touch.classList.remove('on');
   openScreen('crafteo');
+}
+function abrirGemasEnJuego() {
+  controls.disable();
+  hud.style.display = 'none';
+  touch.classList.remove('on');
+  openScreen('gemas');
 }
 function volverAlJuego() {
   closeAllScreens();
@@ -756,6 +856,7 @@ const menuScreen = mountMenu({
   onMundos: () => openScreen('mundos'),
   onAjustes: () => openScreen('ajustes'),
   onCrafteo: () => openScreen('crafteo'),
+  onGemas: () => openScreen('gemas'),
 });
 app.appendChild(menuScreen);
 
@@ -799,6 +900,12 @@ function openScreen(name) {
         onVolver: () => (mode === 'jugar' ? volverAlJuego() : showMenu()),
         onCambio: () => { updateHotbar(); updateToolChip(); },
       });
+    } else if (name === 'gemas') {
+      screens[name] = mountGemas({
+        onVolver: () => (mode === 'jugar' ? volverAlJuego() : showMenu()),
+        getWorld: () => world,
+        getPlayer: () => player,
+      });
     }
     app.appendChild(screens[name]);
   }
@@ -838,5 +945,6 @@ window.__game = {
   get mobs() { return mobs; },
   get bosses() { return bosses; },
   get animals() { return animals; },
+  get gemas() { return gemas; },
   actions: { romper: breakBlock, poner: placeBlock, poder: activarPoderAccion },
 };
