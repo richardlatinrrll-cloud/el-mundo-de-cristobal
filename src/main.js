@@ -15,6 +15,7 @@ import { mountPersonajes } from './skin/skin-editor.js';
 import { applySkinToPlayer, updateAvatar } from './skin/skin-model.js';
 import { MobField } from './game/mobs.js';
 import { BossArena } from './game/bosses.js';
+import { AnimalField } from './game/animals.js';
 import { mountMundos } from './ui/mundos.js';
 import { mountAjustes } from './ui/ajustes.js';
 import { mountClave, claveDesbloqueada } from './ui/clave.js';
@@ -63,6 +64,7 @@ atlasTex.colorSpace = THREE.SRGBColorSpace;
 
 const matOpaque = new THREE.MeshLambertMaterial({ map: atlasTex });
 const matTrans = new THREE.MeshLambertMaterial({ map: atlasTex, transparent: true, opacity: 0.82, depthWrite: false, side: THREE.DoubleSide });
+const matGlow = new THREE.MeshBasicMaterial({ map: atlasTex }); // lava: brilla siempre
 
 // ---------- Mundo (malla por chunks) ----------
 let world;
@@ -71,8 +73,7 @@ const chunkMeshes = new Map(); // "cx,cz" -> { opaque, trans }
 function disposeChunk(key) {
   const c = chunkMeshes.get(key);
   if (!c) return;
-  if (c.opaque) { scene.remove(c.opaque); c.opaque.geometry.dispose(); }
-  if (c.trans) { scene.remove(c.trans); c.trans.geometry.dispose(); }
+  for (const m of ['opaque', 'trans', 'glow']) if (c[m]) { scene.remove(c[m]); c[m].geometry.dispose(); }
   chunkMeshes.delete(key);
 }
 function clearAllChunks() {
@@ -82,15 +83,16 @@ function buildChunk(key) {
   const [cx, cz] = key.split(',').map(Number);
   world.dirtyChunks.delete(key);
   if (cx < 0 || cz < 0 || cx * CHUNK >= world.SX || cz * CHUNK >= world.SZ) { disposeChunk(key); return; }
-  const { opaque, trans } = buildChunkGeometry(world, cx, cz);
+  const geos = buildChunkGeometry(world, cx, cz);
   disposeChunk(key);
-  const rec = { opaque: null, trans: null };
-  if (opaque.attributes.position && opaque.attributes.position.count) {
-    rec.opaque = new THREE.Mesh(opaque, matOpaque); scene.add(rec.opaque);
-  } else opaque.dispose();
-  if (trans.attributes.position && trans.attributes.position.count) {
-    rec.trans = new THREE.Mesh(trans, matTrans); scene.add(rec.trans);
-  } else trans.dispose();
+  const rec = { opaque: null, trans: null, glow: null };
+  const mats = { opaque: matOpaque, trans: matTrans, glow: matGlow };
+  for (const m of ['opaque', 'trans', 'glow']) {
+    const g = geos[m];
+    if (g.attributes.position && g.attributes.position.count) {
+      rec[m] = new THREE.Mesh(g, mats[m]); scene.add(rec[m]);
+    } else g.dispose();
+  }
   chunkMeshes.set(key, rec);
 }
 // distancia de render en chunks (menos en móvil)
@@ -141,6 +143,7 @@ function crearMundo() {
   if (player) player.world = world;
   if (mobs) mobs.world = world;
   if (bosses) bosses.world = world;
+  if (animals) animals.world = world;
   scene.fog.far = Math.max(120, Math.min(320, world.SX * 0.7));
   dayNight._apply();          // el color de cielo lo maneja el ciclo día/noche
   streamChunks(true);         // mallar solo lo cercano al jugador
@@ -165,7 +168,7 @@ function registrarEdit(x, y, z, id) {
 }
 
 // ---------- Jugador, enemigos y jefes ----------
-let player, mobs, bosses;
+let player, mobs, bosses, animals;
 let hotIndex = 0;
 
 crearMundo();                       // crea `world` + malla + color de cielo
@@ -173,6 +176,7 @@ crearMundo();                       // crea `world` + malla + color de cielo
 player = new Player(world, camera);
 mobs = new MobField(world, scene);
 bosses = new BossArena(world, scene);
+animals = new AnimalField(world, scene);
 bosses.onMinion = (pos) => mobs.spawnAt(pos, 'sombra');
 bosses.onHud = () => updateBossBar();
 player.spawnOnSurface();
@@ -520,7 +524,7 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
-let _wasGround = true, _pasoT = 0;
+let _wasGround = true, _pasoT = 0, _lavaCd = 0;
 function frame(dt) {
   if (mode === 'jugar') {
     player.update(dt, controls.state);
@@ -532,9 +536,20 @@ function frame(dt) {
       _pasoT -= dt;
       if (_pasoT <= 0) { audio.sfx('pisada'); _pasoT = controls.state.sprint ? 0.26 : 0.36; }
     } else _pasoT = 0;
+    // ¡lava! rebota al jugador
+    if (world.get(Math.floor(player.pos.x), Math.floor(player.pos.y), Math.floor(player.pos.z)) === 14
+        || world.get(Math.floor(player.pos.x), Math.floor(player.pos.y + 1), Math.floor(player.pos.z)) === 14) {
+      player.vel.y = 12; player.pos.y += 0.3;
+      const cx = Math.floor(world.SX / 2), cz = Math.floor(world.SZ / 2);
+      const ax = player.pos.x - cx, az = player.pos.z - cz, al = Math.hypot(ax, az) || 1;
+      player.pos.x += (ax / al) * 2; player.pos.z += (az / al) * 2;
+      if (!_lavaCd) { audio.sfx('dano'); toast('🔥 ¡Lava! Aléjate'); _lavaCd = 1; }
+    }
+    _lavaCd = Math.max(0, _lavaCd - dt);
     updateAvatar(player, dt, moving);
     mobs.update(dt, player);
     bosses.update(dt, player);
+    animals.update(dt, player);
     updateMobBadge();
     streamChunks();
     actualizarMinado(dt);
@@ -591,6 +606,7 @@ function showMenu() {
   controls.disable();
   mobs.clear();
   bosses.clear();
+  animals.clear();
   hud.style.display = 'none';
   touch.classList.remove('on');
   rotar.classList.remove('show');
@@ -622,6 +638,7 @@ export function jugar() {
     mobs.spawn();
     bosses.refreshBeacons();
   }
+  animals.spawn();   // los animales están siempre (también en modo creador)
   updateMobBadge();
   updateBossBar();
   updateModoBadge();
@@ -726,5 +743,6 @@ window.__game = {
   get player() { return player; },
   get mobs() { return mobs; },
   get bosses() { return bosses; },
+  get animals() { return animals; },
   actions: { romper: breakBlock, poner: placeBlock, poder: activarPoderAccion },
 };

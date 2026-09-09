@@ -19,6 +19,7 @@ export function buildChunkGeometry(world, cx, cz) {
   const x1 = Math.min(SX, x0 + CHUNK), z1 = Math.min(SZ, z0 + CHUNK);
   const opaque = { pos: [], norm: [], uv: [], idx: [] };
   const trans  = { pos: [], norm: [], uv: [], idx: [] };
+  const glow   = { pos: [], norm: [], uv: [], idx: [] };
 
   for (let y = 0; y < SY; y++) {
     for (let z = z0; z < z1; z++) {
@@ -26,12 +27,12 @@ export function buildChunkGeometry(world, cx, cz) {
         const id = world.get(x, y, z);
         if (id === AIR) continue;
         const def = BLOCKS[id];
-        const target = def?.alpha ? trans : opaque;
+        const target = def?.glow ? glow : def?.alpha ? trans : opaque;
         for (const f of FACES) {
           const nId = world.get(x + f.dir[0], y + f.dir[1], z + f.dir[2]);
           if (nId !== AIR) {
             const nDef = BLOCKS[nId];
-            if (!nDef?.alpha) continue;
+            if (!nDef?.alpha && !nDef?.glow) continue;
             if (nId === id) continue;
           }
           addFace(target, x, y, z, f, id);
@@ -39,7 +40,7 @@ export function buildChunkGeometry(world, cx, cz) {
       }
     }
   }
-  return { opaque: toGeometry(opaque), trans: toGeometry(trans) };
+  return { opaque: toGeometry(opaque), trans: toGeometry(trans), glow: toGeometry(glow) };
 }
 
 function addFace(t, x, y, z, f, id) {

@@ -17,12 +17,14 @@ export const BLOCKS = {
   11:{ name: 'Nieve',   all: '#eef4fb', hard: 1 },
   12:{ name: 'Cactus',  all: '#2f7d32', hard: 1 },
   13:{ name: 'Roca oscura', all: '#4a4f57', hard: 4 },
+  14:{ name: 'Lava',    top: '#ff7a2e', side: '#d24713', hard: 99, liquid: true, glow: true },
+  15:{ name: 'Roca volcánica', top: '#41414a', side: '#33333a', bottom: '#2a2a30', hard: 4 },
 };
 
 export const HOTBAR = [1, 3, 7, 4, 5, 6, 8, 9];
 
 // bloques que el jugador puede colocar (para el modo creador: barra completa)
-export const PLACEABLES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13];
+export const PLACEABLES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 15];
 
 // qué bloque sueltas al romper `id` (casi todos se sueltan a sí mismos)
 export function dropFor(id) {
@@ -39,6 +41,7 @@ export function blockEmoji(id) {
   return ({
     1: '🌱', 2: '🟫', 3: '🪨', 4: '🪵', 5: '🍃', 6: '🟨',
     7: '🟧', 8: '🧱', 9: '🔷', 11: '⬜', 12: '🌵', 13: '⬛',
+    14: '🔥', 15: '🌑',
   })[id] || '⬛';
 }
 export function isSolid(id) {

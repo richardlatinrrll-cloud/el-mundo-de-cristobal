@@ -125,6 +125,106 @@ export class World {
       }
     return baseY + 1;
   }
+
+  // y del bloque sólido superior en (x,z), -1 si no hay
+  topeSolido(x, z) {
+    for (let y = SY - 1; y >= 0; y--) {
+      const b = this.data[this.idx(x, y, z)];
+      if (b !== AIR && b !== 10 && b !== 14) return y;
+    }
+    return -1;
+  }
+
+  // rellena de agua todo lo que quede bajo el nivel del mar -> lagos y océanos
+  lagosYMar(mar) {
+    for (let x = 0; x < SX; x++)
+      for (let z = 0; z < SZ; z++) {
+        const h = this.topeSolido(x, z);
+        if (h < 0) continue;
+        if (h < mar) {
+          if (h >= mar - 2 && this.data[this.idx(x, h, z)] === 1) this.data[this.idx(x, h, z)] = 6; // playa
+          for (let y = h + 1; y <= mar; y++)
+            if (this.data[this.idx(x, y, z)] === AIR) this.data[this.idx(x, y, z)] = 10;
+        }
+      }
+  }
+
+  // ríos serpenteantes que cruzan el mapa
+  rios(n, mar) {
+    for (let r = 0; r < n; r++) {
+      const horizontal = this.rnd() < 0.5;
+      let px = horizontal ? 0 : ((this.rnd() * SX) | 0);
+      let pz = horizontal ? ((this.rnd() * SZ) | 0) : 0;
+      const pasos = horizontal ? SX : SZ;
+      const s = this.semilla + 700 + r * 13;
+      for (let i = 0; i < pasos; i++) {
+        // avanzar y serpentear
+        if (horizontal) { px = i; pz += Math.round(fbm(i * 0.05, r, s, 2) * 2); }
+        else { pz = i; px += Math.round(fbm(i * 0.05, r, s, 2) * 2); }
+        const ancho = 2 + ((this.rnd() * 2) | 0);
+        for (let dx = -ancho; dx <= ancho; dx++)
+          for (let dz = -ancho; dz <= ancho; dz++) {
+            if (dx * dx + dz * dz > ancho * ancho + 1) continue;
+            const x = px + dx, z = pz + dz;
+            if (!this.inside(x, 0, z)) continue;
+            const cauce = mar - 1;
+            // vaciar por encima del cauce y rellenar de agua hasta el nivel del río
+            for (let y = cauce + 1; y < SY; y++) if (this.data[this.idx(x, y, z)] !== AIR) this.data[this.idx(x, y, z)] = AIR;
+            for (let y = 0; y <= cauce; y++) {
+              const cur = this.data[this.idx(x, y, z)];
+              if (y >= cauce - 1) this.data[this.idx(x, y, z)] = 10;
+              else if (cur === AIR) this.data[this.idx(x, y, z)] = 2; // no dejar huecos bajo el agua
+            }
+          }
+      }
+    }
+  }
+
+  // un volcán: cono de roca volcánica con cráter de lava y un río de lava
+  volcan(cx, cz) {
+    const R = 16;
+    const baseY = Math.max(4, this.topeSolido(cx, cz));
+    const altura = Math.min(SY - 4, baseY + 26 + ((this.rnd() * 8) | 0));
+    for (let x = cx - R; x <= cx + R; x++)
+      for (let z = cz - R; z <= cz + R; z++) {
+        if (!this.inside(x, 0, z)) continue;
+        const d = Math.hypot(x - cx, z - cz);
+        if (d > R) continue;
+        const top = Math.round(baseY + (altura - baseY) * (1 - d / R));
+        for (let y = 0; y <= top; y++) {
+          const cur = this.data[this.idx(x, y, z)];
+          if (y > this.topeSolido(x, z) || cur === AIR || cur === 10) this.data[this.idx(x, y, z)] = 15;
+        }
+      }
+    // cráter
+    const craterR = 5;
+    for (let x = cx - craterR; x <= cx + craterR; x++)
+      for (let z = cz - craterR; z <= cz + craterR; z++) {
+        if (!this.inside(x, 0, z)) continue;
+        const d = Math.hypot(x - cx, z - cz);
+        if (d > craterR) continue;
+        for (let y = altura; y > altura - 5; y--) this.data[this.idx(x, y, z)] = AIR;
+        // fondo de lava
+        this.data[this.idx(x, altura - 5, z)] = 14;
+        this.data[this.idx(x, altura - 4, z)] = d < craterR - 1 ? 14 : 15;
+      }
+  }
+
+  // cascadas: donde un bloque de agua tiene aire debajo en un acantilado
+  cascadas() {
+    for (let x = 1; x < SX - 1; x++)
+      for (let z = 1; z < SZ - 1; z++)
+        for (let y = SY - 2; y > 4; y--) {
+          if (this.data[this.idx(x, y, z)] !== 10) continue;
+          if (this.data[this.idx(x, y - 1, z)] !== AIR) continue;
+          // cae por el acantilado
+          let yy = y - 1, caida = 0;
+          while (yy > 2 && this.data[this.idx(x, yy, z)] === AIR && caida < 12) {
+            this.data[this.idx(x, yy, z)] = 10; yy--; caida++;
+          }
+          break;
+        }
+  }
 }
 
 // ---------- ruido ----------
@@ -184,36 +284,46 @@ function dispersar(w, n, fn) {
 const GENERADORES = {
   llanuras(w) {
     const G = Math.round(SY * 0.32);
+    const mar = G - 2;
     for (let x = 0; x < SX; x++)
       for (let z = 0; z < SZ; z++) {
-        const h = G + Math.round(4 * fbm(x * 0.05, z * 0.05, w.semilla, 3));
+        const h = G + Math.round(4 * fbm(x * 0.05, z * 0.05, w.semilla, 3)
+          + 3 * fbm(x * 0.012, z * 0.012, w.semilla + 5, 2));   // valles amplios
         columna(w, x, z, h, { top: 1, dirt: 3 });
-        if (h < G - 1) w.data[w.idx(x, Math.max(0, h - 1), z)] = 6;
       }
+    w.rios(2 + ((w.rnd() * 2) | 0), mar);
+    w.lagosYMar(mar);
     w.plataformaCentral(1);
+    w.cascadas();
     dispersar(w, Math.round(SX * SZ / 340), (w, x, y, z, b) => { if (b === 1) ponerArbol(w, x, y, z); });
   },
 
   bosque(w) {
     const G = Math.round(SY * 0.30);
+    const mar = G - 2;
     for (let x = 0; x < SX; x++)
       for (let z = 0; z < SZ; z++) {
-        const h = G + Math.round(3 * fbm(x * 0.04, z * 0.04, w.semilla, 2));
+        const h = G + Math.round(3 * fbm(x * 0.04, z * 0.04, w.semilla, 2)
+          + 3 * fbm(x * 0.013, z * 0.013, w.semilla + 5, 2));
         columna(w, x, z, h, { top: 1, dirt: 3 });
       }
+    w.rios(2, mar);
+    w.lagosYMar(mar);
     w.plataformaCentral(1);
+    w.cascadas();
     dispersar(w, Math.round(SX * SZ / 90), (w, x, y, z, b) => { if (b === 1) ponerArbol(w, x, y, z); });
   },
 
   montanas(w) {
     const G = Math.round(SY * 0.26);
     const nieve = Math.round(SY * 0.62);
+    const mar = G - 1;
     for (let x = 0; x < SX; x++)
       for (let z = 0; z < SZ; z++) {
         const ridge = 1 - Math.abs(fbm(x * 0.028, z * 0.028, w.semilla, 4));   // crestas
         const detalle = 0.5 + 0.5 * fbm(x * 0.08, z * 0.08, w.semilla + 3, 3);
         let h = G + Math.round((SY * 0.6) * Math.pow(ridge, 1.6) * detalle);
-        h = Math.min(SY - 2, Math.max(G - 3, h));
+        h = Math.min(SY - 2, Math.max(G - 4, h));
         for (let y = 0; y < SY; y++) {
           let id = AIR;
           if (y < h - 3) id = 3;
@@ -223,7 +333,17 @@ const GENERADORES = {
           if (id) w.data[w.idx(x, y, z)] = id;
         }
       }
+    // 1-2 volcanes lejos del centro
+    const nv = 1 + ((w.rnd() * 2) | 0);
+    for (let i = 0; i < nv; i++) {
+      const vx = 24 + ((w.rnd() * (SX - 48)) | 0);
+      const vz = 24 + ((w.rnd() * (SZ - 48)) | 0);
+      if (Math.abs(vx - SX / 2) < 24 && Math.abs(vz - SZ / 2) < 24) { i--; continue; }
+      w.volcan(vx, vz);
+    }
+    w.lagosYMar(mar);
     w.plataformaCentral(1);
+    w.cascadas();
     dispersar(w, Math.round(SX * SZ / 500), (w, x, y, z, b) => { if (b === 1) ponerArbol(w, x, y, z); });
   },
 
@@ -239,6 +359,18 @@ const GENERADORES = {
           if (id) w.data[w.idx(x, y, z)] = id;
         }
       }
+    // oasis: un par de lagunas
+    for (let o = 0; o < 3; o++) {
+      const ox = 20 + ((w.rnd() * (SX - 40)) | 0), oz = 20 + ((w.rnd() * (SZ - 40)) | 0);
+      const rr = 5 + ((w.rnd() * 5) | 0);
+      for (let x = ox - rr; x <= ox + rr; x++)
+        for (let z = oz - rr; z <= oz + rr; z++) {
+          if (!w.inside(x, 0, z) || Math.hypot(x - ox, z - oz) > rr) continue;
+          const top = w.topeSolido(x, z);
+          for (let y = top; y > top - 3; y--) w.data[w.idx(x, y, z)] = 10;
+          w.data[w.idx(x, top - 3, z)] = 6;
+        }
+    }
     w.plataformaCentral(6);
     dispersar(w, Math.round(SX * SZ / 260), (w, x, y, z, b) => { if (b === 6) ponerCactus(w, x, y, z); });
   },
