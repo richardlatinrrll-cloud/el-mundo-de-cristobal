@@ -1,0 +1,14 @@
+{
+  "name": "El Mundo de Cristóbal",
+  "short_name": "Cristóbal",
+  "description": "Juego de bloques que se avanza estudiando. Desbloquea superpoderes respondiendo preguntas.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0d1b2a",
+  "theme_color": "#0d1b2a",
+  "icons": [
+    { "src": "./icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
