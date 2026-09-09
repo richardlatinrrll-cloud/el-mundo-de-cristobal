@@ -35,8 +35,11 @@ import { toast } from './ui/toast.js';
 
 const app = document.getElementById('app');
 
-// kit de bloques con que empieza un mundo nuevo normal
-const KIT_INICIAL = { 2: 20, 3: 20, 4: 12, 7: 12, 9: 8 };
+// kit con que empieza un mundo nuevo normal: bloques + materiales para fabricar
+const KIT_INICIAL = {
+  2: 20, 3: 24, 4: 14, 6: 10, 7: 14, 9: 8,                 // bloques
+  palo: 20, carbon: 14, hierro: 12, cristal: 6, cuero: 6, pluma: 6, lana: 4,  // materiales
+};
 
 // El audio necesita un gesto del usuario para arrancar (regla de los navegadores)
 function arrancarAudio() {
@@ -401,7 +404,23 @@ addEventListener('keydown', (e) => { if (mode === 'jugar' && e.code === 'KeyF' &
 function darKitInicial() {
   state.inventario = { ...KIT_INICIAL };
   if (!state.herramientas.includes('pico_madera')) state.herramientas.push('pico_madera');
+  // antorcha de mano de cortesía para las noches
+  if (!state.herramientas.includes('antorcha')) state.herramientas.push('antorcha');
+  state.regaloAntorcha = true;
   state.herramienta = 'pico_madera';
+  toast('🎒 Kit de inicio: materiales para fabricar + 🔥 antorcha (tecla T). ¡Explora, hay depósitos con antorcha por el mapa!', 4200);
+}
+
+// Regalo único para partidas ya empezadas: antorcha de mano + un empujón de
+// materiales para que pueda fabricar lo que necesite.
+function regaloDeCortesia() {
+  if (state.regaloAntorcha || state.maestro || state.mundo.creador) return;
+  state.regaloAntorcha = true;
+  if (!state.herramientas.includes('antorcha')) state.herramientas.push('antorcha');
+  const extra = { palo: 18, carbon: 14, hierro: 12, cristal: 6, cuero: 6, pluma: 6, 3: 16, 7: 12 };
+  for (const [k, v] of Object.entries(extra)) state.inventario[k] = (state.inventario[k] || 0) + v;
+  save();
+  toast('🎁 Regalo: 🔥 antorcha de mano (tecla T) + materiales para fabricar. Hay más repartidos por el mapa.', 4500);
 }
 function invAdd(id, n = 1) {
   if (!id) return;
@@ -1278,6 +1297,7 @@ export function jugar() {
   }
   animals.spawn();   // los animales están siempre (también en modo creador)
   if (!state.salud || state.salud <= 0) state.salud = state.saludMax;
+  regaloDeCortesia();
   updateMobBadge();
   updateBossBar();
   updateModoBadge();

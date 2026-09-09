@@ -56,6 +56,7 @@ export class World {
     const gen = GENERADORES[this.tipo] || GENERADORES.llanuras;
     gen(this);
     if (this.tipo !== 'plano' && this.tipo !== 'flotante') this.vetas();
+    this.suministros();   // cofres/depósitos de materiales repartidos por el mapa
 
     // superponer lo que el jugador ya había construido
     if (config.edits) {
@@ -252,6 +253,39 @@ export class World {
           }
           break;
         }
+  }
+
+  // Depósitos de materiales repartidos por TODO el mapa, en la superficie, con
+  // una antorcha-baliza encima que brilla para verlos de lejos. Así en cualquier
+  // mundo (incluso Plano o Islas flotantes) hay con qué fabricar.
+  suministros() {
+    // en islas flotantes casi no hay suelo → muchos más intentos
+    const factor = this.tipo === 'flotante' ? 5 : 1;
+    const n = Math.min(70, Math.max(10, Math.round(SX * SZ / 2200))) * factor;
+    const lado = Math.ceil(Math.sqrt(n));
+    const mats = [16, 16, 16, 17, 17, 19, 7, 7, 4, 3, 6];   // carbón/hierro/cristal/tablas/madera/piedra/arena
+    for (let i = 0; i < n; i++) {
+      const gx = (i % lado + 0.5) / lado;
+      const gz = (Math.floor(i / lado) + 0.5) / lado;
+      const x = Math.round(4 + gx * (SX - 8) + (this.rnd() * 16 - 8));
+      const z = Math.round(4 + gz * (SZ - 8) + (this.rnd() * 16 - 8));
+      if (!this.inside(x, 0, z)) continue;
+      if (Math.abs(x - SX / 2) < 9 && Math.abs(z - SZ / 2) < 9) continue;  // no en el spawn
+      const sy = this.topeSolido(x, z);
+      if (sy < 2 || sy > SY - 5) continue;
+      if (this.data[this.idx(x, sy, z)] === 10 || this.data[this.idx(x, sy, z)] === 14) continue;
+      const blk = mats[(this.rnd() * mats.length) | 0];
+      // montón 2×2 del material + un extra al centro = 5 bloques
+      for (const [dx, dz] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+        const ax = x + dx, az = z + dz;
+        if (!this.inside(ax, sy + 1, az)) continue;
+        if (this.data[this.idx(ax, sy, az)] === AIR) this.data[this.idx(ax, sy, az)] = 2;
+        this.data[this.idx(ax, sy + 1, az)] = blk;
+      }
+      if (this.inside(x, sy + 2, z)) this.data[this.idx(x, sy + 2, z)] = blk;
+      // antorcha-baliza encima
+      if (this.inside(x, sy + 3, z)) this.data[this.idx(x, sy + 3, z)] = 23;
+    }
   }
 
   // vetas de minerales dentro de la piedra

@@ -49,6 +49,8 @@ const DEFAULT = {
   },
   // estadísticas
   stats: { preguntasOk: 0, preguntasTotal: 0, intentos: 0, derrotados: 0, jefes: 0 },
+  // regalo único: antorcha de mano + materiales (para partidas ya empezadas)
+  regaloAntorcha: false,
 };
 
 export const LIMITE_EDITS = 6000; // tope para no llenar el almacenamiento

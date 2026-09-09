@@ -8,7 +8,7 @@ cambios** por tandas.
 
 Publicado en **GitHub Pages** (deploy automático al hacer `git push`) y en el
 **servidor casero ARGOS** por Tailscale (`http://100.111.194.61:8082`).
-Caché del service worker: `mundo-cristobal-v21`.
+Caché del service worker: `mundo-cristobal-v22`.
 
 ---
 
@@ -36,8 +36,15 @@ Caché del service worker: `mundo-cristobal-v21`.
   y del poder de la herramienta (mano → pico madera/piedra/hierro/cristal (3×3)
   → Martillo del Trueno (3×3)). Grieta que crece.
 - **Inventario**: al romper un bloque lo recoges; solo pones lo que tienes.
-  Mundo nuevo → kit inicial. Lo que construyes se guarda (`state.mundoEdits`,
-  localStorage) y vuelve al recargar el mismo mundo. **Un mundo a la vez.**
+  Mundo nuevo → **kit inicial** con bloques + materiales para fabricar (palo,
+  carbón, hierro, cristal, cuero, pluma) + **antorcha de mano**. Lo que
+  construyes se guarda (`state.mundoEdits`, localStorage) y vuelve al recargar
+  el mismo mundo. **Un mundo a la vez.**
+- **Depósitos de materiales** (`world.suministros()`): en TODOS los tipos de
+  mundo hay ~16–70 (según el tamaño) **montones de material en la superficie**
+  (carbón, hierro, cristal, tablas, madera, piedra, arena) con una **antorcha
+  encima que brilla** para verlos de lejos. Así siempre hay con qué fabricar,
+  incluso en Plano.
 - **Ciclo día/noche** por la hora real del dispositivo (`daynight.js`).
   **De noche** (20:00–06:00) los monstruos **se triplican** (hasta 48) y el
   mundo se oscurece — conviene llevar antorcha.
@@ -245,3 +252,8 @@ para observar, no para morir mirando). Botón "Limpiar arena".
   de lava por dentro y, si lo abres por un costado, **la lava corre y se
   enfría** (con agua → roca al toque; sola → río de roca con el tiempo). El
   mesher baja la superficie del fluido según su nivel (se ve el declive).
+- **Antorcha de cortesía + insumos repartidos** — regalo único a las partidas
+  ya empezadas: antorcha de mano + un empujón de materiales (`regaloDeCortesia`
+  en main.js, flag `state.regaloAntorcha`). El kit inicial de mundos nuevos
+  también trae materiales + antorcha. Y `world.suministros()` reparte montones
+  de material con antorcha-baliza por la superficie de todos los mapas.
