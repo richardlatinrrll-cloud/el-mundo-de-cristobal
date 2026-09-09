@@ -783,23 +783,40 @@ function activarPoderAccion() {
   }
 }
 
-// aura del Modo Furia (sigue al jugador)
+// aura amarilla del Modo Súper Saya (sigue al jugador)
 const auraFuria = new THREE.Mesh(
   new THREE.SphereGeometry(1, 16, 12),
-  new THREE.MeshBasicMaterial({ color: 0xffc23a, transparent: true, opacity: 0.22, depthWrite: false, side: THREE.BackSide })
+  new THREE.MeshBasicMaterial({ color: 0xffe14d, transparent: true, opacity: 0.22, depthWrite: false, side: THREE.BackSide })
 );
 auraFuria.visible = false; auraFuria.renderOrder = 2; scene.add(auraFuria);
 
-function modoFuria() {
+function modoFuria() {          // Modo Súper Saya
   _poderCd = 24;
   player._furiaT = 15;
-  aplicarPoderEquipado();     // recalcula stats con la furia activa
+  player._sayaStartT = 1.7;     // dura la animación de transformación
+  // se ve la transformación en tercera persona; luego vuelve a la vista de antes
+  player._vistaAntesSaya = player._thirdPerson === true;
+  player._thirdPerson = true;
+  aplicarPoderEquipado();       // recalcula stats con el Súper Saya activo
+  // fogonazo
   const flash = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12),
     new THREE.MeshBasicMaterial({ color: 0xfff2a0, transparent: true, depthWrite: false }));
   flash.position.copy(player.pos).add(new THREE.Vector3(0, 1, 0));
-  addFx(flash, 0.5, (m, k) => { m.scale.setScalar(1 + k * 6); m.material.opacity = 0.6 * (1 - k); });
-  audio.sfx('jefe');
-  toast('🔥 ¡MODO FURIA! (15 s)');
+  addFx(flash, 0.6, (m, k) => { m.scale.setScalar(1 + k * 7); m.material.opacity = 0.7 * (1 - k); });
+  // columna de energía dorada que sube
+  const col = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.75, 1.15, 6, 16, 1, true),
+    new THREE.MeshBasicMaterial({ color: 0xffe14d, transparent: true, depthWrite: false, side: THREE.DoubleSide }));
+  col.position.copy(player.pos).add(new THREE.Vector3(0, 3, 0));
+  addFx(col, 1.7, (m, k) => { m.scale.set(1 + k * 0.4, 1, 1 + k * 0.4); m.rotation.y = k * 7; m.material.opacity = 0.5 * (1 - k); });
+  // onda en el suelo
+  const anillo = new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.24, 8, 24),
+    new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, depthWrite: false }));
+  anillo.rotation.x = Math.PI / 2;
+  anillo.position.copy(player.pos).add(new THREE.Vector3(0, 0.3, 0));
+  addFx(anillo, 0.8, (m, k) => { m.scale.setScalar(1 + k * 9); m.material.opacity = 0.7 * (1 - k); });
+  audio.sfx('grito');
+  toast('⚡ ¡MODO SÚPER SAYA! (15 s)');
 }
 
 // --- acciones de cada poder ---
@@ -1034,7 +1051,7 @@ export function aplicarPoderEquipado() {
   const power = id && powerById(id);
   if (power && power.aplica) power.aplica(player);
   aplicarGemas(player);               // dones pasivos de las gemas (encima del poder)
-  if (player._furiaT > 0) {           // Modo Furia activo
+  if (player._furiaT > 0) {           // Modo Súper Saya activo
     player.sprintMul = Math.max(player.sprintMul, 2.4);
     player.jumpV = Math.max(player.jumpV, 15);
     player._gemDano = Math.max(player._gemDano || 1, 2.2);
@@ -1069,7 +1086,14 @@ function frame(dt) {
       player.invisible = true;
       player.sprintMul = Math.max(player.sprintMul, 1.7);
     }
-    // Modo Furia: aura + buff mientras dure
+    // Modo Súper Saya: animación de transformación + aura + buff mientras dure
+    if (player._sayaStartT > 0) {
+      player._sayaStartT -= dt;
+      if (player._sayaStartT <= 0) {
+        player._sayaStartT = 0;
+        player._thirdPerson = player._vistaAntesSaya === true;   // vuelve a la vista de antes
+      }
+    }
     if (player._furiaT > 0) {
       const antes = player._furiaT;
       player._furiaT -= dt;
@@ -1079,10 +1103,15 @@ function frame(dt) {
       auraFuria.visible = true;
       auraFuria.position.set(player.pos.x, player.pos.y + 0.9, player.pos.z);
       const pulso = 1.05 + Math.sin(performance.now() / 90) * 0.12;
-      auraFuria.scale.setScalar(1.0 * pulso);
-      auraFuria.material.opacity = 0.18 + Math.sin(performance.now() / 70) * 0.06;
-      if (antes > 3 && player._furiaT <= 3) toast('🔥 El Modo Furia se acaba…', 900);
-      if (player._furiaT <= 0) { auraFuria.visible = false; aplicarPoderEquipado(); }
+      const arrK = player._sayaStartT > 0 ? 1.5 : 1;     // más grande durante el grito
+      auraFuria.scale.set(1.1 * pulso * arrK, 1.5 * pulso * arrK, 1.1 * pulso * arrK);
+      auraFuria.material.opacity = (0.2 + Math.sin(performance.now() / 55) * 0.08) * arrK;
+      if (antes > 3 && player._furiaT <= 3) toast('⚡ El Súper Saya se acaba…', 900);
+      if (player._furiaT <= 0) {
+        auraFuria.visible = false;
+        player._sayaStartT = 0;
+        aplicarPoderEquipado();
+      }
     } else if (auraFuria.visible) auraFuria.visible = false;
     const moving = Math.abs(controls.state.forward) + Math.abs(controls.state.right) > 0.1;
     // sonido de salto y de pisadas

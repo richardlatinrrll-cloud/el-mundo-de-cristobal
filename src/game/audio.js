@@ -87,6 +87,11 @@ class Audio {
       case 'fallo':    tone(200, 'square', 0.01, 0.25, 0.28, 130); break;
       case 'medalla':  [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => tone(f, 'triangle', 0.01, 0.16, 0.3), i * 80)); break;
       case 'jefe':     tone(70, 'sawtooth', 0.05, 1.1, 0.5, 45); noiseHit(0.05, 0.9, 0.18, 0, 400); break;
+      case 'grito':    // grito de transformación: barrido ascendente + rugido
+        tone(180, 'sawtooth', 0.45, 1.0, 0.4, 760);
+        tone(240, 'square', 0.55, 1.1, 0.2, 900);
+        noiseHit(0.5, 1.0, 0.3, 220, 1900);
+        break;
       case 'menu':     tone(440, 'sine', 0.003, 0.05, 0.18, 520); break;
       case 'nivel':    [392, 523, 659].forEach((f, i) => setTimeout(() => tone(f, 'sine', 0.01, 0.14, 0.3), i * 70)); break;
     }

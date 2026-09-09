@@ -21,10 +21,14 @@ _Actualizado: 2026-09-09 (Parte 9)_
   giran**. Mucha vida (70), ve lejos, **detecta la invisibilidad**, tiene más
   alcance de golpe y pega fuerte. Aparece a partir de nivel 12. Probable en la
   🧪 Sala de pruebas.
-- **Modo Furia** (`src/game/powers/registry.js`, poder tipo "sayayin"):
-  requisito 3 medallas plata. Botón ✨: te transformas ~15 s con un **aura
-  dorada** — +velocidad (sprint ×2,4), +salto, **daño ×2,2** y casi no te
-  empujan. Enfriamiento largo (24 s). Avisa cuando se está por acabar.
+- **Modo Súper Saya** (`src/game/powers/registry.js`, id interno `furia`):
+  requisito 3 medallas plata. Botón ✨: **transformación** — la cámara pasa a
+  tercera persona ~1,7 s, el monigote **grita mirando al cielo con los brazos a
+  los lados haciendo fuerza**, se le pone el **pelo dorado en púas**, sale una
+  columna de energía + onda en el suelo, y queda con un **aura amarilla** ~15 s.
+  Buffs: +velocidad (sprint ×2,4), +salto, **daño ×2,2** y casi no te empujan.
+  Enfriamiento 24 s. Avisa cuando se está por acabar y vuelve a la vista que
+  tenías. Grito propio generado con Web Audio (`audio.sfx('grito')`).
 - **Sobre "achicar los cubos"**: no se cambió la resolución de los bloques (más
   cubos = riesgo de que vaya lento en el teléfono de Cristóbal). La mejora
   "casi realista sin perder la noción de los bloques" se hizo con **modelos de
@@ -321,7 +325,7 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
   reproducción de Spotify DENTRO del juego no es posible en móvil (limitación
   del SDK de Spotify), por eso es "aparte".
 - **PWA**: manifest + service worker **network-first** (`public/sw.js`, caché
-  `mundo-cristobal-v14`). `npm run build` OK (bundle ~650 KB / 179 KB gzip;
+  `mundo-cristobal-v15`). `npm run build` OK (bundle ~650 KB / 179 KB gzip;
   bancos de preguntas en chunks aparte).
 
 ## Limitaciones conocidas / pendiente
@@ -355,8 +359,8 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
 - **Parte 7 — Combate con emoción, arma a la vista, jefes con más detalle**: ✅ hecho.
 - **Parte 8 — Enemigos mucho más duros, curación con trivia, fluidos que
   corren**: ✅ hecho.
-- **Parte 9 — Dinosaurios, El Autómata, Modo Furia, mejores modelos de seres
-  vivos**: ✅ hecho.
+- **Parte 9 — Dinosaurios, El Autómata, Modo Súper Saya (pelo dorado + pose de
+  grito + aura amarilla), mejores modelos de seres vivos**: ✅ hecho.
 
 ## Ideas para siguientes iteraciones
 

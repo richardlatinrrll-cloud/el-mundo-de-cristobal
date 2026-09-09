@@ -55,8 +55,28 @@ export function makeAvatar(texture) {
   const legL = part(4 * S, 12 * S, 4 * S, UV.legL, mat);
   legL.position.set(2 * S, 6 * S, 0);
 
+  // --- pelo dorado del Modo Súper Saya (oculto hasta la transformación) ---
+  const peloSaya = new THREE.Group();
+  const oroMat = new THREE.MeshBasicMaterial({ color: 0xffe14d });
+  const spike = (x, y, z, h, rx, rz) => {
+    const m = new THREE.Mesh(new THREE.ConeGeometry(2.1 * S, h * S, 5), oroMat);
+    m.position.set(x * S, y * S, z * S);
+    m.rotation.set(rx || 0, 0, rz || 0);
+    peloSaya.add(m);
+  };
+  spike(0, 3.4, -0.4, 9, -0.15, 0);
+  spike(-2.6, 2.8, -0.8, 8, -0.2, 0.5);
+  spike(2.6, 2.8, -0.8, 8, -0.2, -0.5);
+  spike(-1.4, 3.0, 1.6, 7, 0.5, 0.25);
+  spike(1.4, 3.0, 1.6, 7, 0.5, -0.25);
+  spike(0, 2.6, -2.4, 8, -0.7, 0);
+  spike(-3.4, 1.8, 0.2, 7, 0, 0.95);
+  spike(3.4, 1.8, 0.2, 7, 0, -0.95);
+  peloSaya.visible = false;
+  head.add(peloSaya);
+
   g.add(head, body, armR, armL, legR, legL);
-  g.userData = { head, body, armR, armL, legR, legL, mat };
+  g.userData = { head, body, armR, armL, legR, legL, mat, peloSaya };
   return g;
 }
 
@@ -198,9 +218,33 @@ export function updateAvatar(player, dt, moving) {
   avatar.rotation.y = player.yaw + Math.PI;
   const p = avatar.userData;
   const t = performance.now() / 140;
-  const sw = moving ? Math.sin(t) * 0.5 : 0;
-  p.armR.rotation.x = sw; p.armL.rotation.x = -sw;
-  p.legR.rotation.x = -sw; p.legL.rotation.x = sw;
+  const saya = (player._furiaT || 0) > 0;
+  const arranque = (player._sayaStartT || 0) > 0;   // animación de transformación
+
+  p.peloSaya.visible = saya;
+  // brillo dorado en piel y ropa mientras dura el Súper Saya
+  if (p.mat.emissive) {
+    const glow = arranque ? 0x8a6b00 : saya ? 0x3a2d00 : 0x000000;
+    p.mat.emissive.setHex(glow);
+  }
+
+  if (arranque) {
+    // pose de carga: mira al cielo, brazos abajo y afuera, temblando por el esfuerzo
+    const tr = Math.sin(performance.now() / 35) * 0.06;
+    p.head.rotation.x = -0.65 + tr;
+    p.body.rotation.x = -0.16;
+    p.armR.rotation.set(0.15 + tr, 0, 0.6);
+    p.armL.rotation.set(0.15 - tr, 0, -0.6);
+    p.legR.rotation.x = 0.18; p.legL.rotation.x = -0.18;
+  } else {
+    const sw = moving ? Math.sin(t) * 0.5 : 0;
+    p.head.rotation.x = 0;
+    p.body.rotation.x = 0;
+    p.armR.rotation.set(sw, 0, saya ? 0.14 : 0);
+    p.armL.rotation.set(-sw, 0, saya ? -0.14 : 0);
+    p.legR.rotation.x = -sw; p.legL.rotation.x = sw;
+  }
+
   const opacity = player.invisible ? 0.15 : 1;
   p.mat.opacity = opacity; p.mat.transparent = opacity < 1 ? true : p.mat.transparent;
 }

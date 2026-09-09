@@ -45,8 +45,10 @@ export const POWERS = [
     aplica(p) { p.flying = true; },
   },
   {
-    id: 'furia', nombre: 'Modo Furia', emoji: '🔥',
-    desc: 'Botón ✨: te transformas ~15 s con un aura — más fuerza, velocidad y salto.',
+    // id interno 'furia' por compatibilidad con partidas guardadas
+    id: 'furia', nombre: 'Modo Súper Saya', emoji: '⚡',
+    desc: 'Botón ✨: te transformas gritando, con el pelo dorado y un aura amarilla ' +
+      '(~15 s). Más fuerza, velocidad y salto, y casi no te empujan.',
     req: { plata: 3 },
     accion: 'furia',
   },
