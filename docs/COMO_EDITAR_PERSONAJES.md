@@ -22,15 +22,20 @@
 
 ## Poderes disponibles (`src/game/powers/registry.js`)
 
-| Poder | Efecto | Requisito por defecto |
+Se equipan en "Mis poderes" y se activan con el botón **✨** del HUD.
+
+| Poder | Efecto | Requisito |
 |---|---|---|
-| Súper fuerza | rompe cualquier bloque de un golpe | 1 medalla bronce |
-| Súper velocidad | corre mucho más rápido (dejas atrás a las Sombras) | 2 medallas bronce |
-| Súper salto | salta altísimo | 3 medallas bronce |
-| Visión láser | rompe bloques a distancia | 1 medalla plata |
-| Invisibilidad | las Sombras no te detectan | 2 medallas plata |
-| Grito sónico | onda que despeja el terreno (botón ✨ / tecla F) | 1 medalla oro |
-| Volar | vuelo libre (saltar sube, agacharse baja) | 2 medallas oro |
+| Súper fuerza | rompe cualquier bloque al toque; ✨ golpe que empuja | 1 medalla bronce |
+| Súper velocidad | corre mucho más; ✨ ráfaga adelante | 2 medallas bronce |
+| Súper salto | salta altísimo; ✨ salto colosal | 3 medallas bronce |
+| Visión láser | ✨ rayo que rompe el bloque y golpea en línea | 1 medalla plata |
+| Invisibilidad | las Sombras no te ven; ✨ manto 6 s | 2 medallas plata |
+| Modo Súper Saya | ✨ transformación ~15 s (pelo dorado, aura, +fuerza/velocidad/salto) | 3 medallas plata |
+| Grito sónico | ✨ onda hacia adelante que despeja y golpea | 1 medalla oro |
+| Volar | vuelo libre; ✨ impulso arriba | 2 medallas oro |
+| Rayo del Martillo | ✨ cae un rayo donde apuntas | Gema Centella |
+| Onda Prisma | ✨ explosión 360° | las 6 gemas |
 
 Las medallas son **acumuladas**: subir un tema a Plata cuenta también como
 bronce; subirlo a Oro cuenta como bronce + plata + oro.
@@ -57,28 +62,41 @@ Añade un objeto más al arreglo `POWERS`. Si el poder es una acción puntual
 
 ## Enemigos (`src/game/mobs.js`)
 
-Hay 5 tipos en el objeto `TYPES`, cada uno con `hp`, `speed`, `view`
+8 tipos en el objeto `TYPES`, cada uno con `hp`, `dano`, `speed`, `view`
 (distancia a la que te ve), `knock` (empujón), `minNivel` (medallas totales para
 que empiece a aparecer) y `peso` (probabilidad relativa).
 
 - **Sombra**: básico, lento. Desde el inicio.
-- **Espectro**: rápido; conviene tener súper velocidad. Desde 3 medallas.
-- **Brincón**: salta obstáculos. Desde 6.
-- **Bruto**: mucha vida y empujón fuerte, lento. Desde 10.
-- **Acechador**: ve muy lejos y detecta a medias la invisibilidad. Desde 15.
+- **Espectro**: rápido; conviene tener súper velocidad.
+- **Brincón**: salta obstáculos.
+- **Bruto**: mucha vida y empujón fuerte, lento.
+- **Acechador**: ve muy lejos y detecta a medias la invisibilidad.
+- **El Larguirucho**: se frena mientras lo miras, corre cuando le quitas la
+  vista. Nivel 9+.
+- **El Gigante**: enorme, lento, te manda a volar, pisotón. Nivel 14+.
+- **El Autómata**: robot con 4 brazos-cuchilla, ve la invisibilidad. Nivel 12+.
 
-La cantidad total de enemigos sube con tu nivel: `4 + nivel × 0,8`, hasta 20.
+La cantidad total de enemigos sube con tu nivel (`cantidadEnemigos()`), hasta 28.
+Para hacer el juego más fácil/difícil: baja/sube `hp` y `dano`, o `minNivel`.
 
 ## Jefes (`src/game/bosses.js`)
 
 4 jefes en el arreglo `BOSSES`. Cada uno tiene `power` (el poder que hace 3×
-daño y que, al desbloquearlo, hace aparecer su torre-baliza), `hp`, `speed`,
-`size` y `at: [x, z]` (dónde está su zona en el mapa).
+daño y que, al desbloquearlo, hace aparecer su torre-baliza), `hp`, `dano`,
+`speed`, `size` y `at: [x, z]` (dónde está su zona en el mapa). Tienen ataques
+propios (proyectiles, embestida, onda sísmica, invocar, teletransporte, rayo).
 
-- **Gólem de Piedra** — súper fuerza — esquina [14, 14]
-- **Rayo** — súper velocidad — esquina opuesta arriba
-- **Ojo Ardiente** — visión láser — flota — esquina abajo izquierda
-- **El Coloso** — volar — esquina opuesta, invoca ayudantes
+- **Trol de las Rocas** — súper fuerza
+- **Dragón Tormenta** — súper velocidad — flota
+- **Titán Ardiente** — visión láser — dispara rayo de los ojos
+- **Elfo Oscuro** — volar — invoca ayudantes y se teletransporta
 
-Para cambiar dificultad: sube/baja `hp` o `speed`. Para agregar un jefe: otro
-objeto en `BOSSES` con un `power` existente y unas coordenadas libres.
+Al derrotar cada jefe ganas una pieza de armadura (~17% menos daño). Para
+cambiar dificultad: sube/baja `hp` o `dano`. Para agregar un jefe: otro objeto
+en `BOSSES` con un `power` existente y coordenadas libres.
+
+## Sala de pruebas (solo con la clave maestra)
+
+En el menú, opción **🧪 Sala de pruebas**: toca cualquier enemigo, jefe,
+dinosaurio o animal y apareces en una arena plana con él enfrente para verlo y
+pelear. Sirve para revisar cambios sin tener que buscarlos en el mundo.

@@ -1,21 +1,21 @@
 # El Mundo de Cristóbal
 
-Juego web tipo Minecraft para teléfono y computador. El niño desbloquea
-**superpoderes** respondiendo preguntas de distintos temas (finanzas, energías
-renovables, reciclaje, tecnología, matemática y más — **677 preguntas**), con
-progresión por medallas **Bronce → Plata → Oro**. Incluye un **editor de skins**
-para crear sus propios personajes, **5 tipos de enemigos** que aparecen más y
-más difíciles según tu nivel, y **4 jefes** en zonas especiales que se abren al
-desbloquear cada poder importante.
+Juego web tipo Minecraft (sandbox de voxels **original**) para teléfono y
+computador. Se construye libremente, pero los **superpoderes** solo se
+desbloquean respondiendo preguntas de distintos temas (finanzas, energías
+renovables, reciclaje, matemática, ciencias y más — **677 preguntas**, 11
+temas), con progresión por medallas **Bronce → Plata → Oro**.
+
+Incluye editor de skins, crafteo con tablero de armado, 8 tipos de enemigos que
+escalan con tu nivel, 4 jefes en zonas especiales, búsqueda de 6 gemas de poder,
+9 animales + 4 dinosaurios, sistema de vida, y 10 poderes.
 
 ## Empezar
 
 ```bash
 npm install
-npm run dev
+npm run dev        # → http://localhost:5273
 ```
-
-Abre la URL que muestra la consola (por defecto http://localhost:5273).
 
 ## Compilar para publicar
 
@@ -23,10 +23,12 @@ Abre la URL que muestra la consola (por defecto http://localhost:5273).
 npm run build      # genera dist/
 ```
 
+El deploy a GitHub Pages es automático al hacer `git push` a `main`.
+
 ## Documentación
 
-- `docs/CLAUDE.md` — cómo está hecho el proyecto
-- `docs/ESTADO_ACTUAL.md` — qué está hecho y qué falta
+- `docs/CLAUDE.md` — qué es y cómo está hecho (empieza por aquí)
+- `docs/ESTADO_ACTUAL.md` — qué está hecho y registro de cambios
 - `docs/COMO_EDITAR_PREGUNTAS.md` — agregar/editar preguntas (sin programar)
 - `docs/COMO_EDITAR_PERSONAJES.md` — poderes y skins
 - `docs/DESPLIEGUE_SERVIDOR.md` — publicar en el servidor casero o en internet
@@ -34,8 +36,8 @@ npm run build      # genera dist/
 ## Controles
 
 **Computador:** WASD moverse · ratón mirar · clic izq. picar / pegar a enemigos ·
-clic der. poner · Shift correr · Espacio saltar · F usar poder · V primera/tercera
-persona · 1–8 elegir bloque.
+clic der. poner · Shift correr · Espacio saltar · ✨ usar poder · V primera/
+tercera persona · T cambiar herramienta · Q crafteo · G mini-mapa.
 
 **Teléfono:** joystick moverse · arrastrar (mitad derecha) mirar · botones
 ⛏️ picar/pegar · 🧱 poner · ✨ poder · ⤒ saltar · 👁️ primera/tercera persona.
