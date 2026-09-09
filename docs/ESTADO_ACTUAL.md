@@ -19,8 +19,12 @@ _Actualizado: 2026-09-09 (Parte 9)_
 - **El Autómata** (`src/game/mobs.js`, enemigo original tipo "omnidroide"):
   robot de combate con núcleo brillante, cabeza y **4 brazos-cuchilla que
   giran**. Mucha vida (70), ve lejos, **detecta la invisibilidad**, tiene más
-  alcance de golpe y pega fuerte. Aparece a partir de nivel 12. Probable en la
-  🧪 Sala de pruebas.
+  alcance de golpe y pega fuerte. Aparece a partir de nivel 12.
+- **🧪 Sala de pruebas ampliada** (`src/ui/pruebas.js`): además de enemigos y
+  jefes, ahora tiene sección **Dinosaurios** (T-Rex, Braquiosaurio,
+  Triceratops, Raptor) y **Animales** (los 9 comunes) + **El Autómata** en
+  enemigos. `AnimalField.spawnUno(id, x, y, z)` y `animals.arenaMode` (no
+  repuebla con animales al azar durante la prueba).
 - **Modo Súper Saya** (`src/game/powers/registry.js`, id interno `furia`):
   requisito 3 medallas plata. Botón ✨: **transformación** — la cámara pasa a
   tercera persona ~1,7 s, el monigote **grita mirando al cielo con los brazos a
@@ -329,7 +333,7 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
   reproducción de Spotify DENTRO del juego no es posible en móvil (limitación
   del SDK de Spotify), por eso es "aparte".
 - **PWA**: manifest + service worker **network-first** (`public/sw.js`, caché
-  `mundo-cristobal-v16`). `npm run build` OK (bundle ~650 KB / 179 KB gzip;
+  `mundo-cristobal-v17`). `npm run build` OK (bundle ~650 KB / 179 KB gzip;
   bancos de preguntas en chunks aparte).
 
 ## Limitaciones conocidas / pendiente

@@ -1238,6 +1238,7 @@ export function jugar() {
   applySkinToPlayer(player, scene);
   checkOrientacion();
   mobs.arenaMode = false;
+  animals.arenaMode = false;
   if (state.mundo.creador) {
     mobs.clear(); mobs.enabled = false;
     bosses.clear();
@@ -1302,6 +1303,7 @@ function entrarArenaPrueba() {
   applySkinToPlayer(player, scene);
   mobs.enabled = true;
   mobs.arenaMode = true;
+  animals.arenaMode = true;
   mobs.clear(); bosses.clear(); gemas.clear(); animals.clear();
   if (!state.salud || state.salud <= 0) state.salud = state.saludMax;
   aplanarArena();
@@ -1324,6 +1326,14 @@ function invocarJefePrueba(id) {
   entrarArenaPrueba();
   bosses.spawnPrueba(id, player.pos);
   updateBossBar();
+}
+function invocarAnimalPrueba(id) {
+  entrarArenaPrueba();
+  const p = player.pos;
+  const gx = Math.floor(p.x + 6), gz = Math.floor(p.z);
+  const gy = world.surfaceY(gx, gz);
+  animals.spawnUno(id, gx, gy, gz);
+  toast('🧪 Míralo y golpéalo con ⛏️. Invócalo las veces que quieras.');
 }
 function volverAlJuego() {
   closeAllScreens();
@@ -1413,7 +1423,8 @@ function openScreen(name) {
         onVolver: () => showMenu(),
         onEnemigo: (t) => invocarEnemigoPrueba(t),
         onJefe: (id) => invocarJefePrueba(id),
-        onLimpiar: () => { mobs.clear(); bosses.clear(); toast('Arena limpia'); },
+        onAnimal: (id) => invocarAnimalPrueba(id),
+        onLimpiar: () => { mobs.clear(); bosses.clear(); animals.clear(); toast('Arena limpia'); },
       });
     } else if (name === 'gemas') {
       screens[name] = mountGemas({

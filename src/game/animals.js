@@ -293,6 +293,7 @@ export class AnimalField {
     this.animals = [];
     this.meshes = [];
     this.onBotin = null;   // callback(botin, nombre) al cazar un animal
+    this.arenaMode = false; // Sala de pruebas: no repoblar con animales al azar
   }
 
   cantidad() { return Math.min(40, Math.round((SX * SZ) / 4500)); }
@@ -312,6 +313,16 @@ export class AnimalField {
   clear() {
     for (const m of this.meshes) this.scene.remove(m);
     this.animals = []; this.meshes = [];
+  }
+
+  // Sala de pruebas: aparece un animal concreto (por id) al lado del jugador.
+  spawnUno(id, x, y, z) {
+    if (!ESPECIES[id]) return null;
+    const a = new Animal(this.world, Math.floor(x), Math.floor(y), Math.floor(z), id);
+    a.pos.set(x + 0.5, y + 0.5, z + 0.5);
+    const mesh = makeMesh(a.def);
+    this.animals.push(a); this.meshes.push(mesh); this.scene.add(mesh);
+    return a;
   }
 
   update(dt, player) {
@@ -335,7 +346,8 @@ export class AnimalField {
         mesh.userData.alas[1].rotation.z = -flap;
       }
     }
-    // reponer si quedan pocos cerca
+    // reponer si quedan pocos cerca (en la Sala de pruebas no)
+    if (this.arenaMode) return;
     const cerca = this.animals.filter((a) => Math.hypot(a.pos.x - player.pos.x, a.pos.z - player.pos.z) < 70).length;
     if (cerca < 5 && this.animals.length < this.cantidad() + 6) this._spawnCercaDe(player);
   }
