@@ -90,8 +90,11 @@ export class Player {
     this.moveAxis('y', this.vel.y * dt);
     this.moveAxis('z', this.vel.z * dt);
 
-    // no caer al vacío
-    if (this.pos.y < -8) this.spawnOnSurface();
+    // volver al inicio si te caes al vacío o te sales del mapa
+    const wx = this.world.SX ?? SX, wz = this.world.SZ ?? SZ;
+    if (this.pos.y < -8 || this.pos.x < -2 || this.pos.z < -2 || this.pos.x > wx + 2 || this.pos.z > wz + 2) {
+      this.spawnOnSurface();
+    }
 
     // cámara
     this.camera.position.set(this.pos.x, this.pos.y + this.eye, this.pos.z);

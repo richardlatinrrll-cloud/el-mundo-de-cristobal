@@ -67,76 +67,77 @@ export function dondeConseguir(id) {
   return 'Del mundo';
 }
 
-// receta: { id, nombre, emoji, cat, necesita:{cosa:n}, da:{cosa:n}, pista }
-export const RECETAS = [
-  // --- básicos ---
-  { id: 'tablas',  nombre: 'Tablas (x4)',   emoji: '🟧', cat: 'Básico', necesita: { 4: 1 },            da: { 7: 4 } },
-  { id: 'palos',   nombre: 'Palos (x4)',    emoji: '🥢', cat: 'Básico', necesita: { 7: 2 },            da: { palo: 4 } },
-  { id: 'vidrio',  nombre: 'Vidrio (x2)',   emoji: '🔷', cat: 'Básico', necesita: { 6: 3 },            da: { 9: 2 }, pista: 'Como si lo fundieras' },
-  { id: 'ladrillo',nombre: 'Ladrillo (x4)', emoji: '🧱', cat: 'Básico', necesita: { 3: 4 },            da: { 8: 4 } },
-  { id: 'antorcha',nombre: 'Antorcha (x4)', emoji: '🕯️', cat: 'Básico', necesita: { palo: 1, carbon: 1 }, da: { 23: 4 }, pista: 'Da luz' },
-
-  // --- construcción ---
-  { id: 'puerta',   nombre: 'Puerta',        emoji: '🚪', cat: 'Construir', necesita: { 7: 6 },           da: { 20: 1 }, pista: 'Se abre y cierra al tocarla' },
-  { id: 'ventana',  nombre: 'Ventana (x2)',  emoji: '🪟', cat: 'Construir', necesita: { 9: 4, palo: 2 },  da: { 22: 2 } },
-  { id: 'valla',    nombre: 'Valla (x3)',    emoji: '🚧', cat: 'Construir', necesita: { palo: 4, 7: 1 },  da: { 24: 3 } },
-  { id: 'escalera', nombre: 'Escalera (x3)', emoji: '🪜', cat: 'Construir', necesita: { palo: 7 },        da: { 25: 3 }, pista: 'Se trepa' },
-
-  // --- herramientas ---
-  { id: 'pico_piedra', nombre: 'Pico de piedra', emoji: '⛏️', cat: 'Herramientas', necesita: { 3: 3, palo: 2 },       da: { pico_piedra: 1 } },
-  { id: 'pico_hierro', nombre: 'Pico de hierro', emoji: '🔨', cat: 'Herramientas', necesita: { hierro: 3, palo: 2 },  da: { pico_hierro: 1 } },
-  { id: 'pico_cristal',nombre: 'Pico de cristal',emoji: '💎', cat: 'Herramientas', necesita: { cristal: 4, palo: 2, oro: 1 }, da: { pico_cristal: 1 }, pista: 'Rompe 3×3' },
-  { id: 'hacha_hierro',nombre: 'Hacha de hierro',emoji: '🪓', cat: 'Herramientas', necesita: { hierro: 3, palo: 2 },  da: { hacha_hierro: 1 }, pista: 'Corta madera rápido' },
-  { id: 'pala_hierro', nombre: 'Pala de hierro', emoji: '🧹', cat: 'Herramientas', necesita: { hierro: 1, palo: 2 },  da: { pala_hierro: 1 }, pista: 'Cava tierra y arena rápido' },
-
-  // --- armas ---
-  { id: 'espada_piedra', nombre: 'Espada de piedra', emoji: '🗡️', cat: 'Armas', necesita: { 3: 2, palo: 1 },       da: { espada_piedra: 1 } },
-  { id: 'espada_hierro', nombre: 'Espada de hierro', emoji: '⚔️', cat: 'Armas', necesita: { hierro: 2, palo: 1 },  da: { espada_hierro: 1 } },
-  { id: 'espada_cristal',nombre: 'Espada de cristal',emoji: '🔱', cat: 'Armas', necesita: { cristal: 2, palo: 1, oro: 1 }, da: { espada_cristal: 1 }, pista: 'Golpe muy fuerte' },
-  { id: 'arco',          nombre: 'Arco',            emoji: '🏹', cat: 'Armas', necesita: { palo: 3, 5: 3 },       da: { arco: 1 }, pista: 'Dispara a distancia (botón de poner)' },
-  { id: 'flechas',       nombre: 'Flechas (x6)',    emoji: '➤',  cat: 'Armas', necesita: { palo: 1, 3: 1 },       da: { flecha: 6 } },
-  { id: 'flechas_pluma', nombre: 'Flechas con pluma (x8)', emoji: '🪶', cat: 'Armas', necesita: { palo: 1, pluma: 2 }, da: { flecha: 8 }, pista: 'Vuelan más rápido' },
-
-  // --- comida y ropa (de la caza) ---
-  { id: 'carne_cocida', nombre: 'Carne cocida (x2)', emoji: '🍖', cat: 'Comida y ropa', necesita: { carne: 2, carbon: 1 }, da: { carne_cocida: 2 }, pista: 'Cura mucha más vida que la cruda' },
-  { id: 'casco_cuero',    nombre: 'Casco de cuero',    emoji: '🪖', cat: 'Comida y ropa', necesita: { cuero: 3 }, da: { casco_cuero: 1 },    pista: 'Menos daño de los enemigos' },
-  { id: 'peto_cuero',     nombre: 'Peto de cuero',     emoji: '🦺', cat: 'Comida y ropa', necesita: { cuero: 5 }, da: { peto_cuero: 1 } },
-  { id: 'pantalon_cuero', nombre: 'Pantalón de cuero', emoji: '👖', cat: 'Comida y ropa', necesita: { cuero: 4 }, da: { pantalon_cuero: 1 } },
-  { id: 'botas_cuero',    nombre: 'Botas de cuero',    emoji: '🥾', cat: 'Comida y ropa', necesita: { cuero: 2 }, da: { botas_cuero: 1 } },
-];
-
 export const CATEGORIAS = ['Básico', 'Construir', 'Herramientas', 'Armas', 'Comida y ropa'];
 
-// --- Tablero de armado (3×3): hay que COLOCAR los materiales en su forma ---
-// P = palo. Cada celda es un id de cosa (número de bloque como string, o
-// material) o null (vacía). Se compara recortando los bordes vacíos.
+// --- Tablero de armado (3×3): hay que COLOCAR los materiales EN SU FORMA ---
+// Cada receta es una FORMA. Cada celda: id de bloque (número como string),
+// material (palo, hierro…) o null (vacía). Se compara recortando bordes vacíos,
+// así la figura puede armarse en cualquier parte del tablero.
 const P = 'palo';
 export const FORMAS = [
-  { id: 'palos',        nombre: 'Palos (x4)',       emoji: '🥢', da: { palo: 4 },
-    patron: [[null, null, null], ['7', null, null], ['7', null, null]] },
-  { id: 'antorcha',     nombre: 'Antorcha (x4)',    emoji: '🕯️', da: { 23: 4 },
+  // --- Básico ---
+  { id: 'tablas',   nombre: 'Tablas (x4)',   emoji: '🟧', cat: 'Básico', da: { 7: 4 },
+    patron: [[null, null, null], [null, '4', null], [null, null, null]] },
+  { id: 'palos',    nombre: 'Palos (x4)',    emoji: '🥢', cat: 'Básico', da: { palo: 4 },
+    patron: [[null, '7', null], [null, '7', null], [null, null, null]] },
+  { id: 'vidrio',   nombre: 'Vidrio (x2)',   emoji: '🔷', cat: 'Básico', da: { 9: 2 }, pista: 'Como si fundieras arena',
+    patron: [[null, null, null], ['6', '6', '6'], [null, null, null]] },
+  { id: 'ladrillo', nombre: 'Ladrillo (x4)', emoji: '🧱', cat: 'Básico', da: { 8: 4 },
+    patron: [[null, null, null], ['3', '3', null], ['3', '3', null]] },
+  { id: 'antorcha', nombre: 'Antorcha (x4)', emoji: '🕯️', cat: 'Básico', da: { 23: 4 }, pista: 'Da luz',
     patron: [[null, 'carbon', null], [null, P, null], [null, null, null]] },
-  { id: 'pico_piedra',  nombre: 'Pico de piedra',   emoji: '⛏️', da: { pico_piedra: 1 },
-    patron: [['3', '3', '3'], [null, P, null], [null, P, null]] },
-  { id: 'pico_hierro',  nombre: 'Pico de hierro',   emoji: '🔨', da: { pico_hierro: 1 },
-    patron: [['hierro', 'hierro', 'hierro'], [null, P, null], [null, P, null]] },
-  { id: 'hacha_hierro', nombre: 'Hacha de hierro',  emoji: '🪓', da: { hacha_hierro: 1 },
-    patron: [['hierro', 'hierro', null], ['hierro', P, null], [null, P, null]] },
-  { id: 'pala_hierro',  nombre: 'Pala de hierro',   emoji: '🥄', da: { pala_hierro: 1 },
-    patron: [[null, 'hierro', null], [null, P, null], [null, P, null]] },
-  { id: 'espada_hierro', nombre: 'Espada de hierro', emoji: '⚔️', da: { espada_hierro: 1 },
-    patron: [[null, 'hierro', null], [null, 'hierro', null], [null, P, null]] },
-  { id: 'espada_piedra', nombre: 'Espada de piedra', emoji: '🗡️', da: { espada_piedra: 1 },
-    patron: [[null, '3', null], [null, '3', null], [null, P, null]] },
-  { id: 'puerta',       nombre: 'Puerta',           emoji: '🚪', da: { 20: 1 },
+
+  // --- Construir ---
+  { id: 'puerta',   nombre: 'Puerta',        emoji: '🚪', cat: 'Construir', da: { 20: 1 }, pista: 'Se abre y cierra al tocarla',
     patron: [['7', '7', null], ['7', '7', null], ['7', '7', null]] },
-  { id: 'escalera',     nombre: 'Escalera (x3)',    emoji: '🪜', da: { 25: 3 },
+  { id: 'ventana',  nombre: 'Ventana (x2)',  emoji: '🪟', cat: 'Construir', da: { 22: 2 },
+    patron: [['9', P, '9'], ['9', P, '9'], [null, null, null]] },
+  { id: 'valla',    nombre: 'Valla (x3)',    emoji: '🚧', cat: 'Construir', da: { 24: 3 },
+    patron: [[P, '7', P], [P, '7', P], [null, null, null]] },
+  { id: 'escalera', nombre: 'Escalera (x3)', emoji: '🪜', cat: 'Construir', da: { 25: 3 }, pista: 'Se trepa',
     patron: [[P, null, P], [P, P, P], [P, null, P]] },
-  { id: 'valla',        nombre: 'Valla (x3)',       emoji: '🚧', da: { 24: 3 },
-    patron: [[P, P, P], [P, P, P], [null, null, null]] },
-  { id: 'arco',         nombre: 'Arco',             emoji: '🏹', da: { arco: 1 },
+
+  // --- Herramientas ---
+  { id: 'pico_piedra',  nombre: 'Pico de piedra',  emoji: '⛏️', cat: 'Herramientas', da: { pico_piedra: 1 },
+    patron: [['3', '3', '3'], [null, P, null], [null, P, null]] },
+  { id: 'pico_hierro',  nombre: 'Pico de hierro',  emoji: '🔨', cat: 'Herramientas', da: { pico_hierro: 1 },
+    patron: [['hierro', 'hierro', 'hierro'], [null, P, null], [null, P, null]] },
+  { id: 'pico_cristal', nombre: 'Pico de cristal', emoji: '💎', cat: 'Herramientas', da: { pico_cristal: 1 }, pista: 'Rompe 3×3',
+    patron: [['cristal', 'cristal', 'cristal'], [null, P, null], [null, P, null]] },
+  { id: 'hacha_hierro', nombre: 'Hacha de hierro', emoji: '🪓', cat: 'Herramientas', da: { hacha_hierro: 1 }, pista: 'Corta madera rápido',
+    patron: [['hierro', 'hierro', null], ['hierro', P, null], [null, P, null]] },
+  { id: 'pala_hierro',  nombre: 'Pala de hierro',  emoji: '🥄', cat: 'Herramientas', da: { pala_hierro: 1 }, pista: 'Cava tierra y arena rápido',
+    patron: [[null, 'hierro', null], [null, P, null], [null, P, null]] },
+
+  // --- Armas ---
+  { id: 'espada_piedra',  nombre: 'Espada de piedra',  emoji: '🗡️', cat: 'Armas', da: { espada_piedra: 1 },
+    patron: [[null, '3', null], [null, '3', null], [null, P, null]] },
+  { id: 'espada_hierro',  nombre: 'Espada de hierro',  emoji: '⚔️', cat: 'Armas', da: { espada_hierro: 1 },
+    patron: [[null, 'hierro', null], [null, 'hierro', null], [null, P, null]] },
+  { id: 'espada_cristal', nombre: 'Espada de cristal', emoji: '🔱', cat: 'Armas', da: { espada_cristal: 1 }, pista: 'Golpe muy fuerte',
+    patron: [[null, 'cristal', null], [null, 'cristal', null], [null, P, null]] },
+  { id: 'arco',           nombre: 'Arco',              emoji: '🏹', cat: 'Armas', da: { arco: 1 }, pista: 'Dispara a distancia (botón de poner)',
     patron: [[null, P, '5'], [P, null, '5'], [null, P, '5']] },
+  { id: 'flechas',        nombre: 'Flechas (x6)',      emoji: '➤',  cat: 'Armas', da: { flecha: 6 },
+    patron: [[null, '5', null], [null, P, null], [null, '3', null]] },
+  { id: 'flechas_pluma',  nombre: 'Flechas con pluma (x8)', emoji: '🪶', cat: 'Armas', da: { flecha: 8 }, pista: 'Vuelan más rápido',
+    patron: [[null, 'pluma', null], [null, P, null], [null, '3', null]] },
+
+  // --- Comida y ropa (de la caza) ---
+  { id: 'carne_cocida',   nombre: 'Carne cocida (x2)', emoji: '🍖', cat: 'Comida y ropa', da: { carne_cocida: 2 }, pista: 'Cura mucho más que la cruda',
+    patron: [[null, 'carne', null], [null, 'carbon', null], [null, null, null]] },
+  { id: 'casco_cuero',    nombre: 'Casco de cuero',    emoji: '🪖', cat: 'Comida y ropa', da: { casco_cuero: 1 }, pista: 'Menos daño de los enemigos',
+    patron: [['cuero', 'cuero', 'cuero'], ['cuero', null, 'cuero'], [null, null, null]] },
+  { id: 'peto_cuero',     nombre: 'Peto de cuero',     emoji: '🦺', cat: 'Comida y ropa', da: { peto_cuero: 1 },
+    patron: [['cuero', null, 'cuero'], ['cuero', 'cuero', 'cuero'], ['cuero', 'cuero', 'cuero']] },
+  { id: 'pantalon_cuero', nombre: 'Pantalón de cuero', emoji: '👖', cat: 'Comida y ropa', da: { pantalon_cuero: 1 },
+    patron: [['cuero', 'cuero', 'cuero'], ['cuero', null, 'cuero'], ['cuero', null, 'cuero']] },
+  { id: 'botas_cuero',    nombre: 'Botas de cuero',    emoji: '🥾', cat: 'Comida y ropa', da: { botas_cuero: 1 },
+    patron: [['cuero', null, 'cuero'], ['cuero', null, 'cuero'], [null, null, null]] },
 ];
+
+// alias: el "libro de recetas" recorre las mismas FORMAS
+export const RECETAS = FORMAS;
 
 function recorta(grid) {
   let r0 = 3, r1 = -1, c0 = 3, c1 = -1;
@@ -174,22 +175,19 @@ export function costoForma(f) {
   return cost;
 }
 
+// patrón recortado y CENTRADO en una grilla 3×3 (para dibujar la guía fantasma)
+export function centrarPatron(f) {
+  const b = recorta(f.patron);
+  const g = [[null, null, null], [null, null, null], [null, null, null]];
+  const r0 = Math.floor((3 - b.rows) / 2), c0 = Math.floor((3 - b.cols) / 2);
+  for (let r = 0; r < b.rows; r++) for (let c = 0; c < b.cols; c++) g[r0 + r][c0 + c] = b.cells[r][c] || null;
+  return g;
+}
+
 export function tengo(inv, cosa) { return inv[cosa] || 0; }
 
-export function puedeCraftear(receta, inv) {
-  return Object.entries(receta.necesita).every(([c, n]) => tengo(inv, c) >= n);
+// ¿el jugador tiene los materiales para armar esta forma?
+export function puedeArmar(f, inv) {
+  return Object.entries(costoForma(f)).every(([c, n]) => (inv[c] || 0) >= n);
 }
-
-// aplica la receta sobre el inventario (objeto) y devuelve true si se hizo
-export function craftear(receta, inv) {
-  if (!puedeCraftear(receta, inv)) return false;
-  for (const [c, n] of Object.entries(receta.necesita)) {
-    inv[c] -= n;
-    if (inv[c] <= 0) delete inv[c];
-  }
-  for (const [c, n] of Object.entries(receta.da)) {
-    if (TOOLS[c] || ARMADURA.includes(c)) continue; // herramientas/armas/armadura no van al inventario
-    inv[c] = (inv[c] || 0) + n;
-  }
-  return true;
-}
+export const puedeCraftear = puedeArmar;   // alias para el libro de recetas

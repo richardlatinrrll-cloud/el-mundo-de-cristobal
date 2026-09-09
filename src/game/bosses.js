@@ -26,8 +26,8 @@ export const BOSSES = [
   },
   {
     id: 'ojo', nombre: 'Titán Ardiente', power: 'laser', forma: 'titan',
-    hp: 155, speed: 2.4, size: 3.0, color: 0xb0442e, eye: 0xffe08a, corner: [0, 1],
-    dano: 22, ataques: ['onda', 'pisoton', 'roca'],
+    hp: 155, speed: 2.4, size: 3.0, color: 0xb0442e, eye: 0xff3020, corner: [0, 1],
+    dano: 22, ataques: ['laser', 'onda', 'pisoton'],
   },
   {
     id: 'coloso', nombre: 'Elfo Oscuro', power: 'volar', forma: 'elfo',
@@ -155,6 +155,11 @@ class BossEntity {
       this.dashT = 0.55;
       audio.sfx('golpe');
       toast(`💨 ¡${this.def.nombre} embiste!`, 900);
+    } else if (tipo === 'laser') {
+      const from = new THREE.Vector3(p.x, p.y + this.height * 0.92, p.z);
+      const to = new THREE.Vector3(player.pos.x, player.pos.y + 1, player.pos.z);
+      arena.lanzarRayo(from, to, Math.round(this.def.dano * 0.9), player);
+      audio.sfx('jefe');
     } else if (tipo === 'onda' || tipo === 'pisoton') {
       arena.ondaEnSuelo(this.pos.clone(), tipo === 'onda' ? 8 : 5.5, Math.round(this.def.dano * 0.8), player);
       audio.sfx('sonico');
@@ -292,6 +297,7 @@ export class BossArena {
     this.beacons.clear();
     for (const p of this.proyectiles) this.scene.remove(p.mesh);
     this.proyectiles = [];
+    for (const arr of [this._ondas, this._rayos]) if (arr) { for (const m of arr) this.scene.remove(m); arr.length = 0; }
     if (this.active) { this.scene.remove(this.active.mesh); this.active = null; }
   }
 
@@ -305,6 +311,34 @@ export class BossArena {
     mesh.position.copy(from);
     this.scene.add(mesh);
     this.proyectiles.push({ mesh, pos: from.clone(), vel: dir.clone().multiplyScalar(opts.vel || 16), dano: opts.dano || 8, vida: 3 });
+  }
+
+  // rayo de los ojos del Titán: línea roja + daño si estás cerca de la línea
+  lanzarRayo(from, to, dano, player) {
+    const dir = to.clone().sub(from);
+    const len = dir.length();
+    dir.normalize();
+    const beam = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.09, 0.09, len, 6),
+      new THREE.MeshBasicMaterial({ color: 0xff2418, transparent: true })
+    );
+    beam.position.copy(from).addScaledVector(dir, len / 2);
+    beam.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    beam.userData = { t: 0, vida: 0.35 };
+    this.scene.add(beam);
+    this._rayos = this._rayos || [];
+    this._rayos.push(beam);
+    // ¿el jugador está sobre la línea del rayo?
+    const pv = player.pos.clone().add(new THREE.Vector3(0, 1, 0)).sub(from);
+    const proj = pv.dot(dir);
+    if (proj > 0 && proj < len + 1.5) {
+      const perp = pv.clone().addScaledVector(dir, -proj).length();
+      if (perp < 1.4) {
+        const k = player._empuje ?? 1;
+        player.pos.addScaledVector(dir, 3 * k); player.vel.y = 4 * k;
+        player.onDañar?.(dano, 'rayo');
+      }
+    }
   }
 
   ondaEnSuelo(pos, radio, dano, player) {
@@ -348,6 +382,14 @@ export class BossArena {
         r.scale.setScalar(1 + k * r.userData.radio); r.material.opacity = 0.8 * (1 - k);
       }
     }
+    if (this._rayos) {
+      for (let i = this._rayos.length - 1; i >= 0; i--) {
+        const b = this._rayos[i]; b.userData.t += dt;
+        const k = b.userData.t / b.userData.vida;
+        if (k >= 1) { this.scene.remove(b); this._rayos.splice(i, 1); continue; }
+        b.material.opacity = 1 - k;
+      }
+    }
   }
 
   update(dt, player) {
@@ -382,6 +424,21 @@ export class BossArena {
     const dist = Math.hypot(player.pos.x - a.entity.home.x, player.pos.z - a.entity.home.z);
     if (a.entity.hp <= 0) { this._win(); return; }
     if (dist > ESCAPE) { this._flee(); return; }
+    this.onHud?.();
+  }
+
+  // Sala de pruebas: invocar un jefe justo al lado del jugador
+  spawnPrueba(defId, playerPos) {
+    const def = BOSSES.find((b) => b.id === defId);
+    if (!def || this.active) return;
+    const entity = new BossEntity(this.world, def);
+    entity.pos.set(playerPos.x + 4, playerPos.y + 1, playerPos.z);
+    entity.home.copy(entity.pos);
+    const mesh = makeBossMesh(def);
+    this.scene.add(mesh);
+    this.active = { def, entity, mesh };
+    audio.sfx('jefe');
+    toast(`🧪 ${def.nombre} invocado`);
     this.onHud?.();
   }
 

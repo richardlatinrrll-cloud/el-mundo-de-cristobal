@@ -20,6 +20,7 @@ import { mountMundos } from './ui/mundos.js';
 import { mountAjustes } from './ui/ajustes.js';
 import { mountCrafteo } from './ui/crafteo.js';
 import { mountTablero } from './ui/tablero.js';
+import { mountPruebas } from './ui/pruebas.js';
 import { mountGemas, dibujarMiniMapa } from './ui/gemas.js';
 import { GemQuest, GEMAS, aplicarGemas, guanteCompleto } from './game/gemas.js';
 import { COMIDA } from './game/recetas.js';
@@ -138,6 +139,7 @@ function streamChunks(force = false) {
 }
 
 let worldSig = '';
+let _tableroGuia = null;   // receta elegida en el libro para armar en el tablero
 function crearMundo() {
   clearAllChunks();
   world = new World({
@@ -211,6 +213,53 @@ const grieta = new THREE.Mesh(
   new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3, depthWrite: false })
 );
 grieta.visible = false;
+
+// Rayos de la Visión láser: dos haces rojos finos desde los ojos hacia la mira
+const laserMat = new THREE.MeshBasicMaterial({ color: 0xff2016, transparent: true, opacity: 0.85, depthWrite: false });
+const laserGlowMat = new THREE.MeshBasicMaterial({ color: 0xff8a6a, transparent: true, opacity: 0.28, depthWrite: false });
+function mkBeam() {
+  const g = new THREE.Group();
+  const core = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 6), laserMat);
+  const glow = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.4, 1, 6), laserGlowMat);
+  g.add(core, glow);
+  g.frustumCulled = false; g.renderOrder = 998; g.visible = false;
+  scene.add(g);
+  return g;
+}
+const laserL = mkBeam(), laserR = mkBeam();
+const laserPunto = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 10),
+  new THREE.MeshBasicMaterial({ color: 0xffb08a, transparent: true, opacity: 0.85, depthWrite: false }));
+laserPunto.renderOrder = 999; laserPunto.visible = false; scene.add(laserPunto);
+const _lYup = new THREE.Vector3(0, 1, 0);
+
+function actualizarLaser() {
+  const on = mode === 'jugar' && state.poderEquipado === 'laser' && !player._thirdPerson;
+  if (!on) { laserL.visible = laserR.visible = laserPunto.visible = false; return; }
+  const r = player.raycast(player.reach || 14);
+  const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+  const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+  const down = new THREE.Vector3(0, -1, 0).applyQuaternion(camera.quaternion);
+  const target = r
+    ? new THREE.Vector3(r.hit.x + 0.5, r.hit.y + 0.5, r.hit.z + 0.5)
+    : camera.position.clone().addScaledVector(fwd, 12);
+  const activo = controls.state.breaking;
+  const rad = activo ? 0.022 : 0.012;
+  laserMat.opacity = activo ? 0.9 : 0.4;
+  laserGlowMat.opacity = activo ? 0.3 : 0.12;
+  for (const [beam, s] of [[laserL, -1], [laserR, 1]]) {
+    // arranca 0.6 adelante y a un lado de la cámara (evita el gigantismo del plano cercano)
+    const eye = camera.position.clone().addScaledVector(fwd, 0.55).addScaledVector(right, 0.13 * s).addScaledVector(down, 0.05);
+    const dir = target.clone().sub(eye);
+    const len = dir.length();
+    dir.normalize();
+    beam.position.copy(eye).addScaledVector(dir, len / 2);
+    beam.quaternion.setFromUnitVectors(_lYup, dir);
+    beam.scale.set(rad, len, rad);
+    beam.visible = true;
+  }
+  laserPunto.position.copy(target);
+  laserPunto.visible = activo;
+}
 scene.add(grieta);
 
 // ---------- flechas (arco) ----------
@@ -831,6 +880,7 @@ function frame(dt) {
     streamChunks();
     actualizarMinado(dt);
     actualizarFlechas(dt);
+    actualizarLaser();
     updateFx(dt);
     const r = currentRay();
     if (r) { highlight.visible = true; highlight.position.set(r.hit.x + 0.5, r.hit.y + 0.5, r.hit.z + 0.5); }
@@ -946,6 +996,37 @@ function abrirTableroEnJuego() {
   touch.classList.remove('on');
   openScreen('tablero');
 }
+
+// --- Sala de pruebas (clave maestra) ---
+function aplanarArena() {
+  const cx = Math.floor(player.pos.x), cz = Math.floor(player.pos.z);
+  const sy = world.surfaceY(cx, cz);
+  for (let dx = -12; dx <= 12; dx++)
+    for (let dz = -12; dz <= 12; dz++) {
+      for (let dy = 1; dy < 22; dy++) { world.set(cx + dx, sy + dy, cz + dz, AIR); }
+      world.set(cx + dx, sy, cz + dz, 1);
+    }
+  player.pos.set(cx + 0.5, sy + 1.2, cz + 0.5);
+  player.vel.set(0, 0, 0);
+  streamChunks(true);
+}
+function invocarEnemigoPrueba(tipo) {
+  volverAlJuego();
+  aplanarArena();
+  mobs.enabled = true;
+  const p = player.pos;
+  mobs.spawnAt({ x: p.x + 4, y: p.y, z: p.z }, tipo);
+  const m = mobs.mobs[mobs.mobs.length - 1];
+  if (m) { m.state = 'chase'; m.pos.set(p.x + 4.5, world.surfaceY(Math.floor(p.x + 4), Math.floor(p.z)) + 1, p.z + 0.5); }
+  toast(`🧪 Enemigo invocado. Míralo y prueba sus movimientos.`);
+}
+function invocarJefePrueba(id) {
+  volverAlJuego();
+  aplanarArena();
+  bosses.clear();
+  bosses.spawnPrueba(id, player.pos);
+  updateBossBar();
+}
 function volverAlJuego() {
   closeAllScreens();
   menuScreen.classList.add('hidden');
@@ -979,6 +1060,7 @@ const menuScreen = mountMenu({
   onAjustes: () => openScreen('ajustes'),
   onCrafteo: () => openScreen('crafteo'),
   onGemas: () => openScreen('gemas'),
+  onPruebas: () => openScreen('pruebas'),
 });
 app.appendChild(menuScreen);
 
@@ -1020,14 +1102,20 @@ function openScreen(name) {
     } else if (name === 'crafteo') {
       screens[name] = mountCrafteo({
         onVolver: () => (mode === 'jugar' ? volverAlJuego() : showMenu()),
-        onTablero: () => openScreen('tablero'),
-        onCambio: () => { updateHotbar(); updateToolChip(); updateHearts(); },
+        onArmar: (f) => { _tableroGuia = f; openScreen('tablero'); },
       });
     } else if (name === 'tablero') {
       screens[name] = mountTablero({
         onVolver: () => (mode === 'jugar' ? volverAlJuego() : showMenu()),
-        onLista: () => openScreen('crafteo'),
+        onLista: () => { _tableroGuia = null; openScreen('crafteo'); },
         onCambio: () => { updateHotbar(); updateToolChip(); updateHearts(); },
+      });
+    } else if (name === 'pruebas') {
+      screens[name] = mountPruebas({
+        onVolver: () => (mode === 'jugar' ? volverAlJuego() : showMenu()),
+        onEnemigo: (t) => invocarEnemigoPrueba(t),
+        onJefe: (id) => invocarJefePrueba(id),
+        onLimpiar: () => { mobs.clear(); bosses.clear(); toast('Arena limpia'); },
       });
     } else if (name === 'gemas') {
       screens[name] = mountGemas({
@@ -1038,6 +1126,7 @@ function openScreen(name) {
     }
     app.appendChild(screens[name]);
   }
+  if (name === 'tablero') screens[name].setGuia?.(_tableroGuia);
   screens[name].refresh?.();
   screens[name].classList.remove('hidden');
 }

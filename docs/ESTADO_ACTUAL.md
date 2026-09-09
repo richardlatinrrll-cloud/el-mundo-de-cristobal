@@ -1,6 +1,6 @@
 # Estado actual — El Mundo de Cristóbal
 
-_Actualizado: 2026-09-09 (Parte 5)_
+_Actualizado: 2026-09-09 (Parte 6)_
 
 **Publicado en GitHub Pages** (repo público, sitio `noindex` + pantalla de clave
 para "solo para Cristóbal"). El deploy es automático: `git push` a `main` →
@@ -161,6 +161,28 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
 - **Selector de poderes**: etiqueta "PODER" sobre el chip; en el teléfono la
   lista se abre **centrada** con botones grandes (antes se pegaba al borde y
   costaba tocar).
+
+## Parte 6 — Armado guiado, sala de pruebas y láser
+
+- **Libro de recetas** (`src/ui/crafteo.js`): rediseñado, más aireado. Ya **no
+  fabrica automáticamente**; cada receta tiene un botón **🔧 Armar** que abre el
+  Tablero con la guía. "Lo que tienes" pasó a ser un desplegable que no tapa
+  nada. Las 25 recetas ahora son FORMAS (una sola lista en `recetas.js`).
+- **Tablero con guía fantasma** (`src/ui/tablero.js`): al venir de una receta,
+  el tablero muestra **cubos transparentes** en las casillas que hay que
+  rellenar, con el emoji del material que va en cada una, más una leyenda
+  ("Necesitas: 🪨 Piedra ×3 · 🥢 Palo ×2"). Tocar un cubo fantasma coloca ese
+  material solo. Sigue funcionando el modo libre.
+- **🧪 Sala de pruebas** (`src/ui/pruebas.js`, solo con la clave maestra, en el
+  menú): botones para invocar cada enemigo y cada jefe **al lado del jugador**
+  en una arena plana, sin tener que buscarlos por el mapa. Botón "Limpiar
+  arena".
+- **Volver al inicio al salirse del mapa**: si te caes al vacío o pasas los
+  bordes del mundo, reapareces en el punto de inicio (`player.js`).
+- **Rayos de la Visión láser**: al tener el poder equipado salen **dos haces
+  rojos desde los ojos** hacia donde apuntas (más brillantes al minar), con un
+  puntito de impacto. El **Titán Ardiente** también dispara un rayo rojo de sus
+  ojos como ataque (`bosses.js` `lanzarRayo`).
 - **Jefes y zonas** (`src/game/bosses.js`): 4 torres-baliza de colores aparecen
   en el mapa al desbloquear el poder de cada jefe.
   - Gólem de Piedra (poder: súper fuerza) — HP 42
@@ -206,7 +228,7 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
   reproducción de Spotify DENTRO del juego no es posible en móvil (limitación
   del SDK de Spotify), por eso es "aparte".
 - **PWA**: manifest + service worker **network-first** (`public/sw.js`, caché
-  `mundo-cristobal-v5`). `npm run build` OK (bundle ~625 KB / 170 KB gzip;
+  `mundo-cristobal-v7`). `npm run build` OK (bundle ~630 KB / 172 KB gzip;
   bancos de preguntas en chunks aparte).
 
 ## Limitaciones conocidas / pendiente
@@ -235,6 +257,8 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
 - **Parte 4 — Más enemigos originales + texturas/luz más realistas**: ✅ hecho.
 - **Parte 5 — Vida, caza, armadura, tablero de armado, mini-mapa, jefes con
   ataques + clave maestra**: ✅ hecho.
+- **Parte 6 — Armado guiado (guía fantasma), sala de pruebas, respawn al salir
+  del mapa, rayos láser**: ✅ hecho.
 
 ## Ideas para siguientes iteraciones
 
