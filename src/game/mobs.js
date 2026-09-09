@@ -13,20 +13,21 @@ import { toast } from '../ui/toast.js';
 // - Los golpeas con clic/⛏️ apuntándoles de cerca, o con el GRITO SÓNICO en área.
 
 const TYPES = {
-  sombra:    { nombre: 'Sombra',    hp: 1, speed: 3.4, view: 13, lose: 22, knock: 4,  color: 0x2b1e3a, eye: 0xff4d4d, size: 1.0, minNivel: 0,  peso: 5 },
-  veloz:     { nombre: 'Espectro',  hp: 1, speed: 5.3, view: 10, lose: 18, knock: 3,  color: 0x1e2f3a, eye: 0x4dd2ff, size: 0.9, minNivel: 3,  peso: 3, verInvisible: false },
-  saltarin:  { nombre: 'Brincón',   hp: 2, speed: 3.1, view: 12, lose: 20, knock: 4,  color: 0x143a1e, eye: 0xa8e10c, size: 0.95, minNivel: 6, peso: 3, salta: true },
-  bruto:     { nombre: 'Bruto',     hp: 4, speed: 2.3, view: 14, lose: 20, knock: 9,  color: 0x3a1e1e, eye: 0xff8a3d, size: 1.35, minNivel: 10, peso: 2 },
-  acechador: { nombre: 'Acechador', hp: 3, speed: 3.9, view: 19, lose: 28, knock: 5,  color: 0x241a2e, eye: 0xff2bd0, size: 1.05, minNivel: 15, peso: 2, verInvisible: true },
+  sombra:    { nombre: 'Sombra',    hp: 1, speed: 3.4, view: 13, lose: 22, knock: 4,  dano: 6,  color: 0x2b1e3a, eye: 0xff4d4d, size: 1.0, minNivel: 0,  peso: 5 },
+  veloz:     { nombre: 'Espectro',  hp: 1, speed: 5.3, view: 10, lose: 18, knock: 3,  dano: 5,  color: 0x1e2f3a, eye: 0x4dd2ff, size: 0.9, minNivel: 3,  peso: 3, verInvisible: false },
+  saltarin:  { nombre: 'Brincón',   hp: 2, speed: 3.1, view: 12, lose: 20, knock: 4,  dano: 7,  color: 0x143a1e, eye: 0xa8e10c, size: 0.95, minNivel: 6, peso: 3, salta: true },
+  bruto:     { nombre: 'Bruto',     hp: 4, speed: 2.3, view: 14, lose: 20, knock: 9,  dano: 14, color: 0x3a1e1e, eye: 0xff8a3d, size: 1.35, minNivel: 10, peso: 2 },
+  acechador: { nombre: 'Acechador', hp: 3, speed: 3.9, view: 19, lose: 28, knock: 5,  dano: 10, color: 0x241a2e, eye: 0xff2bd0, size: 1.05, minNivel: 15, peso: 2, verInvisible: true },
   // --- Parte 4: enemigos originales grandes ---
   larguirucho: {
     nombre: 'El Larguirucho', hp: 5, speed: 7.4, view: 26, lose: 46, knock: 5,
+    dano: 12,
     color: 0xe9e5da, eye: 0x4be0ff, size: 1.2, minNivel: 9, peso: 1,
     verInvisible: true, forma: 'alto', congelaConMirada: true,
     grito: '👁️ El Larguirucho te atrapó. No le quites la vista de encima.',
   },
   gigante: {
-    nombre: 'El Gigante', hp: 14, speed: 1.8, view: 17, lose: 26, knock: 15,
+    nombre: 'El Gigante', hp: 14, speed: 1.8, view: 17, lose: 26, knock: 15, dano: 30,
     color: 0x8a7357, eye: 0xffcf6a, size: 3.1, minNivel: 14, peso: 1,
     forma: 'gigante',
     grito: '🦶 ¡EL GIGANTE te aplastó! Es lento: corre lejos.',
@@ -119,8 +120,8 @@ class Mob {
         player.pos.x -= (dx / d) * (t.knock * 0.5) * k;
         player.pos.z -= (dz / d) * (t.knock * 0.5) * k;
         player.vel.y = (6 + t.knock * 0.4) * k;
-        audio.sfx('dano');
-        toast(t.grito || `👤 ¡Un ${t.nombre} te golpeó! Usa 👻 o ⚡, o pega tú (⛏️ / 💥)`);
+        player.onDañar?.(t.dano || 6, t.nombre);
+        if (t.grito) toast(t.grito);
       }
     } else {
       this.wanderTimer -= dt;

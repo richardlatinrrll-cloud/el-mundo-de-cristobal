@@ -1,9 +1,13 @@
 // Pantalla de clave. No es seguridad "de verdad" (es una web estática), pero
 // evita que cualquiera entre y no aparece en buscadores. Suficiente para
-// "solo para Cristóbal".
+// "solo para Cristóbal". Pide la clave CADA VEZ que se abre el juego.
+//
+// - Clave normal: entra al juego con el avance guardado.
+// - Clave maestra (RUT de Richard sin dígito verificador): modo de prueba con
+//   todos los poderes y gemas desbloqueados; NO guarda el avance.
 
-const KEY_OK = 'mundo-cristobal-clave-ok';
-const HASH_OBJETIVO = '89195a'; // hash de la clave actual
+const HASH_NORMAL = '89195a';   // hash de la clave del juego
+const HASH_MAESTRA = '5jqypa';  // hash de la clave maestra (pruebas)
 
 function hash(s) {
   let x = 5381;
@@ -11,11 +15,10 @@ function hash(s) {
   return x.toString(36);
 }
 
-export function claveDesbloqueada() {
-  try { return localStorage.getItem(KEY_OK) === '1'; } catch { return false; }
-}
+// Siempre pide la clave al entrar (no se recuerda entre visitas).
+export function claveDesbloqueada() { return false; }
 
-// Muestra la pantalla de clave. Llama a onOk() cuando aciertan.
+// Muestra la pantalla de clave. Llama a onOk({ maestro }) al acertar.
 export function mountClave(onOk) {
   const el = document.createElement('div');
   el.id = 'clave';
@@ -34,10 +37,10 @@ export function mountClave(onOk) {
   const err = el.querySelector('[data-err]');
 
   function probar() {
-    if (hash(inp.value.trim()) === HASH_OBJETIVO) {
-      try { localStorage.setItem(KEY_OK, '1'); } catch {}
+    const h = hash(inp.value.trim());
+    if (h === HASH_NORMAL || h === HASH_MAESTRA) {
       el.remove();
-      onOk();
+      onOk({ maestro: h === HASH_MAESTRA });
     } else {
       err.hidden = false;
       el.querySelector('.clave-box').classList.remove('shake');

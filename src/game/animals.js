@@ -7,15 +7,15 @@ import { SX, SZ, SY } from '../engine/world.js';
 
 // bioma: 1=pasto, 5=cerca de árboles/bosque, 6=arena, 10=agua/orilla
 export const ESPECIES = {
-  conejo:   { nombre: 'Conejo',   emoji: '🐇', color: 0xe8e2d8, size: 0.5, vel: 3.8, huye: 14, salta: true,  bioma: ['pasto'] },
-  ciervo:   { nombre: 'Ciervo',   emoji: '🦌', color: 0x9c6b3f, size: 1.3, vel: 4.4, huye: 16,               bioma: ['pasto', 'bosque'] },
-  zorro:    { nombre: 'Zorro',    emoji: '🦊', color: 0xd9702e, size: 0.8, vel: 4.0, huye: 10,               bioma: ['pasto', 'bosque'] },
-  oveja:    { nombre: 'Oveja',    emoji: '🐑', color: 0xf1eee6, size: 1.0, vel: 2.2, huye: 7,                bioma: ['pasto'] },
-  vaca:     { nombre: 'Vaca',     emoji: '🐄', color: 0x4a4038, size: 1.3, vel: 2.0, huye: 6,                bioma: ['pasto'] },
-  jabali:   { nombre: 'Jabalí',   emoji: '🐗', color: 0x5a4636, size: 1.1, vel: 3.4, huye: 8,  carga: true,  bioma: ['bosque', 'pasto'] },
-  oso:      { nombre: 'Oso',      emoji: '🐻', color: 0x6b4a2f, size: 1.7, vel: 3.0, huye: 0,  carga: true,  bioma: ['bosque'] },
-  tortuga:  { nombre: 'Tortuga',  emoji: '🐢', color: 0x3f7d4a, size: 0.7, vel: 0.9, huye: 5,                bioma: ['arena', 'agua'] },
-  pajaro:   { nombre: 'Pájaro',   emoji: '🐦', color: 0x3a6bd0, size: 0.4, vel: 5.5, huye: 12, vuela: true,  bioma: ['pasto', 'bosque', 'arena'] },
+  conejo:   { nombre: 'Conejo',   emoji: '🐇', color: 0xe8e2d8, size: 0.5, vel: 3.8, huye: 14, salta: true,  bioma: ['pasto'], hp: 2, botin: { carne: 1, cuero: 1 } },
+  ciervo:   { nombre: 'Ciervo',   emoji: '🦌', color: 0x9c6b3f, size: 1.3, vel: 4.4, huye: 16,               bioma: ['pasto', 'bosque'], hp: 4, botin: { carne: 2, cuero: 2 } },
+  zorro:    { nombre: 'Zorro',    emoji: '🦊', color: 0xd9702e, size: 0.8, vel: 4.0, huye: 10,               bioma: ['pasto', 'bosque'], hp: 3, botin: { carne: 1, cuero: 1 } },
+  oveja:    { nombre: 'Oveja',    emoji: '🐑', color: 0xf1eee6, size: 1.0, vel: 2.2, huye: 7,                bioma: ['pasto'], hp: 3, botin: { carne: 1, lana: 2 } },
+  vaca:     { nombre: 'Vaca',     emoji: '🐄', color: 0x4a4038, size: 1.3, vel: 2.0, huye: 6,                bioma: ['pasto'], hp: 5, botin: { carne: 3, cuero: 3 } },
+  jabali:   { nombre: 'Jabalí',   emoji: '🐗', color: 0x5a4636, size: 1.1, vel: 3.4, huye: 8,  carga: true,  bioma: ['bosque', 'pasto'], hp: 4, botin: { carne: 2, cuero: 1 } },
+  oso:      { nombre: 'Oso',      emoji: '🐻', color: 0x6b4a2f, size: 1.7, vel: 3.0, huye: 0,  carga: true,  bioma: ['bosque'], hp: 7, botin: { carne: 3, cuero: 2 } },
+  tortuga:  { nombre: 'Tortuga',  emoji: '🐢', color: 0x3f7d4a, size: 0.7, vel: 0.9, huye: 5,                bioma: ['arena', 'agua'], hp: 3, botin: { carne: 1, cuero: 1 } },
+  pajaro:   { nombre: 'Pájaro',   emoji: '🐦', color: 0x3a6bd0, size: 0.4, vel: 5.5, huye: 12, vuela: true,  bioma: ['pasto', 'bosque', 'arena'], hp: 1, botin: { carne: 1, pluma: 2 } },
 };
 
 function biomaDe(world, x, z) {
@@ -58,6 +58,17 @@ class Animal {
     this.face = 0;
     this.cargaCd = 0;
     this.bob = Math.random() * 6;
+    this.hp = this.def.hp || 3;
+    this.hurt = 0;
+    this.dead = false;
+  }
+
+  daño(n) {
+    this.hp -= n;
+    this.hurt = 0.18;
+    this.estado = 'huye';
+    this.timer = Math.max(this.timer, 3);
+    if (this.hp <= 0) this.dead = true;
   }
 
   update(dt, player) {
@@ -67,6 +78,7 @@ class Animal {
     const dist = Math.hypot(dx, dz);
     this.cargaCd = Math.max(0, this.cargaCd - dt);
     this.timer -= dt;
+    this.hurt = Math.max(0, this.hurt - dt);
 
     // decidir estado
     if (d.carga && dist < 2.4 && this.cargaCd === 0 && Math.random() < 0.02) {
@@ -145,6 +157,7 @@ function makeMesh(def) {
   const cabeza = new THREE.Mesh(new THREE.BoxGeometry(0.38 * s, 0.38 * s, 0.38 * s), mat);
   cabeza.position.set(0, 0.55 * s, 0.5 * s);
   g.add(cuerpo, cabeza);
+  g.userData.mats = [cuerpo.material, cabeza.material];
   if (!def.vuela) {
     for (const [px, pz] of [[-0.18, 0.3], [0.18, 0.3], [-0.18, -0.3], [0.18, -0.3]]) {
       const pata = new THREE.Mesh(new THREE.BoxGeometry(0.12 * s, 0.35 * s, 0.12 * s), mat);
@@ -168,6 +181,7 @@ export class AnimalField {
     this.scene = scene;
     this.animals = [];
     this.meshes = [];
+    this.onBotin = null;   // callback(botin, nombre) al cazar un animal
   }
 
   cantidad() { return Math.min(40, Math.round((SX * SZ) / 4500)); }
@@ -192,8 +206,9 @@ export class AnimalField {
 
   update(dt, player) {
     const t = performance.now() / 200;
-    for (let i = 0; i < this.animals.length; i++) {
+    for (let i = this.animals.length - 1; i >= 0; i--) {
       const a = this.animals[i], mesh = this.meshes[i];
+      if (a.dead) { this._kill(i); continue; }
       // solo simular los cercanos
       const lejos = Math.hypot(a.pos.x - player.pos.x, a.pos.z - player.pos.z) > 90;
       if (lejos) { mesh.visible = false; continue; }
@@ -203,6 +218,7 @@ export class AnimalField {
       mesh.rotation.y = a.face;
       const activo = a.estado === 'huye' || a.estado === 'carga' || a.estado === 'camina';
       mesh.userData.cuerpo.rotation.x = activo ? Math.sin(t * 2 + i) * 0.18 : 0;
+      if (mesh.userData.mats) mesh.userData.mats.forEach((m) => m.emissive?.setHex(a.hurt > 0 ? 0xaa3333 : 0x000000));
       if (mesh.userData.alas) {
         const flap = Math.sin(performance.now() / 90 + i) * 0.9;
         mesh.userData.alas[0].rotation.z = flap;
@@ -212,6 +228,41 @@ export class AnimalField {
     // reponer si quedan pocos cerca
     const cerca = this.animals.filter((a) => Math.hypot(a.pos.x - player.pos.x, a.pos.z - player.pos.z) < 70).length;
     if (cerca < 5 && this.animals.length < this.cantidad() + 6) this._spawnCercaDe(player);
+  }
+
+  _kill(i) {
+    const a = this.animals[i];
+    this.scene.remove(this.meshes[i]);
+    this.animals.splice(i, 1);
+    this.meshes.splice(i, 1);
+    if (a.def.botin) this.onBotin?.(a.def.botin, a.def.nombre);
+  }
+
+  // golpe del jugador: apunta con la mirada. Devuelve true si acertó.
+  golpear(camera, reach, daño) {
+    const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
+    const o = camera.position;
+    let best = -1, bestD = Infinity;
+    for (let i = 0; i < this.animals.length; i++) {
+      const a = this.animals[i];
+      const to = new THREE.Vector3(a.pos.x - o.x, a.pos.y + a.height * 0.5 - o.y, a.pos.z - o.z);
+      const d = to.length();
+      if (d > reach + a.def.size) continue;
+      if (to.normalize().dot(dir) < 0.9) continue;
+      if (d < bestD) { bestD = d; best = i; }
+    }
+    if (best < 0) return false;
+    this.animals[best].daño(daño);
+    return true;
+  }
+
+  // Onda Prisma y similares
+  dañoEnRadio(pos, radio, daño) {
+    let n = 0;
+    for (const a of this.animals) {
+      if (Math.hypot(a.pos.x - pos.x, a.pos.y - pos.y, a.pos.z - pos.z) <= radio) { a.daño(daño); n++; }
+    }
+    return n;
   }
 
   _spawnCercaDe(player) {

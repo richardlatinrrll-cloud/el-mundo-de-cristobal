@@ -1,6 +1,52 @@
 import { state } from '../game/state.js';
 import { GEMAS, MARTILLO_A_LAS, tieneGema, gemasConseguidas, guanteCompleto, proximaGema, gemaSitio } from '../game/gemas.js';
 
+// Dibuja el mapa de gemas en un canvas 2D (lo usan la pantalla y el mini-mapa).
+export function dibujarMiniMapa(ctx, W, H, world, player, { grid = true } = {}) {
+  const prox = proximaGema();
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#0d1b2a';
+  ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = '#ffffff22';
+  ctx.strokeRect(2, 2, W - 4, H - 4);
+  if (grid) {
+    ctx.strokeStyle = '#ffffff11';
+    for (let i = 1; i < 4; i++) {
+      ctx.beginPath(); ctx.moveTo(2 + (W - 4) * i / 4, 2); ctx.lineTo(2 + (W - 4) * i / 4, H - 2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(2, 2 + (H - 4) * i / 4); ctx.lineTo(W - 2, 2 + (H - 4) * i / 4); ctx.stroke();
+    }
+  }
+  const px = (fx) => 6 + (W - 12) * fx;
+  const pz = (fz) => 6 + (H - 12) * fz;
+
+  for (const g of GEMAS) {
+    const ok = tieneGema(g.id);
+    const esProx = !ok && prox && prox.id === g.id;
+    const x = px(g.sitio[0]), y = pz(g.sitio[1]);
+    const col = '#' + g.color.toString(16).padStart(6, '0');
+    if (esProx) {
+      ctx.beginPath(); ctx.arc(x, y, Math.max(8, W * 0.05), 0, Math.PI * 2);
+      ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.stroke();
+    }
+    ctx.beginPath(); ctx.arc(x, y, Math.max(4, W * 0.025), 0, Math.PI * 2);
+    ctx.globalAlpha = ok || esProx ? 1 : 0.5;
+    ctx.fillStyle = ok || esProx ? col : '#6b7686';
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    if (ok) { ctx.fillStyle = '#0d1b2a'; ctx.font = `bold ${Math.max(7, W * 0.045)}px system-ui`; ctx.textAlign = 'center'; ctx.fillText('✓', x, y + W * 0.016); }
+  }
+
+  if (world && player && world.SX) {
+    const fx = Math.max(0, Math.min(1, player.pos.x / world.SX));
+    const fz = Math.max(0, Math.min(1, player.pos.z / world.SZ));
+    const x = px(fx), y = pz(fz), r = Math.max(4, W * 0.026);
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(x, y - r); ctx.lineTo(x - r * 0.8, y + r * 0.8); ctx.lineTo(x + r * 0.8, y + r * 0.8); ctx.closePath();
+    ctx.fill();
+  }
+}
+
 // Pantalla "🔮 Búsqueda de Gemas": mapa del mundo con los sitios de las gemas,
 // lista de gemas con su estado y su "don", y el estado del Guante.
 export function mountGemas({ onVolver, getWorld, getPlayer }) {
@@ -63,47 +109,7 @@ export function mountGemas({ onVolver, getWorld, getPlayer }) {
     }
 
     // ---- mapa ----
-    const W = canvas.width, H = canvas.height;
-    ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = '#0d1b2a';
-    ctx.fillRect(0, 0, W, H);
-    ctx.strokeStyle = '#ffffff22';
-    ctx.strokeRect(4, 4, W - 8, H - 8);
-    ctx.strokeStyle = '#ffffff11';
-    for (let i = 1; i < 4; i++) {
-      ctx.beginPath(); ctx.moveTo(4 + (W - 8) * i / 4, 4); ctx.lineTo(4 + (W - 8) * i / 4, H - 4); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(4, 4 + (H - 8) * i / 4); ctx.lineTo(W - 4, 4 + (H - 8) * i / 4); ctx.stroke();
-    }
-    const px = (fx) => 8 + (W - 16) * fx;
-    const pz = (fz) => 8 + (H - 16) * fz;
-
-    for (const g of GEMAS) {
-      const ok = tieneGema(g.id);
-      const esProx = !ok && prox && prox.id === g.id;
-      const x = px(g.sitio[0]), y = pz(g.sitio[1]);
-      const col = '#' + g.color.toString(16).padStart(6, '0');
-      if (esProx) {
-        ctx.beginPath(); ctx.arc(x, y, 12, 0, Math.PI * 2);
-        ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.stroke();
-      }
-      ctx.beginPath(); ctx.arc(x, y, 6, 0, Math.PI * 2);
-      ctx.fillStyle = ok ? col : esProx ? col : '#6b7686';
-      ctx.globalAlpha = ok ? 1 : esProx ? 1 : 0.5;
-      ctx.fill();
-      ctx.globalAlpha = 1;
-      if (ok) { ctx.fillStyle = '#0d1b2a'; ctx.font = 'bold 9px system-ui'; ctx.textAlign = 'center'; ctx.fillText('✓', x, y + 3); }
-    }
-
-    // jugador
-    if (world && player && world.SX) {
-      const fx = Math.max(0, Math.min(1, player.pos.x / world.SX));
-      const fz = Math.max(0, Math.min(1, player.pos.z / world.SZ));
-      const x = px(fx), y = pz(fz);
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.moveTo(x, y - 6); ctx.lineTo(x - 5, y + 5); ctx.lineTo(x + 5, y + 5); ctx.closePath();
-      ctx.fill();
-    }
+    dibujarMiniMapa(ctx, canvas.width, canvas.height, world, player);
   }
 
   el.refresh = pintar;

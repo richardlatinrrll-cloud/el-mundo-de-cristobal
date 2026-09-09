@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { isSolid } from '../engine/blocks.js';
+import { isSolid, BLOCKS } from '../engine/blocks.js';
 import { SX, SZ } from '../engine/world.js';
 import { state, save } from './state.js';
 import { audio } from './audio.js';
@@ -8,17 +8,32 @@ import { toast } from '../ui/toast.js';
 
 // Zonas con jefes. Aparecen (una torre-baliza de color en el mapa) cuando
 // desbloqueas el poder asociado. Al acercarte empieza la pelea.
-// Modelo de daño "mezcla": el jefe tiene mucha vida; el poder de su zona
-// hace 3× de daño (conviene equiparlo), pero cualquier golpe sirve.
 //
-// `corner`: [0|1, 0|1] esquina del mapa. La posición real se calcula con el
-// tamaño de mundo actual (que es variable), no al importar el módulo.
+// PARTE 5: los 4 jefes tienen formas propias (trol, dragón, titán, elfo
+// oscuro), mucha más vida y ATAQUES (proyectiles, embestidas, ondas,
+// invocar). El poder de su zona hace 3× de daño (conviene equiparlo).
 
 export const BOSSES = [
-  { id: 'golem',  nombre: 'Gólem de Piedra', power: 'fuerza',    hp: 42, speed: 2.1, size: 2.4, color: 0x8a8f98, eye: 0xffd166, corner: [0, 0] },
-  { id: 'rayo',   nombre: 'Rayo',            power: 'velocidad', hp: 30, speed: 6.6, size: 1.5, color: 0xffd166, eye: 0xffffff, corner: [1, 0], fast: true },
-  { id: 'ojo',    nombre: 'Ojo Ardiente',    power: 'laser',     hp: 46, speed: 2.6, size: 2.0, color: 0xff4d4d, eye: 0xffe08a, corner: [0, 1], float: true },
-  { id: 'coloso', nombre: 'El Coloso',       power: 'volar',     hp: 84, speed: 2.5, size: 3.6, color: 0x7b3ff2, eye: 0x4dd2ff, corner: [1, 1], minions: true },
+  {
+    id: 'golem', nombre: 'Trol de las Rocas', power: 'fuerza', forma: 'trol',
+    hp: 130, speed: 2.3, size: 2.6, color: 0x6f7d5a, eye: 0xffd166, corner: [0, 0],
+    dano: 16, ataques: ['roca', 'pisoton'],
+  },
+  {
+    id: 'rayo', nombre: 'Dragón Tormenta', power: 'velocidad', forma: 'dragon',
+    hp: 95, speed: 6.4, size: 2.2, color: 0x33507e, eye: 0x9fe8ff, corner: [1, 0], float: true,
+    dano: 13, ataques: ['aliento', 'embestida'],
+  },
+  {
+    id: 'ojo', nombre: 'Titán Ardiente', power: 'laser', forma: 'titan',
+    hp: 155, speed: 2.4, size: 3.0, color: 0xb0442e, eye: 0xffe08a, corner: [0, 1],
+    dano: 22, ataques: ['onda', 'pisoton', 'roca'],
+  },
+  {
+    id: 'coloso', nombre: 'Elfo Oscuro', power: 'volar', forma: 'elfo',
+    hp: 210, speed: 3.5, size: 2.3, color: 0x3a2f52, eye: 0xc07bff, corner: [1, 1], minions: true,
+    dano: 18, ataques: ['sombra', 'invocar', 'parpadeo'],
+  },
 ];
 
 export function bossAt(b) {
@@ -26,10 +41,11 @@ export function bossAt(b) {
 }
 
 const TRIGGER = 5.5;   // distancia para iniciar la pelea
-const ESCAPE = 26;     // si te alejas tanto, el jefe se calma
+const ESCAPE = 30;     // si te alejas tanto, el jefe se calma
 const CATCH = 1.6;
 
 export function jefeDisponible(b) {
+  if (state.maestro) return true;
   const p = powerById(b.power);
   return p && cumpleRequisito(p, state.medallas);
 }
@@ -54,7 +70,10 @@ class BossEntity {
     this.hurt = 0;
     this.face = 0;
     this.catchCd = 0;
-    this.minionCd = 4;
+    this.minionCd = 5;
+    this.atkCd = 2.5;
+    this.dashT = 0;
+    this.dashDir = new THREE.Vector3();
   }
 
   daño(n) { this.hp = Math.max(0, this.hp - n); this.hurt = 0.18; }
@@ -66,13 +85,17 @@ class BossEntity {
     const dist = Math.hypot(dx, dz);
     this.catchCd = Math.max(0, this.catchCd - dt);
     this.hurt = Math.max(0, this.hurt - dt);
+    this.atkCd = Math.max(0, this.atkCd - dt);
+    this.dashT = Math.max(0, this.dashT - dt);
     const dd = dist || 1;
 
-    // persigue al jugador
-    const mx = dx / dd, mz = dz / dd;
+    // persigue al jugador (o embiste)
+    let mx = dx / dd, mz = dz / dd;
+    if (this.dashT > 0) { mx = this.dashDir.x; mz = this.dashDir.z; }
     this.face = Math.atan2(mx, mz);
-    this.vel.x = mx * d.speed;
-    this.vel.z = mz * d.speed;
+    const spd = this.dashT > 0 ? d.speed * 3.2 : d.speed;
+    this.vel.x = mx * spd;
+    this.vel.z = mz * spd;
 
     if (d.float) {
       const targetY = this.world.surfaceY(Math.floor(this.pos.x), Math.floor(this.pos.z)) + 2.5;
@@ -92,18 +115,58 @@ class BossEntity {
     // golpe cuerpo a cuerpo
     if (dist < CATCH + d.size * 0.5 && this.catchCd === 0) {
       this.catchCd = 1.6;
-      const k = player._empuje ?? 1;   // Gema Vital reduce el empujón
+      const k = player._empuje ?? 1;
       player.pos.x -= mx * 6 * k;
       player.pos.z -= mz * 6 * k;
       player.vel.y = 9 * k;
-      audio.sfx('dano');
-      toast(`💢 ¡${d.nombre} te golpeó fuerte!`);
+      player.onDañar?.(d.dano, d.nombre);
+      this.dashT = 0;
     }
 
-    // el Coloso invoca ayudantes
+    // elegir un ataque
+    if (this.atkCd === 0 && dist < 26 && d.ataques?.length) {
+      this.atkCd = 2.4 + Math.random() * 2.4;
+      const a = d.ataques[(Math.random() * d.ataques.length) | 0];
+      this._atacar(a, player, arena, mx, mz, dd);
+    }
+
+    // el Elfo Oscuro invoca ayudantes
     if (d.minions) {
       this.minionCd -= dt;
-      if (this.minionCd <= 0) { this.minionCd = 7; arena.pedirMinion?.(this.pos); }
+      if (this.minionCd <= 0) { this.minionCd = 8; arena.pedirMinion?.(this.pos); }
+    }
+  }
+
+  _atacar(tipo, player, arena, mx, mz, dd) {
+    const p = this.pos;
+    if (tipo === 'roca' || tipo === 'aliento' || tipo === 'sombra') {
+      const col = tipo === 'roca' ? 0x8a8f98 : tipo === 'aliento' ? 0x9fe8ff : 0x9b5fd0;
+      const from = new THREE.Vector3(p.x, p.y + this.height * 0.6, p.z);
+      const to = new THREE.Vector3(player.pos.x, player.pos.y + 1, player.pos.z);
+      const dir = to.sub(from).normalize();
+      arena.lanzarProyectil(from, dir, { vel: tipo === 'aliento' ? 20 : 15, dano: Math.round(this.def.dano * 0.7), color: col });
+      if (tipo === 'aliento') { // aliento = ráfaga de 3
+        arena.lanzarProyectil(from, dir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), 0.18), { vel: 20, dano: 8, color: col });
+        arena.lanzarProyectil(from, dir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), -0.18), { vel: 20, dano: 8, color: col });
+      }
+      audio.sfx('jefe');
+    } else if (tipo === 'embestida') {
+      this.dashDir.set(mx, 0, mz);
+      this.dashT = 0.55;
+      audio.sfx('golpe');
+      toast(`💨 ¡${this.def.nombre} embiste!`, 900);
+    } else if (tipo === 'onda' || tipo === 'pisoton') {
+      arena.ondaEnSuelo(this.pos.clone(), tipo === 'onda' ? 8 : 5.5, Math.round(this.def.dano * 0.8), player);
+      audio.sfx('sonico');
+    } else if (tipo === 'invocar') {
+      arena.pedirMinion?.(this.pos);
+      arena.pedirMinion?.(this.pos);
+      toast(`🌑 ${this.def.nombre} invoca sombras…`, 1000);
+    } else if (tipo === 'parpadeo') {
+      const ang = Math.random() * Math.PI * 2;
+      this.pos.x = player.pos.x + Math.cos(ang) * 3.5;
+      this.pos.z = player.pos.z + Math.sin(ang) * 3.5;
+      audio.sfx('menu');
     }
   }
 
@@ -143,21 +206,55 @@ function makeBeacon(def) {
   return g;
 }
 
+function box(w, h, d, color) {
+  return new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color }));
+}
+
 function makeBossMesh(def) {
   const s = def.size;
   const g = new THREE.Group();
-  const mat = new THREE.MeshLambertMaterial({ color: def.color });
-  const body = new THREE.Mesh(new THREE.BoxGeometry(1.1 * s, 1.3 * s, 0.8 * s), mat);
-  body.position.y = 1.0 * s;
-  const head = new THREE.Mesh(new THREE.BoxGeometry(0.8 * s, 0.7 * s, 0.7 * s), mat.clone());
-  head.position.y = 2.0 * s;
+  const c = def.color;
+  const mats = [];
+  const add = (m, x, y, z) => { m.position.set(x, y, z); g.add(m); mats.push(m.material); return m; };
   const eyeMat = new THREE.MeshBasicMaterial({ color: def.eye });
-  const eL = new THREE.Mesh(new THREE.BoxGeometry(0.18 * s, 0.18 * s, 0.08), eyeMat);
-  const eR = eL.clone();
-  eL.position.set(-0.2 * s, 2.05 * s, 0.36 * s);
-  eR.position.set(0.2 * s, 2.05 * s, 0.36 * s);
-  g.add(body, head, eL, eR);
-  g.userData = { mats: [body.material, head.material] };
+  const eye = (x, y, z, sz = 0.16) => { const e = new THREE.Mesh(new THREE.BoxGeometry(sz * s, sz * s, 0.06), eyeMat); e.position.set(x, y, z); g.add(e); };
+
+  if (def.forma === 'trol') {
+    add(box(1.5 * s, 1.5 * s, 1.0 * s, c), 0, 1.1 * s, 0);         // torso
+    add(box(0.7 * s, 0.6 * s, 0.65 * s, c), 0, 2.1 * s, 0.05 * s); // cabeza pequeña
+    add(box(0.4 * s, 1.7 * s, 0.4 * s, c), -1.0 * s, 1.0 * s, 0);  // brazos largos
+    add(box(0.4 * s, 1.7 * s, 0.4 * s, c), 1.0 * s, 1.0 * s, 0);
+    add(box(0.2 * s, 0.3 * s, 0.2 * s, 0xf2ead6), -0.2 * s, 1.95 * s, 0.4 * s); // colmillos
+    add(box(0.2 * s, 0.3 * s, 0.2 * s, 0xf2ead6), 0.2 * s, 1.95 * s, 0.4 * s);
+    eye(-0.16 * s, 2.2 * s, 0.36 * s); eye(0.16 * s, 2.2 * s, 0.36 * s);
+  } else if (def.forma === 'dragon') {
+    add(box(1.1 * s, 0.9 * s, 1.6 * s, c), 0, 1.0 * s, 0);          // cuerpo
+    add(box(0.35 * s, 0.35 * s, 1.2 * s, c), 0, 1.4 * s, 1.0 * s);  // cuello
+    add(box(0.55 * s, 0.5 * s, 0.7 * s, c), 0, 1.6 * s, 1.8 * s);   // cabeza
+    add(box(0.25 * s, 0.2 * s, 1.4 * s, c), 0, 0.9 * s, -1.3 * s);  // cola
+    const wL = add(box(1.5 * s, 0.08 * s, 0.9 * s, 0x27406b), -1.0 * s, 1.3 * s, 0);
+    const wR = add(box(1.5 * s, 0.08 * s, 0.9 * s, 0x27406b), 1.0 * s, 1.3 * s, 0);
+    g.userData.alas = [wL, wR];
+    eye(-0.16 * s, 1.7 * s, 2.05 * s); eye(0.16 * s, 1.7 * s, 2.05 * s);
+  } else if (def.forma === 'titan') {
+    add(box(1.7 * s, 1.9 * s, 1.1 * s, c), 0, 1.4 * s, 0);          // torso enorme
+    add(box(0.85 * s, 0.8 * s, 0.8 * s, c), 0, 2.7 * s, 0);        // cabeza
+    add(box(0.55 * s, 1.6 * s, 0.55 * s, c), -1.2 * s, 1.4 * s, 0); // brazos
+    add(box(0.55 * s, 1.6 * s, 0.55 * s, c), 1.2 * s, 1.4 * s, 0);
+    add(box(0.9 * s, 0.7 * s, 0.9 * s, 0xff8a3d), -1.2 * s, 0.5 * s, 0); // puños ardientes
+    add(box(0.9 * s, 0.7 * s, 0.9 * s, 0xff8a3d), 1.2 * s, 0.5 * s, 0);
+    eye(-0.2 * s, 2.8 * s, 0.42 * s, 0.22); eye(0.2 * s, 2.8 * s, 0.42 * s, 0.22);
+  } else { // elfo oscuro
+    add(box(0.6 * s, 1.3 * s, 0.5 * s, c), 0, 1.0 * s, 0);          // cuerpo esbelto
+    add(box(0.45 * s, 0.5 * s, 0.45 * s, c), 0, 1.9 * s, 0);       // cabeza
+    add(box(0.95 * s, 1.5 * s, 0.3 * s, 0x241d38), 0, 1.1 * s, -0.25 * s); // capa
+    add(box(0.6 * s, 0.5 * s, 0.6 * s, 0x241d38), 0, 2.15 * s, -0.05 * s);  // capucha
+    const staff = add(box(0.1 * s, 2.2 * s, 0.1 * s, 0x5a4a2f), 0.5 * s, 1.3 * s, 0.1 * s);
+    add(new THREE.Mesh(new THREE.OctahedronGeometry(0.22 * s), new THREE.MeshBasicMaterial({ color: def.eye })), 0.5 * s, 2.5 * s, 0.1 * s);
+    eye(-0.1 * s, 1.95 * s, 0.24 * s, 0.1); eye(0.1 * s, 1.95 * s, 0.24 * s, 0.1);
+  }
+
+  g.userData.mats = mats;
   return g;
 }
 
@@ -169,6 +266,7 @@ export class BossArena {
     this.active = null;         // { def, entity, mesh }
     this.onMinion = null;       // callback(pos) -> spawn helper sombra
     this.onHud = null;          // callback() para refrescar barra
+    this.proyectiles = [];      // { mesh, pos, vel, dano, vida }
   }
 
   refreshBeacons() {
@@ -192,10 +290,65 @@ export class BossArena {
   clear() {
     for (const m of this.beacons.values()) this.scene.remove(m);
     this.beacons.clear();
+    for (const p of this.proyectiles) this.scene.remove(p.mesh);
+    this.proyectiles = [];
     if (this.active) { this.scene.remove(this.active.mesh); this.active = null; }
   }
 
   pedirMinion(pos) { this.onMinion?.(pos); }
+
+  lanzarProyectil(from, dir, opts) {
+    const mesh = new THREE.Mesh(
+      new THREE.SphereGeometry(0.28, 8, 8),
+      new THREE.MeshBasicMaterial({ color: opts.color || 0xffffff })
+    );
+    mesh.position.copy(from);
+    this.scene.add(mesh);
+    this.proyectiles.push({ mesh, pos: from.clone(), vel: dir.clone().multiplyScalar(opts.vel || 16), dano: opts.dano || 8, vida: 3 });
+  }
+
+  ondaEnSuelo(pos, radio, dano, player) {
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(1, 0.3, 8, 22),
+      new THREE.MeshBasicMaterial({ color: 0xffcf6a, transparent: true })
+    );
+    ring.rotation.x = Math.PI / 2;
+    ring.position.set(pos.x, pos.y + 0.4, pos.z);
+    ring.userData = { t: 0, radio };
+    this.scene.add(ring);
+    this._ondas = this._ondas || [];
+    this._ondas.push(ring);
+    const d = Math.hypot(player.pos.x - pos.x, player.pos.z - pos.z);
+    if (d < radio) {
+      const k = player._empuje ?? 1;
+      const nx = (player.pos.x - pos.x) / (d || 1), nz = (player.pos.z - pos.z) / (d || 1);
+      player.pos.x += nx * 4 * k; player.pos.z += nz * 4 * k; player.vel.y = 8 * k;
+      player.onDañar?.(dano, 'onda');
+    }
+  }
+
+  _updateProyectiles(dt, player) {
+    for (let i = this.proyectiles.length - 1; i >= 0; i--) {
+      const p = this.proyectiles[i];
+      p.vida -= dt;
+      p.pos.addScaledVector(p.vel, dt);
+      p.vel.y -= 6 * dt;
+      p.mesh.position.copy(p.pos);
+      const hitPlayer = Math.hypot(p.pos.x - player.pos.x, p.pos.y - (player.pos.y + 1), p.pos.z - player.pos.z) < 1.1;
+      const bid = this.world.get(Math.floor(p.pos.x), Math.floor(p.pos.y), Math.floor(p.pos.z));
+      const hitBlock = bid && isSolid(bid);
+      if (hitPlayer) player.onDañar?.(p.dano, 'proyectil');
+      if (hitPlayer || hitBlock || p.vida <= 0) { this.scene.remove(p.mesh); this.proyectiles.splice(i, 1); }
+    }
+    if (this._ondas) {
+      for (let i = this._ondas.length - 1; i >= 0; i--) {
+        const r = this._ondas[i]; r.userData.t += dt;
+        const k = r.userData.t / 0.5;
+        if (k >= 1) { this.scene.remove(r); this._ondas.splice(i, 1); continue; }
+        r.scale.setScalar(1 + k * r.userData.radio); r.material.opacity = 0.8 * (1 - k);
+      }
+    }
+  }
 
   update(dt, player) {
     const t = performance.now() / 1000;
@@ -203,9 +356,9 @@ export class BossArena {
       m.userData.orb.rotation.y += dt * 1.5;
       m.userData.orb.position.y = 2.2 + Math.sin(t * 2) * 0.25;
     }
+    this._updateProyectiles(dt, player);
 
     if (!this.active) {
-      // ¿entrar a una arena?
       for (const b of BOSSES) {
         if (!jefeDisponible(b) || jefeDerrotado(b)) continue;
         const at = bossAt(b);
@@ -215,11 +368,14 @@ export class BossArena {
       return;
     }
 
-    // pelea en curso
     const a = this.active;
     a.entity.update(dt, player, this);
     a.mesh.position.set(a.entity.pos.x, a.entity.pos.y, a.entity.pos.z);
     a.mesh.rotation.y = a.entity.face;
+    if (a.mesh.userData.alas) {
+      const f = Math.sin(t * 6) * 0.6;
+      a.mesh.userData.alas[0].rotation.z = f; a.mesh.userData.alas[1].rotation.z = -f;
+    }
     const flash = a.entity.hurt > 0;
     a.mesh.userData.mats.forEach((mm) => mm.emissive?.setHex(flash ? 0xaa0000 : 0x000000));
 
@@ -237,7 +393,7 @@ export class BossArena {
     if (this.beacons.has(def.id)) { this.scene.remove(this.beacons.get(def.id)); this.beacons.delete(def.id); }
     const tienePoder = state.poderEquipado === def.power;
     audio.sfx('jefe');
-    toast(`⚔️ ¡${def.nombre} despertó! ${tienePoder ? 'Tienes el poder correcto equipado.' : 'Equipa ' + (powerById(def.power)?.nombre || def.power) + ' para hacer 3× daño.'}`);
+    toast(`⚔️ ¡${def.nombre} despertó! ${tienePoder ? 'Tienes el poder correcto: 3× daño.' : 'Equipa ' + (powerById(def.power)?.nombre || def.power) + ' para hacer 3× daño.'}`);
     this.onHud?.();
   }
 
@@ -245,6 +401,8 @@ export class BossArena {
     const def = this.active.def;
     this.scene.remove(this.active.mesh);
     this.active = null;
+    for (const p of this.proyectiles) this.scene.remove(p.mesh);
+    this.proyectiles = [];
     state.jefesDerrotados = state.jefesDerrotados || [];
     if (!state.jefesDerrotados.includes(def.id)) state.jefesDerrotados.push(def.id);
     state.stats = state.stats || {};
@@ -263,6 +421,8 @@ export class BossArena {
     const def = this.active.def;
     this.scene.remove(this.active.mesh);
     this.active = null;
+    for (const p of this.proyectiles) this.scene.remove(p.mesh);
+    this.proyectiles = [];
     toast(`${def.nombre} volvió a dormir. Acércate para reintentar.`);
     this.refreshBeacons();
     this.onHud?.();
@@ -296,7 +456,6 @@ export class BossArena {
     return 1;
   }
 
-  // Onda Prisma: daño en esfera alrededor de un punto
   dañoEnRadio(pos, radio, dañoBase) {
     if (!this.active) return 0;
     const a = this.active;

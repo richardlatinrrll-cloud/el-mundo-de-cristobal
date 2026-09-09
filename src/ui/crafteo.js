@@ -1,19 +1,21 @@
 import { state, save } from '../game/state.js';
-import { RECETAS, CATEGORIAS, puedeCraftear, craftear, tengo, cosaNombre, cosaEmoji, dondeConseguir, MATERIALES } from '../game/recetas.js';
+import { RECETAS, CATEGORIAS, puedeCraftear, craftear, tengo, cosaNombre, cosaEmoji, dondeConseguir, MATERIALES, ARMADURA } from '../game/recetas.js';
 import { TOOLS } from '../game/tools.js';
 import { audio } from '../game/audio.js';
 import { toast } from './toast.js';
 
-export function mountCrafteo({ onVolver, onCambio }) {
+export function mountCrafteo({ onVolver, onCambio, onTablero }) {
   const el = document.createElement('div');
   el.className = 'screen';
   el.innerHTML = `
     <div class="topbar">
       <button class="btn small secondary" data-volver>← Menú</button>
+      <button class="btn small secondary" data-tablero>🔧 Tablero de armado</button>
       <div class="spacer"></div>
     </div>
     <h2>🔨 Crafteo</h2>
-    <p class="sub">Junta materiales del mundo y fabrica cosas. En verde: ya lo puedes hacer.</p>
+    <p class="sub">Junta materiales del mundo y fabrica cosas. En verde: ya lo puedes hacer.
+      En el <b>Tablero</b> las herramientas se arman colocando las piezas en su forma.</p>
 
     <div class="row" data-tabs style="margin-bottom:4px"></div>
     <div class="craft-list" data-lista></div>
@@ -23,6 +25,9 @@ export function mountCrafteo({ onVolver, onCambio }) {
     <p class="hint" data-guia></p>
   `;
   el.querySelector('[data-volver]').addEventListener('click', onVolver);
+  const tabBtn = el.querySelector('[data-tablero]');
+  if (onTablero) tabBtn.addEventListener('click', onTablero);
+  else tabBtn.remove();
 
   let cat = CATEGORIAS[0];
   const tabsEl = el.querySelector('[data-tabs]');
@@ -61,6 +66,7 @@ export function mountCrafteo({ onVolver, onCambio }) {
           // si fabricó una herramienta/arma, agrégala a la lista de herramientas
           for (const c of Object.keys(r.da)) {
             if (TOOLS[c] && !state.herramientas.includes(c)) { state.herramientas.push(c); state.herramienta = c; }
+            if (ARMADURA.includes(c)) { state.armadura = state.armadura || []; if (!state.armadura.includes(c)) state.armadura.push(c); }
           }
           save();
           audio.sfx('medalla');

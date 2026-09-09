@@ -1,13 +1,17 @@
 # Estado actual — El Mundo de Cristóbal
 
-_Actualizado: 2026-09-09 (Parte 4)_
+_Actualizado: 2026-09-09 (Parte 5)_
 
 **Publicado en GitHub Pages** (repo público, sitio `noindex` + pantalla de clave
 para "solo para Cristóbal"). El deploy es automático: `git push` a `main` →
 GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
 - URL: la que da GitHub Pages para el repo.
-- Clave del juego: `src/ui/clave.js` (`HASH_OBJETIVO`). Para cambiarla, calcular
-  el hash con la función `hash()` de ese archivo y reemplazar.
+- **La clave se pide CADA VEZ** que se abre el juego (`src/ui/clave.js`).
+  - Clave normal `Cristobal2013` (hash `89195a`): juego con avance guardado.
+  - **Clave maestra** (RUT de Richard sin DV, hash `5jqypa`): modo de prueba con
+    TODOS los poderes, gemas, herramientas y armadura; **no guarda el avance**
+    (`state.maestro` → `save()` no hace nada). No es invencible: se puede probar
+    el combate y morir.
 - El despliegue anterior en el servidor casero ARGOS (Docker, puerto 8082) sigue
   disponible dentro de la red / por Tailscale; ver `docs/DESPLIEGUE_SERVIDOR.md`
   (fuera de git).
@@ -122,6 +126,40 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
   y la base de árboles/muros se oscurecen → se ve profundidad) y sombreado por
   cara (arriba más claro, abajo más oscuro). Luz ambiente un poco más cálida y
   fuerte para que la sombra no ensucie.
+
+## Parte 5 — Vida, caza y jefes de verdad
+
+- **Sistema de vida** (`state.salud` 0..100 = 10 corazones): los enemigos te
+  hacen daño de verdad (cada tipo/jefe tiene su `dano`). La vida **se regenera
+  sola** de a poco al no recibir golpes. Al llegar a 0 → pantalla "Te
+  desmayaste", revives en el punto de inicio **con tus cosas**. HUD: fila de
+  corazones + botón **🍖 Comer** (tecla F) que usa la mejor comida que tengas
+  (carne cocida cura más que la cruda).
+- **Armadura de cuero**: 4 piezas fabricables (casco/peto/pantalón/botas);
+  cada una reduce el daño ~13% (hasta ~55% con las 4). HUD: 🛡️ con el número.
+- **Caza de animales**: los animales tienen vida; al cazarlos (⛏️ o arco)
+  sueltan **carne, cuero, pluma o lana** según la especie. Con eso hay recetas
+  nuevas (categoría **Comida y ropa**): carne cocida, flechas con pluma, y las
+  4 piezas de armadura de cuero.
+- **Tablero de armado** (`src/ui/tablero.js`, botón en la pantalla de Crafteo):
+  grilla 3×3 donde hay que **colocar los materiales en su forma** (pico = 3
+  arriba + 2 palos en columna, espada = 2 en fila + palo, etc.). Cuando la
+  figura está bien aparece "Fabricar". Entrena paciencia y "ver" cada
+  herramienta. La lista de recetas normal sigue disponible.
+- **Mini-mapa** (`src/ui/gemas.js` → `dibujarMiniMapa`): el botón 🔮 del HUD
+  (tecla G) ahora abre un **mini-mapa transparente en la esquina** que no pausa
+  el juego, con los sitios de las gemas y tu posición. La pantalla completa de
+  Búsqueda de Gemas sigue en el menú.
+- **Jefes rediseñados** (`src/game/bosses.js`): ahora son **Trol de las Rocas**,
+  **Dragón Tormenta**, **Titán Ardiente** y **Elfo Oscuro** (formas propias con
+  cuernos, alas, capa, puños ardientes…). **~3× más vida** (95–210) y **ataques
+  de verdad**: proyectiles (roca / aliento de dragón / bola de sombra),
+  embestida, onda sísmica que te empuja, invocar sombras, parpadeo (el elfo se
+  teletransporta). El poder correcto sigue haciendo 3×. Los guardianes de gemas
+  también tienen más vida y te hacen daño.
+- **Selector de poderes**: etiqueta "PODER" sobre el chip; en el teléfono la
+  lista se abre **centrada** con botones grandes (antes se pegaba al borde y
+  costaba tocar).
 - **Jefes y zonas** (`src/game/bosses.js`): 4 torres-baliza de colores aparecen
   en el mapa al desbloquear el poder de cada jefe.
   - Gólem de Piedra (poder: súper fuerza) — HP 42
@@ -167,7 +205,7 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
   reproducción de Spotify DENTRO del juego no es posible en móvil (limitación
   del SDK de Spotify), por eso es "aparte".
 - **PWA**: manifest + service worker **network-first** (`public/sw.js`, caché
-  `mundo-cristobal-v4`). `npm run build` OK (bundle ~600 KB / 162 KB gzip;
+  `mundo-cristobal-v5`). `npm run build` OK (bundle ~625 KB / 170 KB gzip;
   bancos de preguntas en chunks aparte).
 
 ## Limitaciones conocidas / pendiente
@@ -194,8 +232,8 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
 - **Parte 2 — Crafteo**: ✅ hecho.
 - **Parte 3 — Objetos legendarios + búsqueda de gemas**: ✅ hecho.
 - **Parte 4 — Más enemigos originales + texturas/luz más realistas**: ✅ hecho.
-
-El roadmap de 4 partes que pidió Richard está **completo**.
+- **Parte 5 — Vida, caza, armadura, tablero de armado, mini-mapa, jefes con
+  ataques + clave maestra**: ✅ hecho.
 
 ## Ideas para siguientes iteraciones
 

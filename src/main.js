@@ -19,8 +19,10 @@ import { AnimalField } from './game/animals.js';
 import { mountMundos } from './ui/mundos.js';
 import { mountAjustes } from './ui/ajustes.js';
 import { mountCrafteo } from './ui/crafteo.js';
-import { mountGemas } from './ui/gemas.js';
+import { mountTablero } from './ui/tablero.js';
+import { mountGemas, dibujarMiniMapa } from './ui/gemas.js';
 import { GemQuest, GEMAS, aplicarGemas, guanteCompleto } from './game/gemas.js';
+import { COMIDA } from './game/recetas.js';
 import { mountClave, claveDesbloqueada } from './ui/clave.js';
 import { audio } from './game/audio.js';
 import { DayNight } from './game/daynight.js';
@@ -187,6 +189,12 @@ bosses.onHud = () => updateBossBar();
 gemas.onMinion = (pos) => mobs.spawnAt(pos, 'sombra');
 gemas.onHud = () => updateBossBar();
 gemas.onCollect = () => { aplicarPoderEquipado(); updateToolChip(); updateHotbar(); };
+player.onDañar = (n, motivo) => dañarJugador(n, motivo);
+animals.onBotin = (botin, nombre) => {
+  const partes = [];
+  for (const [k, v] of Object.entries(botin)) { invAdd(k, v); partes.push(`${v} ${k}`); }
+  toast(`🥩 ${nombre}: +${partes.join(', ')}`, 1400);
+};
 player.spawnOnSurface();
 
 // resaltado del bloque apuntado
@@ -241,7 +249,7 @@ function actualizarFlechas(dt) {
     // choque con enemigo / jefe (mira desde la punta de la flecha)
     if (!quitar) {
       const fakeCam = { position: p, quaternion: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, -1), a.vel.clone().normalize()) };
-      if (bosses.golpear(fakeCam, 1.6, 6) || gemas.golpear(fakeCam, 1.6, 6) || mobs.golpear(fakeCam, 1.6, 5)) { quitar = true; audio.sfx('golpe'); }
+      if (bosses.golpear(fakeCam, 1.6, 6) || gemas.golpear(fakeCam, 1.6, 6) || mobs.golpear(fakeCam, 1.6, 5) || animals.golpear(fakeCam, 1.6, 5)) { quitar = true; audio.sfx('golpe'); }
     }
     if (quitar) { scene.remove(a.mesh); flechas.splice(i, 1); }
   }
@@ -255,11 +263,18 @@ hud.innerHTML = `
   <div class="crosshair"></div>
   <button class="btn-back">☰ Menú</button>
   <button class="btn-craft" title="Crafteo (Q)">🔨</button>
-  <button class="btn-gemas" title="Búsqueda de Gemas (G)">🔮</button>
+  <button class="btn-gemas" title="Mini-mapa de gemas (G)">🔮</button>
   <div class="power-picker">
+    <div class="pp-label">Poder</div>
     <button class="power-badge"><span class="dot"></span><span class="pb-name">Sin poder</span><span class="pb-arrow">▾</span></button>
     <div class="power-list" hidden></div>
   </div>
+  <div class="vida-row">
+    <div class="hearts"></div>
+    <span class="arm-badge" hidden>🛡️ <span class="arm-n">0</span></span>
+    <button class="btn-comer" hidden>🍖 Comer</button>
+  </div>
+  <canvas class="mini-mapa" width="150" height="150" hidden></canvas>
   <div class="mob-badge" hidden>👤 <span class="mb-n">0</span> enemigo(s) persiguiéndote</div>
   <div class="modo-badge" hidden>🎨 Modo creador</div>
   <div class="boss-bar" hidden>
@@ -305,7 +320,23 @@ touch.querySelector('.t-view').addEventListener('touchstart', (e) => {
 
 hud.querySelector('.btn-back').addEventListener('click', () => showMenu());
 hud.querySelector('.btn-craft').addEventListener('click', () => abrirCrafteoEnJuego());
-hud.querySelector('.btn-gemas').addEventListener('click', () => abrirGemasEnJuego());
+hud.querySelector('.btn-gemas').addEventListener('click', () => toggleMiniMapa());
+hud.querySelector('.btn-comer').addEventListener('click', () => comer());
+
+// ---------- Mini-mapa (transparente, no pausa el juego) ----------
+const miniMapa = hud.querySelector('.mini-mapa');
+const miniCtx = miniMapa.getContext('2d');
+let _miniCd = 0;
+function toggleMiniMapa() { miniMapa.hidden = !miniMapa.hidden; audio.sfx('menu'); }
+function updateMiniMapa(dt) {
+  if (miniMapa.hidden || mode !== 'jugar') return;
+  _miniCd -= dt;
+  if (_miniCd > 0) return;
+  _miniCd = 0.35;
+  dibujarMiniMapa(miniCtx, miniMapa.width, miniMapa.height, world, player, { grid: false });
+}
+addEventListener('keydown', (e) => { if (mode === 'jugar' && e.code === 'KeyG' && hud.style.display === 'block') toggleMiniMapa(); });
+addEventListener('keydown', (e) => { if (mode === 'jugar' && e.code === 'KeyF' && hud.style.display === 'block') comer(); });
 
 // ---------- Inventario ----------
 function darKitInicial() {
@@ -361,6 +392,83 @@ updateHotbar();
 const modoBadge = hud.querySelector('.modo-badge');
 function updateModoBadge() { modoBadge.hidden = !state.mundo.creador; }
 
+// ---------- Vida / corazones ----------
+const heartsEl = hud.querySelector('.hearts');
+const armBadge = hud.querySelector('.arm-badge');
+const btnComer = hud.querySelector('.btn-comer');
+let _regenCd = 0, _invulnCd = 0;
+
+function updateHearts() {
+  const s = Math.max(0, Math.round(state.salud));
+  const total = 10;                       // 10 corazones
+  const porCorazon = state.saludMax / total;
+  let html = '';
+  for (let i = 0; i < total; i++) {
+    const v = s - i * porCorazon;
+    html += `<span class="hp">${v >= porCorazon ? '❤️' : v > 0 ? '🧡' : '🖤'}</span>`;
+  }
+  heartsEl.innerHTML = html;
+  const n = (state.armadura || []).length;
+  armBadge.hidden = n === 0;
+  armBadge.querySelector('.arm-n').textContent = n;
+  btnComer.hidden = !hayComida();
+}
+
+function hayComida() {
+  return Object.keys(COMIDA).some((k) => COMIDA[k] > 0 && (state.inventario[k] || 0) > 0);
+}
+
+function comer() {
+  if (mode !== 'jugar') return;
+  if (state.salud >= state.saludMax) { toast('Ya tienes toda la vida', 900); return; }
+  // elige la mejor comida disponible
+  let mejor = null, val = 0;
+  for (const [k, v] of Object.entries(COMIDA)) {
+    if (v > val && (state.inventario[k] || 0) > 0) { mejor = k; val = v; }
+  }
+  if (!mejor) { toast('No tienes comida. Caza animales 🥩', 1100); return; }
+  state.inventario[mejor]--;
+  if (state.inventario[mejor] <= 0) delete state.inventario[mejor];
+  state.salud = Math.min(state.saludMax, state.salud + val);
+  audio.sfx('medalla');
+  toast(`😋 +${val} vida`, 900);
+  updateHearts(); updateHotbar();
+  if (screens.crafteo && !screens.crafteo.classList.contains('hidden')) screens.crafteo.refresh?.();
+}
+
+function dañarJugador(n, motivo) {
+  if (mode !== 'jugar' || _invulnCd > 0) return;
+  if (state.mundo.creador) return;   // en modo creador no te hacen daño
+  const piezas = (state.armadura || []).length;
+  const red = Math.min(0.55, piezas * 0.13);       // hasta -55% con las 4 piezas
+  n = Math.max(1, Math.round(n * (1 - red)));
+  state.salud = Math.max(0, state.salud - n);
+  _regenCd = 5;
+  _invulnCd = 0.5;
+  audio.sfx('dano');
+  updateHearts();
+  if (state.salud <= 0) desmayo();
+}
+
+const desmayoEl = document.createElement('div');
+desmayoEl.id = 'desmayo';
+desmayoEl.innerHTML = '<div class="ico">😵</div><h2>Te desmayaste</h2><p class="sub">Vuelves al punto de inicio con tus cosas.</p>';
+app.appendChild(desmayoEl);
+
+function desmayo() {
+  desmayoEl.classList.add('show');
+  audio.sfx('jefe');
+  mobs.clear(); bosses.clear();
+  setTimeout(() => {
+    player.spawnOnSurface();
+    state.salud = state.saludMax;
+    _invulnCd = 3;
+    updateHearts();
+    desmayoEl.classList.remove('show');
+    if (!state.mundo.creador) { mobs.spawn(); bosses.refreshBeacons(); gemas.refreshShrines(); }
+  }, 1900);
+}
+
 const toolChip = hud.querySelector('.tool-chip');
 function updateToolChip() {
   const t = tool(state.herramienta);
@@ -380,7 +488,6 @@ function cambiarHerramienta() {
 toolChip.addEventListener('click', cambiarHerramienta);
 addEventListener('keydown', (e) => { if (mode === 'jugar' && e.code === 'KeyT') cambiarHerramienta(); });
 addEventListener('keydown', (e) => { if (mode === 'jugar' && e.code === 'KeyQ' && hud.style.display === 'block') abrirCrafteoEnJuego(); });
-addEventListener('keydown', (e) => { if (mode === 'jugar' && e.code === 'KeyG' && hud.style.display === 'block') abrirGemasEnJuego(); });
 
 const mobBadge = hud.querySelector('.mob-badge');
 function updateMobBadge() {
@@ -410,6 +517,7 @@ function updatePowerBadge() {
 }
 
 function poderesDisponibles() {
+  if (state.maestro) return POWERS.slice();
   return POWERS.filter((p) => cumpleRequisito(p, state.medallas));
 }
 function renderPowerList() {
@@ -477,6 +585,7 @@ function breakBlock() {
   if (bosses.golpear(camera, reach, dano)) { audio.sfx('golpe'); return; }
   if (gemas.golpear(camera, reach, dano)) { audio.sfx('golpe'); return; }
   if (mobs.golpear(camera, reach, dano)) { audio.sfx('golpe'); return; }
+  if (animals.golpear(camera, reach, dano)) { audio.sfx('golpe'); return; }
 }
 
 // minado por tiempo mientras se mantiene pulsado (llamado desde frame)
@@ -599,6 +708,7 @@ function rayoMartillo() {
   const nm = mobs.dañoEnRadio(hit, 4.5, 14);
   bosses.dañoEnRadio(hit, 4.5, 16);
   gemas.dañoEnRadio(hit, 4.5, 16);
+  animals.dañoEnRadio(hit, 4.5, 14);
   toast(nm ? `⚡ ¡RAYO! Golpeaste a ${nm}` : '⚡ ¡RAYO!');
 }
 
@@ -628,6 +738,7 @@ function ondaPrisma() {
   const nm = mobs.dañoEnRadio(c, 16, 40);
   bosses.dañoEnRadio(c, 16, 40);
   gemas.dañoEnRadio(c, 16, 40);
+  animals.dañoEnRadio(c, 16, 40);
   audio.sfx('sonico');
   toast(nm ? `✊ ¡ONDA PRISMA! ${nm} enemigos barridos` : '✊ ¡ONDA PRISMA!');
 }
@@ -700,15 +811,23 @@ function frame(dt) {
       const cx = Math.floor(world.SX / 2), cz = Math.floor(world.SZ / 2);
       const ax = player.pos.x - cx, az = player.pos.z - cz, al = Math.hypot(ax, az) || 1;
       player.pos.x += (ax / al) * 2; player.pos.z += (az / al) * 2;
-      if (!_lavaCd) { audio.sfx('dano'); toast('🔥 ¡Lava! Aléjate'); _lavaCd = 1; }
+      if (!_lavaCd) { dañarJugador(6, 'lava'); toast('🔥 ¡Lava! Aléjate'); _lavaCd = 1; }
     }
     _lavaCd = Math.max(0, _lavaCd - dt);
+    // vida: regeneración lenta al no recibir golpes
+    _regenCd = Math.max(0, _regenCd - dt);
+    _invulnCd = Math.max(0, _invulnCd - dt);
+    if (_regenCd === 0 && state.salud < state.saludMax && !state.mundo.creador) {
+      state.salud = Math.min(state.saludMax, state.salud + 6 * dt);
+      if (Math.random() < 0.06) updateHearts();
+    }
     updateAvatar(player, dt, moving);
     mobs.update(dt, player);
     bosses.update(dt, player);
     gemas.update(dt, player);
     animals.update(dt, player);
     updateMobBadge();
+    updateMiniMapa(dt);
     streamChunks();
     actualizarMinado(dt);
     actualizarFlechas(dt);
@@ -802,10 +921,12 @@ export function jugar() {
     gemas.refreshShrines();
   }
   animals.spawn();   // los animales están siempre (también en modo creador)
+  if (!state.salud || state.salud <= 0) state.salud = state.saludMax;
   updateMobBadge();
   updateBossBar();
   updateModoBadge();
   updateToolChip();
+  updateHearts();
   hotIndex = 0;
   updateHotbar();
   controls.enable();
@@ -819,11 +940,11 @@ function abrirCrafteoEnJuego() {
   touch.classList.remove('on');
   openScreen('crafteo');
 }
-function abrirGemasEnJuego() {
+function abrirTableroEnJuego() {
   controls.disable();
   hud.style.display = 'none';
   touch.classList.remove('on');
-  openScreen('gemas');
+  openScreen('tablero');
 }
 function volverAlJuego() {
   closeAllScreens();
@@ -833,6 +954,7 @@ function volverAlJuego() {
   aplicarPoderEquipado();
   updateHotbar();
   updateToolChip();
+  updateHearts();
   controls.enable();
   last = performance.now();
 }
@@ -898,7 +1020,14 @@ function openScreen(name) {
     } else if (name === 'crafteo') {
       screens[name] = mountCrafteo({
         onVolver: () => (mode === 'jugar' ? volverAlJuego() : showMenu()),
-        onCambio: () => { updateHotbar(); updateToolChip(); },
+        onTablero: () => openScreen('tablero'),
+        onCambio: () => { updateHotbar(); updateToolChip(); updateHearts(); },
+      });
+    } else if (name === 'tablero') {
+      screens[name] = mountTablero({
+        onVolver: () => (mode === 'jugar' ? volverAlJuego() : showMenu()),
+        onLista: () => openScreen('crafteo'),
+        onCambio: () => { updateHotbar(); updateToolChip(); updateHearts(); },
       });
     } else if (name === 'gemas') {
       screens[name] = mountGemas({
@@ -929,8 +1058,21 @@ window.__booted = true;
 const boot = document.getElementById('boot');
 if (boot) boot.remove();
 
-if (claveDesbloqueada()) showMenu();
-else { mode = 'menu'; menuScreen.classList.add('hidden'); mountClave(() => showMenu()); }
+// La clave se pide SIEMPRE al entrar
+function activarMaestro() {
+  state.maestro = true;
+  state.gemas = GEMAS.map((g) => g.id);
+  state.medallas = { bronce: 11, plata: 11, oro: 11 };
+  for (const h of ['pico_madera', 'pico_piedra', 'pico_hierro', 'pico_cristal', 'martillo_trueno', 'hacha_hierro', 'pala_hierro', 'espada_piedra', 'espada_hierro', 'espada_cristal', 'arco']) {
+    if (!state.herramientas.includes(h)) state.herramientas.push(h);
+  }
+  state.armadura = ['casco_cuero', 'peto_cuero', 'pantalon_cuero', 'botas_cuero'];
+  state.inventario = { ...state.inventario, flecha: 128, carne_cocida: 20 };
+  toast('🔓 Modo maestro: todo desbloqueado (tu avance normal NO se toca)', 2600);
+}
+mode = 'menu';
+menuScreen.classList.add('hidden');
+mountClave(({ maestro }) => { if (maestro) activarMaestro(); showMenu(); });
 
 // PWA: registrar service worker solo en build de producción
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
@@ -946,5 +1088,5 @@ window.__game = {
   get bosses() { return bosses; },
   get animals() { return animals; },
   get gemas() { return gemas; },
-  actions: { romper: breakBlock, poner: placeBlock, poder: activarPoderAccion },
+  actions: { romper: breakBlock, poner: placeBlock, poder: activarPoderAccion, comer, dañar: dañarJugador },
 };

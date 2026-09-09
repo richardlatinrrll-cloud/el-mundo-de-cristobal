@@ -18,6 +18,13 @@ const DEFAULT = {
   jefesDerrotados: [],
   // gemas de poder conseguidas (ids) — búsqueda de gemas / Guante
   gemas: [],
+  // vida del jugador (0..100 = 10 corazones)
+  salud: 100,
+  saludMax: 100,
+  // piezas de armadura de cuero fabricadas y puestas (reducen el daño)
+  armadura: [],
+  // modo maestro (clave maestra): todo desbloqueado, NO se guarda el avance
+  maestro: false,
   // mundo actual: { tipo, tamano, semilla, creador }
   mundo: { tipo: 'llanuras', tamano: 'pequeno', semilla: 12345, creador: false },
   // lo que el jugador construyó/rompió en este mundo: { "x,y,z": idBloque }
@@ -62,6 +69,10 @@ function load() {
       herramienta: parsed.herramienta || 'mano',
       gemas: parsed.gemas || [],
       jefesDerrotados: parsed.jefesDerrotados || [],
+      armadura: parsed.armadura || [],
+      salud: parsed.salud ?? 100,
+      saludMax: parsed.saludMax ?? 100,
+      maestro: false,   // el modo maestro nunca se recuerda: se activa con su clave
       ajustes: { ...DEFAULT.ajustes, ...(parsed.ajustes || {}) },
       stats: { ...DEFAULT.stats, ...(parsed.stats || {}) } };
   } catch {
@@ -70,6 +81,7 @@ function load() {
 }
 
 export function save() {
+  if (state.maestro) return;   // modo prueba: no tocar el avance real
   try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {}
 }
 

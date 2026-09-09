@@ -22,37 +22,37 @@ export const GEMAS = [
     id: 'ignea', nombre: 'Gema Ígnea', emoji: '🔴', color: 0xff5a3c,
     don: 'Tus golpes hacen bastante más daño',
     sitio: [0.50, 0.15],
-    guard: { nombre: 'Guardián de Brasa', hp: 24, speed: 2.6, size: 1.5, color: 0xc0472a, dano: 4 },
+    guard: { nombre: 'Guardián de Brasa', hp: 34, speed: 2.6, size: 1.5, color: 0xc0472a, dano: 8 },
   },
   {
     id: 'brinco', nombre: 'Gema del Brinco', emoji: '🟢', color: 0x76d167,
     don: 'Saltas mucho más alto',
     sitio: [0.15, 0.40],
-    guard: { nombre: 'Guardián Saltarín', hp: 40, speed: 3.2, size: 1.5, color: 0x3f9e35, dano: 4, salta: true },
+    guard: { nombre: 'Guardián Saltarín', hp: 55, speed: 3.2, size: 1.5, color: 0x3f9e35, dano: 9, salta: true },
   },
   {
     id: 'veloz', nombre: 'Gema Veloz', emoji: '🔵', color: 0x49b0ff,
     don: 'Corres mucho más rápido',
     sitio: [0.85, 0.40],
-    guard: { nombre: 'Guardián Raudo', hp: 58, speed: 6.4, size: 1.4, color: 0x2b7fd0, dano: 5, fast: true },
+    guard: { nombre: 'Guardián Raudo', hp: 80, speed: 6.4, size: 1.4, color: 0x2b7fd0, dano: 11, fast: true },
   },
   {
     id: 'vital', nombre: 'Gema Vital', emoji: '🟣', color: 0xff77dd,
     don: 'Los enemigos casi no te empujan',
     sitio: [0.50, 0.85],
-    guard: { nombre: 'Guardián Pétreo', hp: 82, speed: 2.1, size: 2.5, color: 0x9c5fd0, dano: 7 },
+    guard: { nombre: 'Guardián Pétreo', hp: 115, speed: 2.1, size: 2.5, color: 0x9c5fd0, dano: 15 },
   },
   {
     id: 'centella', nombre: 'Gema Centella', emoji: '🟡', color: 0xffd54a,
     don: 'Con el Martillo del Trueno equipado, el botón ✨ lanza un rayo',
     sitio: [0.22, 0.80],
-    guard: { nombre: 'Guardián Tormenta', hp: 112, speed: 4.0, size: 2.0, color: 0xe0b020, dano: 8, fast: true },
+    guard: { nombre: 'Guardián Tormenta', hp: 150, speed: 4.0, size: 2.0, color: 0xe0b020, dano: 16, fast: true },
   },
   {
     id: 'prisma', nombre: 'Gema Prisma', emoji: '⚪', color: 0xdfe6ff,
     don: 'Con el Guante completo, el botón ✨ hace la Onda Prisma',
     sitio: [0.80, 0.20],
-    guard: { nombre: 'Guardián Prisma', hp: 150, speed: 3.0, size: 3.2, color: 0xbfc7ff, dano: 9, minions: true },
+    guard: { nombre: 'Guardián Prisma', hp: 210, speed: 3.0, size: 3.2, color: 0xbfc7ff, dano: 20, minions: true },
   },
 ];
 
@@ -137,8 +137,7 @@ class Guard {
       player.pos.x -= mx * 5 * k;
       player.pos.z -= mz * 5 * k;
       player.vel.y = 8 * k;
-      audio.sfx('dano');
-      toast(`💢 ¡${d.nombre} te golpeó!`);
+      player.onDañar?.(d.dano || 8, d.nombre);
     }
 
     if (d.minions) {
