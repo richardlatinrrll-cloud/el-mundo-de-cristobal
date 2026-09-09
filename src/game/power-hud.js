@@ -1,4 +1,4 @@
-import { POWERS, cumpleRequisito, reqTexto } from './powers/registry.js';
+import { POWERS, poderDesbloqueado, reqTexto } from './powers/registry.js';
 import { state, save } from './state.js';
 
 export function mountPoderes({ onVolver, onCambio }) {
@@ -24,7 +24,7 @@ export function mountPoderes({ onVolver, onCambio }) {
     list.appendChild(ninguno);
 
     for (const p of POWERS) {
-      const ok = cumpleRequisito(p, state.medallas);
+      const ok = poderDesbloqueado(p, state);
       const equipped = state.poderEquipado === p.id;
       list.appendChild(row(
         p, ok, equipped,

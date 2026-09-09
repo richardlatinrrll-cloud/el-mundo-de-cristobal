@@ -34,7 +34,7 @@ export const POWERS = [
   },
   {
     id: 'sonico', nombre: 'Grito sónico', emoji: '💥',
-    desc: 'Una onda que despeja el terreno frente a ti.',
+    desc: 'Onda hacia adelante que despeja el terreno y golpea. (Botón ✨)',
     req: { oro: 1 },
     accion: 'sonico',
   },
@@ -44,6 +44,19 @@ export const POWERS = [
     req: { oro: 2 },
     aplica(p) { p.flying = true; },
   },
+  // --- poderes de las gemas: se activan con el botón ✨ ---
+  {
+    id: 'rayo_martillo', nombre: 'Rayo del Martillo', emoji: '⚡',
+    desc: 'Cae un rayo donde apuntas y golpea alrededor. (Botón ✨)',
+    req: {}, gema: 'centella',
+    accion: 'rayo',
+  },
+  {
+    id: 'onda_prisma', nombre: 'Onda Prisma', emoji: '✊',
+    desc: 'Explosión en 360° que barre a los enemigos. (Botón ✨)',
+    req: {}, gema: 'TODAS',
+    accion: 'prisma',
+  },
 ];
 
 export function powerById(id) { return POWERS.find((x) => x.id === id) || null; }
@@ -52,7 +65,17 @@ export function cumpleRequisito(power, medallas) {
   return Object.entries(power.req).every(([k, v]) => (medallas[k] || 0) >= v);
 }
 
+// ¿está desbloqueado este poder? (medallas o gemas). `state` = objeto de estado.
+export function poderDesbloqueado(power, state) {
+  if (state.maestro) return true;
+  if (power.gema === 'TODAS') return (state.gemas || []).length >= 6;
+  if (power.gema) return (state.gemas || []).includes(power.gema);
+  return cumpleRequisito(power, state.medallas || {});
+}
+
 export function reqTexto(power) {
+  if (power.gema === 'TODAS') return 'las 6 Gemas de Poder';
+  if (power.gema) return 'la Gema ' + power.gema.charAt(0).toUpperCase() + power.gema.slice(1);
   return Object.entries(power.req)
     .map(([k, v]) => `${v} medalla${v > 1 ? 's' : ''} ${k}`)
     .join(' + ');

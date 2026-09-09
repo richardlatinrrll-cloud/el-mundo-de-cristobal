@@ -1,6 +1,6 @@
 import { state, nivelTema } from '../game/state.js';
 import { TOPICS } from '../game/topics.js';
-import { POWERS, cumpleRequisito } from '../game/powers/registry.js';
+import { POWERS, poderDesbloqueado } from '../game/powers/registry.js';
 
 export function mountMenu({ onJugar, onAprender, onPersonajes, onPoderes, onMundos, onAjustes, onCrafteo, onGemas, onPruebas }) {
   const el = document.createElement('div');
@@ -34,7 +34,7 @@ export function mountMenu({ onJugar, onAprender, onPersonajes, onPoderes, onMund
   el.refresh = () => {
     el.querySelector('[data-a=pruebas]').hidden = !state.maestro;
     const temas = TOPICS.filter((t) => nivelTema(t.id) !== 'none').length;
-    const pod = POWERS.filter((p) => cumpleRequisito(p, state.medallas)).length;
+    const pod = POWERS.filter((p) => poderDesbloqueado(p, state)).length;
     const m = state.mundo || {};
     el.querySelector('[data-role=resumen]').textContent =
       `Mundo: ${m.tipo || 'llanuras'}${m.creador ? ' (creador)' : ''} · Temas: ${temas}/${TOPICS.length} · Poderes: ${pod}/${POWERS.length}`;

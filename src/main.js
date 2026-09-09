@@ -6,7 +6,7 @@ import { buildAtlas, BLOCKS, PLACEABLES, blockName, blockEmoji, dropFor, AIR } f
 import { Player } from './engine/player.js';
 import { Controls } from './engine/controls.js';
 import { state, save, LIMITE_EDITS } from './game/state.js';
-import { POWERS, powerById, cumpleRequisito } from './game/powers/registry.js';
+import { POWERS, powerById, cumpleRequisito, poderDesbloqueado } from './game/powers/registry.js';
 import { mountMenu } from './ui/menu.js';
 import { openQuiz } from './quiz/quiz-ui.js';
 import { mountAprender } from './quiz/progress-ui.js';
@@ -579,8 +579,7 @@ function updatePowerBadge() {
 }
 
 function poderesDisponibles() {
-  if (state.maestro) return POWERS.slice();
-  return POWERS.filter((p) => cumpleRequisito(p, state.medallas));
+  return POWERS.filter((p) => poderDesbloqueado(p, state));
 }
 function renderPowerList() {
   const disp = poderesDisponibles();
@@ -731,20 +730,18 @@ function placeBlock() {
 
 let _poderCd = 0;   // enfriamiento de las acciones legendarias (rayo / prisma)
 
-// ¿el botón ✨ hace algo ahora mismo? (para mostrar/ocultar el botón)
+// ¿el poder equipado se activa con el botón ✨? (para mostrar/ocultar el botón)
 function tieneAccionPoder() {
-  const g = state.gemas || [];
-  if (g.length >= GEMAS.length) return true;                                   // Onda Prisma
-  if (g.includes('centella') && state.herramienta === 'martillo_trueno') return true; // Rayo
   const p = state.poderEquipado && powerById(state.poderEquipado);
-  return !!(p && p.accion);                                                    // grito sónico
+  return !!(p && p.accion);
 }
+// El botón ✨ activa la ACCIÓN del poder seleccionado.
 function activarPoderAccion() {
-  const g = state.gemas || [];
-  if (g.length >= GEMAS.length) { ondaPrisma(); return; }
-  if (g.includes('centella') && state.herramienta === 'martillo_trueno') { rayoMartillo(); return; }
   const power = state.poderEquipado && powerById(state.poderEquipado);
-  if (power && power.accion === 'sonico') sonicBlast();
+  if (!power || !power.accion) return;
+  if (power.accion === 'sonico') sonicBlast();
+  else if (power.accion === 'rayo') rayoMartillo();
+  else if (power.accion === 'prisma') ondaPrisma();
 }
 
 // ---------- efectos visuales cortos ----------
