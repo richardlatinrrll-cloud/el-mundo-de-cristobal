@@ -19,10 +19,29 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
   mundos grandes. Plataforma de aparición despejada en el centro.
 - **7 tipos de mundo + creador** (`src/engine/world.js`, pantalla "🌍 Mundos"):
   Llanuras, Bosque, Montañas, Desierto, Islas, Islas flotantes, Plano.
-  Tamaño Pequeño (96³) / Mediano (128²) / Grande (176×80×176). Semilla numérica
-  (reproducible) o aleatoria. **Modo creador**: vuelas, rompes al toque, sin
-  enemigos. Generación 14–66 ms (pequeño) / ~210 ms (grande). Verificado los 7
-  tipos, los 3 tamaños, semilla, y modo creador.
+  Tamaños: Pequeño 192³ · Mediano 384² · Grande 576×112×576 · Gigante
+  768×120×768 (aviso: mucha memoria, ~1,7 s). **Streaming de chunks**
+  (`streamChunks` en main.js): solo se mallan los chunks dentro del radio de
+  render (7 en móvil, 10 en PC) y se descargan los lejanos → mundos enormes
+  jugables. `crearMundo` malla un tope de 170 al arrancar; el resto entra al
+  moverse. Semilla reproducible. **Modo creador**: vuelas, rompes al toque,
+  sin enemigos.
+- **Ciclo día/noche** (`src/game/daynight.js`) según la **hora real del
+  dispositivo**: color de cielo, sol (posición e intensidad), luz ambiente y
+  estrellas de noche. Keyframes por hora (medianoche → amanecer → mediodía →
+  atardecer → noche).
+- **Selector de poderes** desplegable en el HUD (toca el chip arriba a la
+  derecha) para cambiar de poder al vuelo, sin ir al menú.
+- **Minado por tiempo + herramientas** (`src/game/tools.js`): mantener pulsado
+  rompe el bloque; el tiempo depende de la dureza del bloque y del poder de la
+  herramienta (mano 1 → pico de madera 2,2 → piedra 3,6 → hierro 6 → cristal 10
+  (3×3) → martillo del trueno 22 (3×3)). Grieta que crece sobre el bloque.
+  `state.herramientas` / `state.herramienta`, chip para cambiar (tecla T). El
+  kit inicial trae pico de madera. Los picos de metal/cristal/legendarios se
+  fabricarán (crafteo, fase siguiente).
+- **Caminar por terreno irregular**: el jugador sube escalones de 1 bloque solo
+  (auto-step) y la zona de aparición se funde con el terreno vecino en vez de
+  dejar un muro. Antes se quedaba trabado.
 - **Lo que construyes se guarda**: cada bloque puesto/roto va a
   `state.mundoEdits` (localStorage, tope 6000) y se re-aplica al volver al mismo
   tipo+tamaño+semilla. Verificado: construir → recargar → sigue ahí.
