@@ -23,11 +23,12 @@ import { mountTablero } from './ui/tablero.js';
 import { mountPruebas } from './ui/pruebas.js';
 import { mountGemas, dibujarMiniMapa } from './ui/gemas.js';
 import { GemQuest, GEMAS, aplicarGemas, guanteCompleto } from './game/gemas.js';
-import { COMIDA } from './game/recetas.js';
+import { COMIDA, reduccionArmadura, ARMADURA_JEFE } from './game/recetas.js';
 import { mountClave, claveDesbloqueada } from './ui/clave.js';
 import { audio } from './game/audio.js';
 import { DayNight } from './game/daynight.js';
 import { TOOLS, tool, tiempoRomper, danoGolpe } from './game/tools.js';
+import { ViewModel } from './game/viewmodel.js';
 import { toast } from './ui/toast.js';
 
 const app = document.getElementById('app');
@@ -57,6 +58,11 @@ const canvas = renderer.domElement;
 const scene = new THREE.Scene();
 scene.fog = new THREE.Fog(0x8fc7ff, 40, 110);
 const camera = new THREE.PerspectiveCamera(72, 1, 0.1, 400);
+scene.add(camera);   // para que se rendericen los hijos de la cámara (modelo de arma)
+
+const viewModel = new ViewModel(camera);
+function vmSwing() { viewModel.swing(); }
+function vmSetTool(id) { viewModel.setTool(id, state.poderEquipado); }
 
 const dayNight = new DayNight(scene, renderer);
 
@@ -214,51 +220,47 @@ const grieta = new THREE.Mesh(
 );
 grieta.visible = false;
 
-// Rayos de la Visión láser: dos haces rojos finos desde los ojos hacia la mira
-const laserMat = new THREE.MeshBasicMaterial({ color: 0xff2016, transparent: true, opacity: 0.85, depthWrite: false });
-const laserGlowMat = new THREE.MeshBasicMaterial({ color: 0xff8a6a, transparent: true, opacity: 0.28, depthWrite: false });
+// Rayos de la Visión láser: dos haces rojos SÓLIDOS desde los ojos hacia la mira.
+// Solo mientras usas el poder (mantener pulsado). Se ven también en 3ª persona.
+const laserMat = new THREE.MeshBasicMaterial({ color: 0xff1a10, depthWrite: false });
 function mkBeam() {
   const g = new THREE.Group();
-  const core = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 6), laserMat);
-  const glow = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.4, 1, 6), laserGlowMat);
-  g.add(core, glow);
+  g.add(new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 8), laserMat));
+  g.add(new THREE.Mesh(new THREE.CylinderGeometry(1.9, 1.9, 1, 8),
+    new THREE.MeshBasicMaterial({ color: 0xff6a4a, transparent: true, opacity: 0.35, depthWrite: false })));
   g.frustumCulled = false; g.renderOrder = 998; g.visible = false;
   scene.add(g);
   return g;
 }
 const laserL = mkBeam(), laserR = mkBeam();
-const laserPunto = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 10),
-  new THREE.MeshBasicMaterial({ color: 0xffb08a, transparent: true, opacity: 0.85, depthWrite: false }));
+const laserPunto = new THREE.Mesh(new THREE.SphereGeometry(0.11, 10, 10),
+  new THREE.MeshBasicMaterial({ color: 0xff3a1a, depthWrite: false }));
 laserPunto.renderOrder = 999; laserPunto.visible = false; scene.add(laserPunto);
 const _lYup = new THREE.Vector3(0, 1, 0);
 
 function actualizarLaser() {
-  const on = mode === 'jugar' && state.poderEquipado === 'laser' && !player._thirdPerson;
+  const on = mode === 'jugar' && state.poderEquipado === 'laser' && controls.state.breaking;
   if (!on) { laserL.visible = laserR.visible = laserPunto.visible = false; return; }
   const r = player.raycast(player.reach || 14);
-  const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-  const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
-  const down = new THREE.Vector3(0, -1, 0).applyQuaternion(camera.quaternion);
+  // dirección desde la mirada del jugador (sirve en 1ª y 3ª persona)
+  const dirLook = new THREE.Vector3(0, 0, -1).applyEuler(new THREE.Euler(player.pitch, player.yaw, 0, 'YXZ'));
+  const right = new THREE.Vector3(1, 0, 0).applyEuler(new THREE.Euler(0, player.yaw, 0, 'YXZ'));
+  const eyeC = new THREE.Vector3(player.pos.x, player.pos.y + player.eye, player.pos.z);
   const target = r
     ? new THREE.Vector3(r.hit.x + 0.5, r.hit.y + 0.5, r.hit.z + 0.5)
-    : camera.position.clone().addScaledVector(fwd, 12);
-  const activo = controls.state.breaking;
-  const rad = activo ? 0.022 : 0.012;
-  laserMat.opacity = activo ? 0.9 : 0.4;
-  laserGlowMat.opacity = activo ? 0.3 : 0.12;
+    : eyeC.clone().addScaledVector(dirLook, 12);
   for (const [beam, s] of [[laserL, -1], [laserR, 1]]) {
-    // arranca 0.6 adelante y a un lado de la cámara (evita el gigantismo del plano cercano)
-    const eye = camera.position.clone().addScaledVector(fwd, 0.55).addScaledVector(right, 0.13 * s).addScaledVector(down, 0.05);
+    const eye = eyeC.clone().addScaledVector(dirLook, 0.28).addScaledVector(right, 0.12 * s).addScaledVector(_lYup, -0.03);
     const dir = target.clone().sub(eye);
     const len = dir.length();
     dir.normalize();
     beam.position.copy(eye).addScaledVector(dir, len / 2);
     beam.quaternion.setFromUnitVectors(_lYup, dir);
-    beam.scale.set(rad, len, rad);
+    beam.scale.set(0.03, len, 0.03);
     beam.visible = true;
   }
   laserPunto.position.copy(target);
-  laserPunto.visible = activo;
+  laserPunto.visible = true;
 }
 scene.add(grieta);
 
@@ -488,8 +490,7 @@ function comer() {
 function dañarJugador(n, motivo) {
   if (mode !== 'jugar' || _invulnCd > 0) return;
   if (state.mundo.creador) return;   // en modo creador no te hacen daño
-  const piezas = (state.armadura || []).length;
-  const red = Math.min(0.55, piezas * 0.13);       // hasta -55% con las 4 piezas
+  const red = reduccionArmadura(state.armadura || []);
   n = Math.max(1, Math.round(n * (1 - red)));
   state.salud = Math.max(0, state.salud - n);
   _regenCd = 5;
@@ -504,17 +505,24 @@ desmayoEl.id = 'desmayo';
 desmayoEl.innerHTML = '<div class="ico">😵</div><h2>Te desmayaste</h2><p class="sub">Vuelves al punto de inicio con tus cosas.</p>';
 app.appendChild(desmayoEl);
 
+let _desmayado = false;
 function desmayo() {
+  if (_desmayado) return;
+  _desmayado = true;
   desmayoEl.classList.add('show');
   audio.sfx('jefe');
-  mobs.clear(); bosses.clear();
+  _invulnCd = 99;
+  // limpiar y revivir fuera del ciclo de update (evita mutar en medio)
+  setTimeout(() => { mobs.clear(); bosses.clear(); gemas.clear(); }, 60);
   setTimeout(() => {
     player.spawnOnSurface();
     state.salud = state.saludMax;
     _invulnCd = 3;
+    _desmayado = false;
     updateHearts();
     desmayoEl.classList.remove('show');
-    if (!state.mundo.creador) { mobs.spawn(); bosses.refreshBeacons(); gemas.refreshShrines(); }
+    if (state.mundo.creador) return;
+    if (mode === 'jugar' && !mobs.arenaMode) { mobs.spawn(); bosses.refreshBeacons(); gemas.refreshShrines(); }
   }, 1900);
 }
 
@@ -531,6 +539,8 @@ function cambiarHerramienta() {
   state.herramienta = tengo[(i + 1) % tengo.length];
   save();
   updateToolChip();
+  updatePowerBadge();
+  vmSetTool(state.herramienta);
   audio.sfx('menu');
   toast(`${tool(state.herramienta).emoji} ${tool(state.herramienta).nombre}`, 900);
 }
@@ -559,10 +569,13 @@ const powerPicker = hud.querySelector('.power-picker');
 const powerBadgeBtn = powerPicker.querySelector('.power-badge');
 const powerListEl = powerPicker.querySelector('.power-list');
 
+const tPowerBtn = touch.querySelector('.t-power');
 function updatePowerBadge() {
   const power = state.poderEquipado && powerById(state.poderEquipado);
   powerBadgeBtn.querySelector('.pb-name').textContent = power ? `${power.emoji} ${power.nombre}` : 'Sin poder';
   powerBadgeBtn.classList.toggle('on', !!power);
+  // el botón ✨ (acción especial) solo aparece si hace algo ahora
+  if (tPowerBtn) tPowerBtn.classList.toggle('oculto', !tieneAccionPoder());
 }
 
 function poderesDisponibles() {
@@ -627,14 +640,23 @@ function quitarBloque(x, y, z) {
   return true;
 }
 
+// daño de un golpe cuerpo a cuerpo. Los poderes lo suben (fuerte, no instantáneo).
+function danoCombate() {
+  let d = danoGolpe(state.herramienta) * (player._gemDano || 1);
+  if (state.poderEquipado === 'fuerza') d *= 2.4;
+  else if (state.poderEquipado === 'laser') d *= 1.6;
+  return d;
+}
 // se llama al pulsar (tap/clic): pega a enemigos; el minado por tiempo va en frame()
 function breakBlock() {
   const reach = player.reach || 6;
-  const dano = (player.instaBreak ? 6 : danoGolpe(state.herramienta)) * (player._gemDano || 1);
-  if (bosses.golpear(camera, reach, dano)) { audio.sfx('golpe'); return; }
-  if (gemas.golpear(camera, reach, dano)) { audio.sfx('golpe'); return; }
-  if (mobs.golpear(camera, reach, dano)) { audio.sfx('golpe'); return; }
-  if (animals.golpear(camera, reach, dano)) { audio.sfx('golpe'); return; }
+  const dano = danoCombate();
+  const empuje = state.poderEquipado === 'fuerza' ? 3.5 : 1.2;
+  vmSwing();
+  if (bosses.golpear(camera, reach, dano, empuje)) { audio.sfx('golpe'); return; }
+  if (gemas.golpear(camera, reach, dano, empuje)) { audio.sfx('golpe'); return; }
+  if (mobs.golpear(camera, reach, dano, empuje)) { audio.sfx('golpe'); return; }
+  if (animals.golpear(camera, reach, dano, empuje)) { audio.sfx('golpe'); return; }
 }
 
 // minado por tiempo mientras se mantiene pulsado (llamado desde frame)
@@ -709,17 +731,20 @@ function placeBlock() {
 
 let _poderCd = 0;   // enfriamiento de las acciones legendarias (rayo / prisma)
 
+// ¿el botón ✨ hace algo ahora mismo? (para mostrar/ocultar el botón)
+function tieneAccionPoder() {
+  const g = state.gemas || [];
+  if (g.length >= GEMAS.length) return true;                                   // Onda Prisma
+  if (g.includes('centella') && state.herramienta === 'martillo_trueno') return true; // Rayo
+  const p = state.poderEquipado && powerById(state.poderEquipado);
+  return !!(p && p.accion);                                                    // grito sónico
+}
 function activarPoderAccion() {
   const g = state.gemas || [];
-  // Guante de Gemas completo → Onda Prisma
   if (g.length >= GEMAS.length) { ondaPrisma(); return; }
-  // Gema Centella + Martillo del Trueno equipado → rayo
   if (g.includes('centella') && state.herramienta === 'martillo_trueno') { rayoMartillo(); return; }
-  // si no, el poder equipado (grito sónico)
-  const id = state.poderEquipado;
-  const power = id && powerById(id);
-  if (!power || !power.accion) return;
-  if (power.accion === 'sonico') { audio.sfx('sonico'); sonicBlast(); }
+  const power = state.poderEquipado && powerById(state.poderEquipado);
+  if (power && power.accion === 'sonico') sonicBlast();
 }
 
 // ---------- efectos visuales cortos ----------
@@ -792,25 +817,41 @@ function ondaPrisma() {
   toast(nm ? `✊ ¡ONDA PRISMA! ${nm} enemigos barridos` : '✊ ¡ONDA PRISMA!');
 }
 
+// Grito sónico: onda en 360° alrededor tuyo (despeja y empuja a todos).
 function sonicBlast() {
-  const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
-  const o = camera.position.clone();
-  let removed = 0;
-  for (let d = 1; d <= 8; d++) {
-    for (let ox = -1; ox <= 1; ox++)
-      for (let oy = -1; oy <= 1; oy++) {
-        const p = o.clone().add(dir.clone().multiplyScalar(d)).add(new THREE.Vector3(ox, oy, 0));
-        const bx = Math.floor(p.x), by = Math.floor(p.y), bz = Math.floor(p.z);
+  if (_poderCd > 0) { toast(`💥 El grito se recarga (${Math.ceil(_poderCd)}s)`, 900); return; }
+  _poderCd = 5;
+  const c = player.pos.clone();
+  const R = 4;
+  for (let dx = -R; dx <= R; dx++)
+    for (let dy = -R; dy <= R; dy++)
+      for (let dz = -R; dz <= R; dz++) {
+        if (dx * dx + dy * dy + dz * dz > R * R) continue;
+        const bx = Math.floor(c.x + dx), by = Math.floor(c.y + dy), bz = Math.floor(c.z + dz);
         const id = world.get(bx, by, bz);
         if (id !== AIR && (BLOCKS[id]?.hard ?? 1) < 99) {
-          world.set(bx, by, bz, AIR); registrarEdit(bx, by, bz, AIR); removed++;
+          world.set(bx, by, bz, AIR); registrarEdit(bx, by, bz, AIR);
           if (!state.mundo.creador) invAdd(dropFor(id), 1);
         }
       }
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(1, 0.22, 8, 26),
+    new THREE.MeshBasicMaterial({ color: 0x9fe8ff, transparent: true })
+  );
+  ring.rotation.x = Math.PI / 2;
+  ring.position.set(c.x, c.y + 0.6, c.z);
+  addFx(ring, 0.55, (m, k) => { m.scale.setScalar(1 + k * 11); m.material.opacity = 0.85 * (1 - k); });
+  const nMobs = mobs.dañoEnRadio(c, 11, 4);
+  bosses.dañoEnRadio(c, 11, 10);
+  gemas.dañoEnRadio(c, 11, 10);
+  animals.dañoEnRadio(c, 11, 3);
+  // empujar a los enemigos hacia afuera
+  for (const m of mobs.mobs) {
+    const ex = m.pos.x - c.x, ez = m.pos.z - c.z, ed = Math.hypot(ex, ez);
+    if (ed < 11) { m.pos.x += (ex / (ed || 1)) * 5; m.pos.z += (ez / (ed || 1)) * 5; m.vel.y = 6; }
   }
-  const nMobs = mobs.dañoEnCono(o, dir, 9, 3);
-  bosses.dañoEnCono(o, dir, 9, 10);
-  toast(nMobs ? `💥 ¡BOOM! Golpeaste a ${nMobs}` : '💥 ¡BOOM!');
+  audio.sfx('sonico');
+  toast(nMobs ? `💥 ¡ONDA SÓNICA! ${nMobs} golpeados` : '💥 ¡ONDA SÓNICA!');
 }
 
 // aplicar poder equipado a los parámetros del jugador
@@ -827,6 +868,7 @@ export function aplicarPoderEquipado() {
     player.flying = true; player.instaBreak = true; player.reach = 8;
   }
   updatePowerBadge();
+  vmSetTool(state.herramienta);
 }
 
 // ---------- Bucle ----------
@@ -881,6 +923,7 @@ function frame(dt) {
     actualizarMinado(dt);
     actualizarFlechas(dt);
     actualizarLaser();
+    viewModel.update(dt, player._thirdPerson);
     updateFx(dt);
     const r = currentRay();
     if (r) { highlight.visible = true; highlight.position.set(r.hit.x + 0.5, r.hit.y + 0.5, r.hit.z + 0.5); }

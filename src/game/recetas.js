@@ -26,6 +26,26 @@ export const ARMADURA_NOMBRE = {
   pantalon_cuero: 'Pantalón de cuero', botas_cuero: 'Botas de cuero',
 };
 
+// armaduras que se GANAN al derrotar a cada jefe (no se fabrican). Reducen más.
+export const ARMADURA_JEFE = {
+  trol:   { nombre: 'Coraza del Trol',       emoji: '🪨', red: 0.17 },
+  dragon: { nombre: 'Escamas del Dragón',    emoji: '🐲', red: 0.17 },
+  titan:  { nombre: 'Placa del Titán',       emoji: '☄️', red: 0.17 },
+  elfo:   { nombre: 'Manto del Elfo Oscuro', emoji: '🌑', red: 0.17 },
+};
+// qué armadura suelta cada jefe (por id de jefe)
+export const JEFE_ARMADURA = { golem: 'trol', rayo: 'dragon', ojo: 'titan', coloso: 'elfo' };
+
+// reducción total de daño según las piezas puestas
+export function reduccionArmadura(armadura = []) {
+  let r = 0;
+  for (const p of armadura) {
+    if (typeof p === 'string' && p.startsWith('jefe_')) r += ARMADURA_JEFE[p.slice(5)]?.red || 0.15;
+    else r += 0.13;
+  }
+  return Math.min(0.78, r);
+}
+
 // las claves de objetos (necesita/da/inventario) llegan como string: "7" -> 7
 function normId(id) {
   return (typeof id === 'string' && /^\d+$/.test(id)) ? Number(id) : id;

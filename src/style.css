@@ -174,6 +174,18 @@ canvas { display: block; touch-action: none; }
 }
 .crafteo-screen h2, .tablero-screen h2 { margin-bottom: 2px; }
 .crafteo-screen p.sub.compact { font-size: 13px; margin: 0; }
+
+/* En teléfono: encabezado mínimo → más espacio para ver qué construir */
+@media (max-height: 520px), (max-width: 560px) {
+  .crafteo-screen, .tablero-screen { padding-top: 42px; gap: 5px; }
+  .crafteo-screen h2, .tablero-screen h2 { font-size: 17px; margin: 0; }
+  .crafteo-screen p.sub, .tablero-screen p.sub { display: none; }
+  .tablero-screen .tab-obj { font-size: 12px; }
+  .crafteo-screen .topbar, .tablero-screen .topbar { padding: 6px 12px; }
+  .crafteo-screen .topbar .btn.small, .tablero-screen .topbar .btn.small { padding: 6px 10px; font-size: 13px; }
+  .tablero-grid { grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(3, 56px); }
+  .tab-cell { width: 56px; height: 56px; font-size: 26px; }
+}
 .crafteo-screen .cats { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; }
 .craft-list {
   display: grid; gap: 10px; width: min(720px, 100%); flex: 1 1 auto; min-height: 120px;
@@ -360,6 +372,7 @@ canvas { display: block; touch-action: none; }
   user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
 }
 #touch .tbtn:active { background: #2a3a58ee; }
+#touch .tbtn.oculto { display: none; }
 #touch .tbtn.wide { grid-column: span 2; width: auto; height: 48px; font-size: 16px; }
 
 /* aviso para girar el teléfono */

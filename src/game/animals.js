@@ -239,7 +239,7 @@ export class AnimalField {
   }
 
   // golpe del jugador: apunta con la mirada. Devuelve true si acertó.
-  golpear(camera, reach, daño) {
+  golpear(camera, reach, daño, empuje = 0) {
     const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
     const o = camera.position;
     let best = -1, bestD = Infinity;
@@ -252,7 +252,12 @@ export class AnimalField {
       if (d < bestD) { bestD = d; best = i; }
     }
     if (best < 0) return false;
-    this.animals[best].daño(daño);
+    const a = this.animals[best];
+    a.daño(daño);
+    if (empuje > 0 && !a.dead) {
+      const dx = a.pos.x - o.x, dz = a.pos.z - o.z, dd = Math.hypot(dx, dz) || 1;
+      a.pos.x += (dx / dd) * empuje; a.pos.z += (dz / dd) * empuje; a.vel.y = 4;
+    }
     return true;
   }
 

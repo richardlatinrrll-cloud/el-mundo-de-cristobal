@@ -13,21 +13,21 @@ import { toast } from '../ui/toast.js';
 // - Los golpeas con clic/⛏️ apuntándoles de cerca, o con el GRITO SÓNICO en área.
 
 const TYPES = {
-  sombra:    { nombre: 'Sombra',    hp: 1, speed: 3.4, view: 13, lose: 22, knock: 4,  dano: 6,  color: 0x2b1e3a, eye: 0xff4d4d, size: 1.0, minNivel: 0,  peso: 5 },
-  veloz:     { nombre: 'Espectro',  hp: 1, speed: 5.3, view: 10, lose: 18, knock: 3,  dano: 5,  color: 0x1e2f3a, eye: 0x4dd2ff, size: 0.9, minNivel: 3,  peso: 3, verInvisible: false },
-  saltarin:  { nombre: 'Brincón',   hp: 2, speed: 3.1, view: 12, lose: 20, knock: 4,  dano: 7,  color: 0x143a1e, eye: 0xa8e10c, size: 0.95, minNivel: 6, peso: 3, salta: true },
-  bruto:     { nombre: 'Bruto',     hp: 4, speed: 2.3, view: 14, lose: 20, knock: 9,  dano: 14, color: 0x3a1e1e, eye: 0xff8a3d, size: 1.35, minNivel: 10, peso: 2 },
-  acechador: { nombre: 'Acechador', hp: 3, speed: 3.9, view: 19, lose: 28, knock: 5,  dano: 10, color: 0x241a2e, eye: 0xff2bd0, size: 1.05, minNivel: 15, peso: 2, verInvisible: true },
+  sombra:    { nombre: 'Sombra',    hp: 3, speed: 3.4, view: 13, lose: 22, knock: 4,  dano: 6,  color: 0x2b1e3a, eye: 0xff4d4d, size: 1.0, minNivel: 0,  peso: 5 },
+  veloz:     { nombre: 'Espectro',  hp: 3, speed: 5.3, view: 10, lose: 18, knock: 3,  dano: 5,  color: 0x1e2f3a, eye: 0x4dd2ff, size: 0.9, minNivel: 3,  peso: 3, verInvisible: false },
+  saltarin:  { nombre: 'Brincón',   hp: 4, speed: 3.1, view: 12, lose: 20, knock: 4,  dano: 7,  color: 0x143a1e, eye: 0xa8e10c, size: 0.95, minNivel: 6, peso: 3, salta: true },
+  bruto:     { nombre: 'Bruto',     hp: 8, speed: 2.3, view: 14, lose: 20, knock: 9,  dano: 14, color: 0x3a1e1e, eye: 0xff8a3d, size: 1.35, minNivel: 10, peso: 2 },
+  acechador: { nombre: 'Acechador', hp: 6, speed: 3.9, view: 19, lose: 28, knock: 5,  dano: 10, color: 0x241a2e, eye: 0xff2bd0, size: 1.05, minNivel: 15, peso: 2, verInvisible: true },
   // --- Parte 4: enemigos originales grandes ---
   larguirucho: {
-    nombre: 'El Larguirucho', hp: 5, speed: 7.4, view: 26, lose: 46, knock: 5,
+    nombre: 'El Larguirucho', hp: 9, speed: 7.4, view: 26, lose: 46, knock: 5,
     dano: 12,
     color: 0xe9e5da, eye: 0x4be0ff, size: 1.2, minNivel: 9, peso: 1,
     verInvisible: true, forma: 'alto', congelaConMirada: true,
     grito: '👁️ El Larguirucho te atrapó. No le quites la vista de encima.',
   },
   gigante: {
-    nombre: 'El Gigante', hp: 14, speed: 1.8, view: 17, lose: 26, knock: 15, dano: 30,
+    nombre: 'El Gigante', hp: 26, speed: 1.8, view: 17, lose: 26, knock: 15, dano: 30,
     color: 0x8a7357, eye: 0xffcf6a, size: 3.1, minNivel: 14, peso: 1,
     forma: 'gigante',
     grito: '🦶 ¡EL GIGANTE te aplastó! Es lento: corre lejos.',
@@ -107,14 +107,15 @@ class Mob {
       speed = t.speed;
       const d = dist || 1;
       mx = dx / d; mz = dz / d;
-      // El Larguirucho se congela mientras lo miras; avanza cuando le quitas la vista
+      // El Larguirucho se acerca lento mientras lo miras y rapidísimo cuando le quitas la vista
       this._mirado = false;
       if (t.congelaConMirada) {
-        // cámara-adelante del jugador = (-sinY, -cosY); ¿apunta hacia el mob?
         const fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw);
-        if ((-dx / d) * fx + (-dz / d) * fz > 0.42) { this._mirado = true; speed = 0.2; mx = 0; mz = 0; }
+        if ((-dx / d) * fx + (-dz / d) * fz > 0.42) { this._mirado = true; speed = t.speed * 0.3; }
       }
-      if (dist < CATCH_DIST && this.catchCooldown === 0 && !this._mirado) {
+      // ¿está a la misma altura? (no "atrapa" si pasas por encima o por debajo)
+      const dyOk = Math.abs(player.pos.y - this.pos.y) < this.height * 0.7 + 0.9;
+      if (dist < CATCH_DIST && dyOk && this.catchCooldown === 0 && !this._mirado) {
         this.catchCooldown = t.forma === 'gigante' ? 1.6 : 2.2;
         const k = player._empuje ?? 1;   // Gema Vital reduce el empujón
         player.pos.x -= (dx / d) * (t.knock * 0.5) * k;
@@ -122,6 +123,22 @@ class Mob {
         player.vel.y = (6 + t.knock * 0.4) * k;
         player.onDañar?.(t.dano || 6, t.nombre);
         if (t.grito) toast(t.grito);
+      }
+      // El Gigante: pisotón telegrafiado (onda que golpea aunque no te toque)
+      if (t.forma === 'gigante') {
+        this._stompCd = (this._stompCd ?? 3) - dt;
+        this._stompT = Math.max(0, (this._stompT ?? 0) - dt);
+        if (this._stompCd <= 0 && dist < 5 && dyOk) {
+          this._stompCd = 3.6;
+          this._stompT = 0.55;
+          const k = player._empuje ?? 1;
+          player.pos.x -= (dx / d) * 5 * k;
+          player.pos.z -= (dz / d) * 5 * k;
+          player.vel.y = 9 * k;
+          player.onDañar?.(Math.round((t.dano || 30) * 0.8), t.nombre);
+          audio.sfx('sonico');
+          toast('🦶 ¡EL GIGANTE pisotea! Aléjate.');
+        }
       }
     } else {
       this.wanderTimer -= dt;
@@ -201,8 +218,9 @@ function randomSpot(world) {
 function makeMesh(def) {
   const g = new THREE.Group();
   const s = def.size;
-  const mat = () => new THREE.MeshLambertMaterial({ color: def.color });
-  let body, head, eLpos, eRpos, eSize;
+  const partesMat = [];
+  const mat = () => { const m = new THREE.MeshLambertMaterial({ color: def.color }); partesMat.push(m); return m; };
+  let body, head, eLpos, eRpos, eSize, brazos = null;
 
   if (def.forma === 'alto') {
     // El Larguirucho: altísimo y flaco, brazos largos
@@ -216,16 +234,31 @@ function makeMesh(def) {
     g.add(aL, aR);
     eSize = 0.2 * s; eLpos = [-0.14 * s, 3.55 * s, 0.28 * s]; eRpos = [0.14 * s, 3.55 * s, 0.28 * s];
   } else if (def.forma === 'gigante') {
-    // El Gigante: enorme y macizo, con piernas
-    body = new THREE.Mesh(new THREE.BoxGeometry(1.3 * s, 1.5 * s, 0.9 * s), mat());
-    body.position.y = 1.15 * s;
-    head = new THREE.Mesh(new THREE.BoxGeometry(0.9 * s, 0.8 * s, 0.8 * s), mat());
-    head.position.y = 2.25 * s;
-    const legGeo = new THREE.BoxGeometry(0.5 * s, 1.0 * s, 0.5 * s);
-    const lL = new THREE.Mesh(legGeo, mat()); lL.position.set(-0.34 * s, 0.5 * s, 0);
-    const lR = new THREE.Mesh(legGeo, mat()); lR.position.set(0.34 * s, 0.5 * s, 0);
-    g.add(lL, lR);
-    eSize = 0.16 * s; eLpos = [-0.2 * s, 2.35 * s, 0.42 * s]; eRpos = [0.2 * s, 2.35 * s, 0.42 * s];
+    // El Gigante: enorme y macizo, con piernas y brazotes
+    body = new THREE.Mesh(new THREE.BoxGeometry(1.35 * s, 1.5 * s, 0.95 * s), mat());
+    body.position.y = 1.2 * s;
+    const pecho = new THREE.Mesh(new THREE.BoxGeometry(1.5 * s, 0.55 * s, 1.05 * s), mat());
+    pecho.position.y = 1.75 * s;
+    head = new THREE.Mesh(new THREE.BoxGeometry(0.85 * s, 0.75 * s, 0.8 * s), mat());
+    head.position.y = 2.3 * s;
+    const mand = new THREE.Mesh(new THREE.BoxGeometry(0.7 * s, 0.22 * s, 0.6 * s), mat());
+    mand.position.set(0, 1.98 * s, 0.12 * s);
+    const legGeo = new THREE.BoxGeometry(0.52 * s, 1.05 * s, 0.55 * s);
+    const lL = new THREE.Mesh(legGeo, mat()); lL.position.set(-0.36 * s, 0.5 * s, 0);
+    const lR = new THREE.Mesh(legGeo, mat()); lR.position.set(0.36 * s, 0.5 * s, 0);
+    // brazos (pivotan desde el hombro para la animación del pisotón)
+    const armGeo = new THREE.BoxGeometry(0.42 * s, 1.5 * s, 0.42 * s);
+    const brazoIzq = new THREE.Group(), brazoDer = new THREE.Group();
+    const aL = new THREE.Mesh(armGeo, mat()); aL.position.y = -0.75 * s; brazoIzq.add(aL);
+    const aR = new THREE.Mesh(armGeo, mat()); aR.position.y = -0.75 * s; brazoDer.add(aR);
+    const puñoGeo = new THREE.BoxGeometry(0.55 * s, 0.5 * s, 0.55 * s);
+    const pL = new THREE.Mesh(puñoGeo, mat()); pL.position.y = -1.55 * s; brazoIzq.add(pL);
+    const pR = new THREE.Mesh(puñoGeo, mat()); pR.position.y = -1.55 * s; brazoDer.add(pR);
+    brazoIzq.position.set(-0.9 * s, 2.0 * s, 0);
+    brazoDer.position.set(0.9 * s, 2.0 * s, 0);
+    g.add(pecho, mand, lL, lR, brazoIzq, brazoDer);
+    brazos = [brazoIzq, brazoDer];
+    eSize = 0.16 * s; eLpos = [-0.2 * s, 2.38 * s, 0.42 * s]; eRpos = [0.2 * s, 2.38 * s, 0.42 * s];
   } else {
     body = new THREE.Mesh(new THREE.BoxGeometry(0.7 * s, 0.9 * s, 0.5 * s), mat());
     body.position.y = 0.75 * s;
@@ -240,7 +273,7 @@ function makeMesh(def) {
   eL.position.set(...eLpos);
   eR.position.set(...eRpos);
   g.add(body, head, eL, eR);
-  g.userData = { body, mats: [body.material, head.material] };
+  g.userData = { body, mats: partesMat, brazos };
   return g;
 }
 
@@ -294,12 +327,22 @@ export class MobField {
       mob.update(dt, player);
       if (mob.dead) { this._kill(i); continue; }
       const mesh = this.meshes[i];
+      if (!mesh) continue;
       mesh.position.set(mob.pos.x, mob.pos.y, mob.pos.z);
       mesh.rotation.y = mob.face;
-      // el Larguirucho se queda quieto mientras lo miras
+      // el Larguirucho casi no se balancea; los demás sí
       mesh.userData.body.rotation.x = mob._mirado
-        ? 0
+        ? Math.sin(t * 0.5 + i) * 0.04
         : Math.sin(t + i) * (mob.state === 'chase' ? 0.35 : 0.12);
+      // El Gigante: brazos arriba y golpe abajo al pisotear
+      if (mesh.userData.brazos) {
+        const st = mob._stompT || 0;
+        const ang = st > 0.35 ? -2.4 * ((st - 0.35) / 0.2)      // levanta
+          : st > 0 ? -2.4 + 3.0 * (1 - st / 0.35)               // baja el golpe
+          : Math.sin(t * 0.8 + i) * 0.12;                        // caminar
+        mesh.userData.brazos[0].rotation.x = ang;
+        mesh.userData.brazos[1].rotation.x = ang;
+      }
       const flash = mob.hurt > 0;
       mesh.userData.mats.forEach((m) => m.emissive?.setHex(flash ? 0xff0000 : 0x000000));
     }
@@ -323,7 +366,7 @@ export class MobField {
   }
 
   // golpe del jugador: apunta con la mirada; devuelve true si acertó
-  golpear(camera, reach, daño) {
+  golpear(camera, reach, daño, empuje = 0) {
     const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
     const o = camera.position;
     let best = -1, bestD = Infinity;
@@ -337,7 +380,13 @@ export class MobField {
       if (d < bestD) { bestD = d; best = i; }
     }
     if (best < 0) return false;
-    this.mobs[best].daño(daño);
+    const m = this.mobs[best];
+    m.daño(daño);
+    if (empuje > 0 && !m.dead) {
+      const dx = m.pos.x - o.x, dz = m.pos.z - o.z, dd = Math.hypot(dx, dz) || 1;
+      m.pos.x += (dx / dd) * empuje; m.pos.z += (dz / dd) * empuje;
+      m.vel.y = 5; m.state = 'chase';
+    }
     return true;
   }
 

@@ -1,6 +1,6 @@
 # Estado actual — El Mundo de Cristóbal
 
-_Actualizado: 2026-09-09 (Parte 6)_
+_Actualizado: 2026-09-09 (Parte 7)_
 
 **Publicado en GitHub Pages** (repo público, sitio `noindex` + pantalla de clave
 para "solo para Cristóbal"). El deploy es automático: `git push` a `main` →
@@ -166,6 +166,37 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
   origen es el centro real del anillo (joystick fijo) y todo se atenúa cuando
   no se usa.
 
+## Parte 7 — Combate con emoción, arma a la vista, jefes con más detalle
+
+- **Los poderes ya no matan al instante**: `danoCombate()` en main.js — súper
+  fuerza = ×2,4 daño + empujón; visión láser = ×1,6. Cada golpe **aleja** al
+  enemigo (los básicos aguantan más: Sombra/Espectro 3, Brincón 4, Bruto 8,
+  Gigante 26…). `instaBreak` solo sirve para picar bloques, no para el combate.
+- **Se ve el arma/herramienta en primera persona** (`src/game/viewmodel.js`):
+  una mano sostiene el pico / hacha / espada / arco / martillo y **se balancea
+  al atacar**. Con súper fuerza el puño brilla. Se oculta en tercera persona.
+- **Grito sónico = onda 360°**: despeja y empuja a los enemigos en todas
+  direcciones alrededor tuyo (antes era un cono hacia adelante).
+- **Botón ✨ solo cuando hace algo**: aparece únicamente si tienes el grito
+  sónico, el Rayo del Martillo o la Onda Prisma.
+- **Bug corregido**: los enemigos ya **no te "aplastan" si pasas por encima**
+  (plataforma) — el golpe cuerpo a cuerpo ahora comprueba que estés a su altura.
+- **El Gigante** tiene brazos y **pisotea**: onda telegrafiada que te golpea y
+  empuja aunque no te toque (anima los brazos al golpear).
+- **El Larguirucho** ya no queda "congelado": se acerca lento mientras lo miras
+  y rapidísimo cuando le quitas la vista.
+- **Rayos láser**: sólidos (no transparentes), salen de los ojos, **también se
+  ven en tercera persona**, y solo mientras mantienes pulsado el ataque.
+- **Armaduras de jefe**: al derrotar a cada jefe ganas una pieza
+  (`ARMADURA_JEFE` en recetas.js): Coraza del Trol, Escamas del Dragón, Placa
+  del Titán, Manto del Elfo Oscuro (−17% daño cada una).
+- **Jefes con más detalle** (`makeBossMesh` reescrito): más piezas, colores
+  sombreados, púas/cuernos/escamas/crin, piernas y brazos definidos.
+- **Tablero de armado**: si te falta un material, la guía te dice **dónde
+  conseguirlo** (ej. "Cristal — Mina cristal, en lo más profundo").
+- **Crafteo en el teléfono**: encabezado mucho más chico (media query) para dar
+  más espacio a ver la figura que armas.
+
 ## Parte 6 — Armado guiado, sala de pruebas y láser
 
 - **Libro de recetas** (`src/ui/crafteo.js`): rediseñado, más aireado. Ya **no
@@ -233,7 +264,7 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
   reproducción de Spotify DENTRO del juego no es posible en móvil (limitación
   del SDK de Spotify), por eso es "aparte".
 - **PWA**: manifest + service worker **network-first** (`public/sw.js`, caché
-  `mundo-cristobal-v8`). `npm run build` OK (bundle ~630 KB / 172 KB gzip;
+  `mundo-cristobal-v9`). `npm run build` OK (bundle ~630 KB / 172 KB gzip;
   bancos de preguntas en chunks aparte).
 
 ## Limitaciones conocidas / pendiente

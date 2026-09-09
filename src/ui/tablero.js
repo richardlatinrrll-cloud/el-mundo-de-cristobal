@@ -1,5 +1,5 @@
 import { state, save } from '../game/state.js';
-import { formaEnTablero, costoForma, centrarPatron, cosaNombre, cosaEmoji, ARMADURA } from '../game/recetas.js';
+import { formaEnTablero, costoForma, centrarPatron, cosaNombre, cosaEmoji, dondeConseguir, ARMADURA } from '../game/recetas.js';
 import { TOOLS } from '../game/tools.js';
 import { BLOCKS } from '../engine/blocks.js';
 import { audio } from '../game/audio.js';
@@ -119,10 +119,16 @@ export function mountTablero({ onVolver, onLista, onCambio }) {
       palEl.appendChild(chip);
     }
 
-    // leyenda
+    // leyenda + de dónde sacar lo que te falta
     if (guia) {
-      leyEl.innerHTML = 'Necesitas: ' + Object.entries(costoForma(guia))
+      const cost = costoForma(guia);
+      leyEl.innerHTML = 'Necesitas: ' + Object.entries(cost)
         .map(([k, v]) => `${cosaEmoji(k)} <b>${cosaNombre(k)}</b> ×${v}`).join(' · ');
+      const faltan = Object.entries(cost).filter(([k, v]) => inv(k) < v);
+      if (faltan.length) {
+        leyEl.innerHTML += '<br><span class="hint">Te falta: ' + faltan
+          .map(([k]) => `<b>${cosaNombre(k)}</b> — ${dondeConseguir(k)}`).join(' · ') + '</span>';
+      }
     } else {
       leyEl.innerHTML = 'Ejemplos: <b>Pico</b> = 3 arriba + 2 palos abajo · <b>Espada</b> = 2 en columna + palo.';
     }

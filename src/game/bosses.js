@@ -5,6 +5,7 @@ import { state, save } from './state.js';
 import { audio } from './audio.js';
 import { powerById, cumpleRequisito } from './powers/registry.js';
 import { toast } from '../ui/toast.js';
+import { ARMADURA_JEFE, JEFE_ARMADURA } from './recetas.js';
 
 // Zonas con jefes. Aparecen (una torre-baliza de color en el mapa) cuando
 // desbloqueas el poder asociado. Al acercarte empieza la pelea.
@@ -112,8 +113,9 @@ class BossEntity {
       if (blocked && this.onGround) this.vel.y = 8;
     }
 
-    // golpe cuerpo a cuerpo
-    if (dist < CATCH + d.size * 0.5 && this.catchCd === 0) {
+    // golpe cuerpo a cuerpo (solo si estás a su altura, no si pasas por encima)
+    const dyOk = Math.abs(player.pos.y - this.pos.y) < this.height * 0.7 + 1;
+    if (dist < CATCH + d.size * 0.5 && dyOk && this.catchCd === 0) {
       this.catchCd = 1.6;
       const k = player._empuje ?? 1;
       player.pos.x -= mx * 6 * k;
@@ -211,52 +213,96 @@ function makeBeacon(def) {
   return g;
 }
 
-function box(w, h, d, color) {
-  return new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color }));
+function shade(hex, f) {
+  const r = Math.max(0, Math.min(255, ((hex >> 16 & 255) * f) | 0));
+  const gr = Math.max(0, Math.min(255, ((hex >> 8 & 255) * f) | 0));
+  const b = Math.max(0, Math.min(255, ((hex & 255) * f) | 0));
+  return (r << 16) | (gr << 8) | b;
 }
 
 function makeBossMesh(def) {
   const s = def.size;
   const g = new THREE.Group();
   const c = def.color;
+  const cD = shade(c, 0.72), cL = shade(c, 1.22);
   const mats = [];
-  const add = (m, x, y, z) => { m.position.set(x, y, z); g.add(m); mats.push(m.material); return m; };
+  const box = (w, h, d, color) => new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color }));
+  const add = (w, h, d, color, x, y, z, rot) => {
+    const m = box(w * s, h * s, d * s, color);
+    m.position.set(x * s, y * s, z * s);
+    if (rot) m.rotation.set(rot[0] || 0, rot[1] || 0, rot[2] || 0);
+    g.add(m); mats.push(m.material); return m;
+  };
   const eyeMat = new THREE.MeshBasicMaterial({ color: def.eye });
-  const eye = (x, y, z, sz = 0.16) => { const e = new THREE.Mesh(new THREE.BoxGeometry(sz * s, sz * s, 0.06), eyeMat); e.position.set(x, y, z); g.add(e); };
+  const eye = (x, y, z, sz = 0.16) => { const e = new THREE.Mesh(new THREE.BoxGeometry(sz * s, sz * s, 0.06), eyeMat); e.position.set(x * s, y * s, z * s); g.add(e); };
+  const pincho = (color, x, y, z, len, rot) => add(0.12, len, 0.12, color, x, y, z, rot);
 
   if (def.forma === 'trol') {
-    add(box(1.5 * s, 1.5 * s, 1.0 * s, c), 0, 1.1 * s, 0);         // torso
-    add(box(0.7 * s, 0.6 * s, 0.65 * s, c), 0, 2.1 * s, 0.05 * s); // cabeza pequeña
-    add(box(0.4 * s, 1.7 * s, 0.4 * s, c), -1.0 * s, 1.0 * s, 0);  // brazos largos
-    add(box(0.4 * s, 1.7 * s, 0.4 * s, c), 1.0 * s, 1.0 * s, 0);
-    add(box(0.2 * s, 0.3 * s, 0.2 * s, 0xf2ead6), -0.2 * s, 1.95 * s, 0.4 * s); // colmillos
-    add(box(0.2 * s, 0.3 * s, 0.2 * s, 0xf2ead6), 0.2 * s, 1.95 * s, 0.4 * s);
-    eye(-0.16 * s, 2.2 * s, 0.36 * s); eye(0.16 * s, 2.2 * s, 0.36 * s);
+    add(1.5, 1.5, 1.0, c, 0, 1.1, 0);                 // torso
+    add(1.6, 0.5, 1.05, cD, 0, 0.6, 0);               // vientre
+    add(1.5, 0.4, 1.06, cL, 0, 1.75, 0);              // pectoral
+    add(0.7, 0.6, 0.65, cL, 0, 2.15, 0.05);           // cabeza
+    add(0.75, 0.25, 0.4, cD, 0, 1.9, 0.25);           // mandíbula
+    add(0.42, 1.7, 0.42, c, -1.02, 1.0, 0);           // brazos
+    add(0.42, 1.7, 0.42, c, 1.02, 1.0, 0);
+    add(0.5, 0.5, 0.5, cD, -1.02, 0.2, 0);            // puños
+    add(0.5, 0.5, 0.5, cD, 1.02, 0.2, 0);
+    add(0.55, 1.0, 0.55, cD, -0.4, 0.45, 0);          // piernas
+    add(0.55, 1.0, 0.55, cD, 0.4, 0.45, 0);
+    for (let i = -1; i <= 1; i++) pincho(0x6b5a44, i * 0.4, 2.05, -0.4, 0.5, [-0.3, 0, 0]); // crin de púas
+    add(0.22, 0.34, 0.22, 0xf2ead6, -0.22, 1.86, 0.42); // colmillos
+    add(0.22, 0.34, 0.22, 0xf2ead6, 0.22, 1.86, 0.42);
+    eye(-0.16, 2.24, 0.36); eye(0.16, 2.24, 0.36);
   } else if (def.forma === 'dragon') {
-    add(box(1.1 * s, 0.9 * s, 1.6 * s, c), 0, 1.0 * s, 0);          // cuerpo
-    add(box(0.35 * s, 0.35 * s, 1.2 * s, c), 0, 1.4 * s, 1.0 * s);  // cuello
-    add(box(0.55 * s, 0.5 * s, 0.7 * s, c), 0, 1.6 * s, 1.8 * s);   // cabeza
-    add(box(0.25 * s, 0.2 * s, 1.4 * s, c), 0, 0.9 * s, -1.3 * s);  // cola
-    const wL = add(box(1.5 * s, 0.08 * s, 0.9 * s, 0x27406b), -1.0 * s, 1.3 * s, 0);
-    const wR = add(box(1.5 * s, 0.08 * s, 0.9 * s, 0x27406b), 1.0 * s, 1.3 * s, 0);
+    add(1.1, 0.95, 1.7, c, 0, 1.0, 0);                // cuerpo
+    add(0.9, 0.5, 1.5, cL, 0, 0.6, 0.05);             // vientre claro (escamas)
+    add(0.38, 0.4, 1.3, c, 0, 1.35, 1.05);            // cuello
+    add(0.34, 0.34, 1.2, c, 0, 1.75, 1.35, [0.5, 0, 0]);
+    add(0.58, 0.5, 0.72, cL, 0, 1.9, 2.05);           // cabeza
+    add(0.5, 0.2, 0.4, cD, 0, 1.72, 2.35);            // hocico
+    pincho(cD, 0, 2.25, 1.9, 0.4, [0.3, 0, 0]);       // cuernos
+    pincho(cD, -0.18, 2.2, 1.85, 0.35, [0.4, 0, -0.2]);
+    pincho(cD, 0.18, 2.2, 1.85, 0.35, [0.4, 0, 0.2]);
+    for (let i = 0; i < 4; i++) pincho(cD, 0, 1.55 - i * 0.05, 0.7 - i * 0.55, 0.3, [0.2, 0, 0]); // cresta
+    add(0.26, 0.24, 1.6, c, 0, 0.85, -1.4);           // cola
+    add(0.14, 0.14, 0.5, cD, 0, 0.85, -2.3, [0.3, 0, 0]); // punta de cola
+    const wL = add(1.6, 0.07, 1.0, 0x27406b, -1.05, 1.35, -0.1);
+    const wR = add(1.6, 0.07, 1.0, 0x27406b, 1.05, 1.35, -0.1);
+    add(0.35, 1.0, 0.35, cD, -0.55, 0.5, 0.3);        // patas
+    add(0.35, 1.0, 0.35, cD, 0.55, 0.5, 0.3);
     g.userData.alas = [wL, wR];
-    eye(-0.16 * s, 1.7 * s, 2.05 * s); eye(0.16 * s, 1.7 * s, 2.05 * s);
+    eye(-0.17, 2.0, 2.32, 0.13); eye(0.17, 2.0, 2.32, 0.13);
   } else if (def.forma === 'titan') {
-    add(box(1.7 * s, 1.9 * s, 1.1 * s, c), 0, 1.4 * s, 0);          // torso enorme
-    add(box(0.85 * s, 0.8 * s, 0.8 * s, c), 0, 2.7 * s, 0);        // cabeza
-    add(box(0.55 * s, 1.6 * s, 0.55 * s, c), -1.2 * s, 1.4 * s, 0); // brazos
-    add(box(0.55 * s, 1.6 * s, 0.55 * s, c), 1.2 * s, 1.4 * s, 0);
-    add(box(0.9 * s, 0.7 * s, 0.9 * s, 0xff8a3d), -1.2 * s, 0.5 * s, 0); // puños ardientes
-    add(box(0.9 * s, 0.7 * s, 0.9 * s, 0xff8a3d), 1.2 * s, 0.5 * s, 0);
-    eye(-0.2 * s, 2.8 * s, 0.42 * s, 0.22); eye(0.2 * s, 2.8 * s, 0.42 * s, 0.22);
+    add(1.7, 1.9, 1.1, c, 0, 1.4, 0);                 // torso
+    add(1.75, 0.6, 1.14, 0xff8a3d, 0, 1.0, 0);        // grieta ardiente
+    add(1.4, 0.35, 1.13, shade(0xff8a3d, 1.3), 0, 1.75, 0);
+    add(0.85, 0.85, 0.8, cL, 0, 2.75, 0);             // cabeza
+    add(0.9, 0.25, 0.5, cD, 0, 2.45, 0.2);            // ceño
+    add(0.58, 1.65, 0.58, c, -1.22, 1.45, 0);         // brazos
+    add(0.58, 1.65, 0.58, c, 1.22, 1.45, 0);
+    add(0.95, 0.8, 0.95, 0xff8a3d, -1.22, 0.5, 0);    // puños ardientes
+    add(0.95, 0.8, 0.95, 0xff8a3d, 1.22, 0.5, 0);
+    add(0.7, 1.1, 0.75, cD, -0.5, 0.5, 0);            // piernas
+    add(0.7, 1.1, 0.75, cD, 0.5, 0.5, 0);
+    for (let i = -1; i <= 1; i++) pincho(cD, i * 0.55, 3.15, -0.1, 0.55, [-0.15, 0, i * 0.15]); // corona de rocas
+    eye(-0.2, 2.85, 0.42, 0.24); eye(0.2, 2.85, 0.42, 0.24);
   } else { // elfo oscuro
-    add(box(0.6 * s, 1.3 * s, 0.5 * s, c), 0, 1.0 * s, 0);          // cuerpo esbelto
-    add(box(0.45 * s, 0.5 * s, 0.45 * s, c), 0, 1.9 * s, 0);       // cabeza
-    add(box(0.95 * s, 1.5 * s, 0.3 * s, 0x241d38), 0, 1.1 * s, -0.25 * s); // capa
-    add(box(0.6 * s, 0.5 * s, 0.6 * s, 0x241d38), 0, 2.15 * s, -0.05 * s);  // capucha
-    const staff = add(box(0.1 * s, 2.2 * s, 0.1 * s, 0x5a4a2f), 0.5 * s, 1.3 * s, 0.1 * s);
-    add(new THREE.Mesh(new THREE.OctahedronGeometry(0.22 * s), new THREE.MeshBasicMaterial({ color: def.eye })), 0.5 * s, 2.5 * s, 0.1 * s);
-    eye(-0.1 * s, 1.95 * s, 0.24 * s, 0.1); eye(0.1 * s, 1.95 * s, 0.24 * s, 0.1);
+    add(0.6, 1.35, 0.5, c, 0, 1.0, 0);                // cuerpo
+    add(0.66, 0.4, 0.54, shade(0x8a5fd0, 0.9), 0, 1.55, 0); // peto
+    add(0.46, 0.52, 0.46, cL, 0, 1.95, 0);            // cabeza
+    add(1.0, 1.6, 0.28, 0x201a30, 0, 1.15, -0.28);    // capa
+    add(1.15, 0.5, 0.3, 0x201a30, 0, 0.5, -0.28, [0, 0, 0]); // vuelo de la capa
+    add(0.64, 0.56, 0.62, 0x201a30, 0, 2.18, -0.06);  // capucha
+    pincho(0x201a30, -0.28, 2.35, -0.1, 0.45, [0.1, 0, -0.5]); // puntas de capucha
+    pincho(0x201a30, 0.28, 2.35, -0.1, 0.45, [0.1, 0, 0.5]);
+    add(0.32, 1.15, 0.32, cD, -0.42, 0.9, 0);         // brazos
+    add(0.32, 1.15, 0.32, cD, 0.42, 0.9, 0);
+    add(0.34, 1.2, 0.34, 0x201a30, -0.22, 0.55, 0);   // piernas
+    add(0.34, 1.2, 0.34, 0x201a30, 0.22, 0.55, 0);
+    add(0.1, 2.4, 0.1, 0x4a3a5a, 0.55, 1.4, 0.12);    // bastón
+    const orb = new THREE.Mesh(new THREE.OctahedronGeometry(0.24 * s), new THREE.MeshBasicMaterial({ color: def.eye }));
+    orb.position.set(0.55 * s, 2.7 * s, 0.12 * s); g.add(orb);
+    eye(-0.1, 1.99, 0.24, 0.1); eye(0.1, 1.99, 0.24, 0.1);
   }
 
   g.userData.mats = mats;
@@ -412,6 +458,7 @@ export class BossArena {
 
     const a = this.active;
     a.entity.update(dt, player, this);
+    if (!this.active) return;   // el jugador se desmayó (clear() durante el update)
     a.mesh.position.set(a.entity.pos.x, a.entity.pos.y, a.entity.pos.z);
     a.mesh.rotation.y = a.entity.face;
     if (a.mesh.userData.alas) {
@@ -464,6 +511,16 @@ export class BossArena {
     if (!state.jefesDerrotados.includes(def.id)) state.jefesDerrotados.push(def.id);
     state.stats = state.stats || {};
     state.stats.jefes = (state.stats.jefes || 0) + 1;
+    // armadura inspirada en el jefe
+    const arm = JEFE_ARMADURA[def.id];
+    if (arm) {
+      state.armadura = state.armadura || [];
+      const key = 'jefe_' + arm;
+      if (!state.armadura.includes(key)) {
+        state.armadura.push(key);
+        setTimeout(() => toast(`🛡️ ¡Ganaste la ${ARMADURA_JEFE[arm].nombre}! Menos daño.`), 2400);
+      }
+    }
     save();
     audio.sfx('medalla');
     toast(`🏆 ¡Derrotaste a ${def.nombre}!`);
@@ -486,7 +543,7 @@ export class BossArena {
   }
 
   // golpe del jugador contra el jefe (mismo criterio de mira que los mobs)
-  golpear(camera, reach, dañoBase) {
+  golpear(camera, reach, dañoBase, empuje = 0) {
     if (!this.active) return false;
     const a = this.active;
     const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
@@ -497,6 +554,11 @@ export class BossArena {
     if (to.normalize().dot(dir) < 0.9) return false;
     const mult = state.poderEquipado === a.def.power ? 3 : 1;
     a.entity.daño(dañoBase * mult);
+    if (empuje > 0) {  // los jefes son pesados: empujón chico
+      const dx = a.entity.pos.x - o.x, dz = a.entity.pos.z - o.z, dd = Math.hypot(dx, dz) || 1;
+      a.entity.pos.x += (dx / dd) * empuje * 0.25;
+      a.entity.pos.z += (dz / dd) * empuje * 0.25;
+    }
     this.onHud?.();
     return true;
   }

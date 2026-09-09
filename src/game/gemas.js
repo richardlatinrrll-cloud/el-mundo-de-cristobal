@@ -131,7 +131,8 @@ class Guard {
     this._move('y', this.vel.y * dt);
     if (blocked && this.onGround) this.vel.y = d.salta ? 9.5 : 7;
 
-    if (dist < CATCH + d.size * 0.5 && this.catchCd === 0) {
+    const dyOk = Math.abs(player.pos.y - this.pos.y) < this.height * 0.7 + 1;
+    if (dist < CATCH + d.size * 0.5 && dyOk && this.catchCd === 0) {
       this.catchCd = 1.5;
       const k = player._empuje ?? 1;
       player.pos.x -= mx * 5 * k;
@@ -253,6 +254,7 @@ export class GemQuest {
 
     const a = this.active;
     a.entity.update(dt, player, this);
+    if (!this.active) return;   // el jugador se desmayó (clear() durante el update)
     a.mesh.position.set(a.entity.pos.x, a.entity.pos.y, a.entity.pos.z);
     a.mesh.rotation.y = a.entity.face;
     a.mesh.userData.gem.rotation.y += dt * 2;
@@ -314,7 +316,7 @@ export class GemQuest {
   }
 
   // golpe del jugador (misma mira que mobs/jefes). El Martillo del Trueno = 2×.
-  golpear(camera, reach, dañoBase) {
+  golpear(camera, reach, dañoBase, empuje = 0) {
     if (!this.active) return false;
     const a = this.active;
     const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
@@ -327,6 +329,11 @@ export class GemQuest {
     if (d > reach + a.def.guard.size) return false;
     if (to.normalize().dot(dir) < 0.9) return false;
     a.entity.daño(dañoBase * (state.herramienta === 'martillo_trueno' ? 2 : 1));
+    if (empuje > 0) {
+      const dx = a.entity.pos.x - o.x, dz = a.entity.pos.z - o.z, dd = Math.hypot(dx, dz) || 1;
+      a.entity.pos.x += (dx / dd) * empuje * 0.4;
+      a.entity.pos.z += (dz / dd) * empuje * 0.4;
+    }
     this.onHud?.();
     return true;
   }
