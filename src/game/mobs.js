@@ -314,7 +314,7 @@ export class MobField {
     save();
     // reponer uno nuevo tras un rato para que el mundo no se vacíe
     setTimeout(() => {
-      if (!this.enabled || this.mobs.length >= cantidadEnemigos()) return;
+      if (!this.enabled || this.arenaMode || this.mobs.length >= cantidadEnemigos()) return;
       const s = randomSpot(this.world);
       const mob = new Mob(this.world, s.x, s.y, s.z, eligeTipo());
       const mesh = makeMesh(mob.def);

@@ -91,8 +91,13 @@ export class Controls {
       if (!this.enabled || stickId !== null) return;
       const t = e.changedTouches[0];
       stickId = t.identifier;
-      ox = t.clientX; oy = t.clientY;             // origen = donde tocaste
-      nub.style.transform = 'translate(-50%,-50%)';
+      // origen = centro real del anillo en pantalla (joystick fijo, nub centrado)
+      const rb = stick.getBoundingClientRect();
+      ox = this.ajustes.stickIzquierda ? rb.left + 83 : rb.right - 83;
+      oy = rb.bottom - 83;
+      stick.classList.add('activo');
+      nub.style.transform = 'translate(0px, 0px)';
+      moveStick(e);
       e.preventDefault();
     };
     stick.addEventListener('touchstart', startStick, { passive: false });
@@ -103,7 +108,7 @@ export class Controls {
         let dx = t.clientX - ox, dy = t.clientY - oy;
         const d = Math.hypot(dx, dy) || 1;
         if (d > R) { dx = dx / d * R; dy = dy / d * R; }
-        nub.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+        nub.style.transform = `translate(${dx}px, ${dy}px)`;
         const rx = dx / R, ry = dy / R;
         this.state.right = (this.ajustes.invJoyX ? -rx : rx);
         this.state.forward = (this.ajustes.invJoyY ? ry : -ry);
@@ -114,7 +119,8 @@ export class Controls {
       for (const t of e.changedTouches) {
         if (t.identifier !== stickId) continue;
         stickId = null;
-        nub.style.transform = 'translate(-50%,-50%)';
+        stick.classList.remove('activo');
+        nub.style.transform = 'translate(0px, 0px)';   // vuelve al centro
         this.state.forward = this.state.right = 0;
       }
     };

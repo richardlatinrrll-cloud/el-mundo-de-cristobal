@@ -16,12 +16,12 @@ export function mountPruebas({ onVolver, onEnemigo, onJefe, onLimpiar }) {
   el.className = 'screen';
   el.innerHTML = `
     <div class="topbar">
-      <button class="btn small secondary" data-volver>← Volver al juego</button>
+      <button class="btn small secondary" data-volver>← Menú</button>
       <div class="spacer"></div>
     </div>
     <h2>🧪 Sala de pruebas</h2>
-    <p class="sub">Modo maestro. Invoca lo que quieras revisar; aparece frente a ti
-      en una arena plana. Vuelve al juego para verlo y probar sus movimientos.</p>
+    <p class="sub">Modo maestro. Toca un enemigo o jefe: apareces en una arena
+      plana con él enfrente para verlo, mirar sus movimientos y pelear.</p>
 
     <h3 class="pr-h">Enemigos</h3>
     <div class="pr-grid" data-enem></div>

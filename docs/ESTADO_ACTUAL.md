@@ -161,6 +161,10 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
 - **Selector de poderes**: etiqueta "PODER" sobre el chip; en el teléfono la
   lista se abre **centrada** con botones grandes (antes se pegaba al borde y
   costaba tocar).
+- **Joystick táctil**: la esfera interior ahora **se centra en el anillo** al
+  soltar (antes quedaba pegada arriba por un desajuste de `transform`). El
+  origen es el centro real del anillo (joystick fijo) y todo se atenúa cuando
+  no se usa.
 
 ## Parte 6 — Armado guiado, sala de pruebas y láser
 
@@ -174,9 +178,10 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
   ("Necesitas: 🪨 Piedra ×3 · 🥢 Palo ×2"). Tocar un cubo fantasma coloca ese
   material solo. Sigue funcionando el modo libre.
 - **🧪 Sala de pruebas** (`src/ui/pruebas.js`, solo con la clave maestra, en el
-  menú): botones para invocar cada enemigo y cada jefe **al lado del jugador**
-  en una arena plana, sin tener que buscarlos por el mapa. Botón "Limpiar
-  arena".
+  menú): tocar un enemigo/jefe te mete a una **arena plana en modo juego**
+  (`entrarArenaPrueba()`) con esa criatura enfrente. Sí te puedes mover y pelear
+  (antes no cambiaba a modo `jugar` y quedabas trabado). Los enemigos de la
+  arena no se reponen solos (`mobs.arenaMode`). Botón "Limpiar arena".
 - **Volver al inicio al salirse del mapa**: si te caes al vacío o pasas los
   bordes del mundo, reapareces en el punto de inicio (`player.js`).
 - **Rayos de la Visión láser**: al tener el poder equipado salen **dos haces
@@ -228,7 +233,7 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
   reproducción de Spotify DENTRO del juego no es posible en móvil (limitación
   del SDK de Spotify), por eso es "aparte".
 - **PWA**: manifest + service worker **network-first** (`public/sw.js`, caché
-  `mundo-cristobal-v7`). `npm run build` OK (bundle ~630 KB / 172 KB gzip;
+  `mundo-cristobal-v8`). `npm run build` OK (bundle ~630 KB / 172 KB gzip;
   bancos de preguntas en chunks aparte).
 
 ## Limitaciones conocidas / pendiente

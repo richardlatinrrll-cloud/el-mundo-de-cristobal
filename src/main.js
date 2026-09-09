@@ -960,6 +960,7 @@ export function jugar() {
   aplicarPoderEquipado();
   applySkinToPlayer(player, scene);
   checkOrientacion();
+  mobs.arenaMode = false;
   if (state.mundo.creador) {
     mobs.clear(); mobs.enabled = false;
     bosses.clear();
@@ -1001,29 +1002,49 @@ function abrirTableroEnJuego() {
 function aplanarArena() {
   const cx = Math.floor(player.pos.x), cz = Math.floor(player.pos.z);
   const sy = world.surfaceY(cx, cz);
-  for (let dx = -12; dx <= 12; dx++)
-    for (let dz = -12; dz <= 12; dz++) {
-      for (let dy = 1; dy < 22; dy++) { world.set(cx + dx, sy + dy, cz + dz, AIR); }
+  for (let dx = -14; dx <= 14; dx++)
+    for (let dz = -14; dz <= 14; dz++) {
+      for (let dy = 1; dy < 24; dy++) world.set(cx + dx, sy + dy, cz + dz, AIR);
       world.set(cx + dx, sy, cz + dz, 1);
     }
   player.pos.set(cx + 0.5, sy + 1.2, cz + 0.5);
   player.vel.set(0, 0, 0);
+  player.yaw = -Math.PI / 2;   // mirando hacia +x (donde aparecen los monstruos)
+  player.pitch = 0;
   streamChunks(true);
 }
-function invocarEnemigoPrueba(tipo) {
-  volverAlJuego();
-  aplanarArena();
+// entra al juego en modo arena de pruebas (sin spawnear el mundo normal)
+function entrarArenaPrueba() {
+  mode = 'jugar';
+  menuScreen.classList.add('hidden');
+  closeAllScreens();
+  hud.style.display = 'block';
+  if (controls.isTouch) { touch.classList.add('on'); controls.applyStickSide(); }
+  player._thirdPerson = state.ajustes.vista === 'tercera';
+  aplicarPoderEquipado();
+  applySkinToPlayer(player, scene);
   mobs.enabled = true;
+  mobs.arenaMode = true;
+  mobs.clear(); bosses.clear(); gemas.clear(); animals.clear();
+  if (!state.salud || state.salud <= 0) state.salud = state.saludMax;
+  aplanarArena();
+  updateHearts(); updateToolChip(); updateHotbar(); updateModoBadge();
+  updateMobBadge(); updateBossBar(); checkOrientacion();
+  controls.enable();
+  last = performance.now();
+}
+function invocarEnemigoPrueba(tipo) {
+  entrarArenaPrueba();
   const p = player.pos;
-  mobs.spawnAt({ x: p.x + 4, y: p.y, z: p.z }, tipo);
+  const gx = Math.floor(p.x + 5), gz = Math.floor(p.z);
+  const gy = world.surfaceY(gx, gz);
+  mobs.spawnAt({ x: gx, y: gy, z: gz }, tipo);
   const m = mobs.mobs[mobs.mobs.length - 1];
-  if (m) { m.state = 'chase'; m.pos.set(p.x + 4.5, world.surfaceY(Math.floor(p.x + 4), Math.floor(p.z)) + 1, p.z + 0.5); }
-  toast(`🧪 Enemigo invocado. Míralo y prueba sus movimientos.`);
+  if (m) { m.pos.set(gx + 0.5, gy + 1, gz + 0.5); m.state = 'chase'; }
+  toast('🧪 Invócalo las veces que quieras. Golpéalo con ⛏️.');
 }
 function invocarJefePrueba(id) {
-  volverAlJuego();
-  aplanarArena();
-  bosses.clear();
+  entrarArenaPrueba();
   bosses.spawnPrueba(id, player.pos);
   updateBossBar();
 }
@@ -1112,7 +1133,7 @@ function openScreen(name) {
       });
     } else if (name === 'pruebas') {
       screens[name] = mountPruebas({
-        onVolver: () => (mode === 'jugar' ? volverAlJuego() : showMenu()),
+        onVolver: () => showMenu(),
         onEnemigo: (t) => invocarEnemigoPrueba(t),
         onJefe: (id) => invocarJefePrueba(id),
         onLimpiar: () => { mobs.clear(); bosses.clear(); toast('Arena limpia'); },

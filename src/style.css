@@ -338,12 +338,16 @@ canvas { display: block; touch-action: none; }
   border-radius: 50%; background: #ffffff10; border: 2px solid #ffffff2e;
 }
 #touch.stick-right .stick::before { left: auto; right: 24px; }
+/* nub centrado sobre el anillo: centro del anillo = 24 + 59 = 83; media nub = 29 */
 #touch .stick .nub {
-  position: absolute; left: 83px; bottom: 83px; width: 58px; height: 58px;
-  border-radius: 50%; background: #ffffff40; border: 2px solid #ffffff55;
-  transform: translate(-50%, 50%);
+  position: absolute; left: 54px; bottom: 54px; width: 58px; height: 58px;
+  border-radius: 50%; background: #ffffff44; border: 2px solid #ffffff66;
+  transform: translate(0, 0); will-change: transform;
 }
-#touch.stick-right .stick .nub { left: auto; right: 83px; transform: translate(50%, 50%); }
+#touch.stick-right .stick .nub { left: auto; right: 54px; }
+/* atenuado cuando no se usa; nítido al tocar */
+#touch .stick::before, #touch .stick .nub { opacity: .45; transition: opacity .15s; }
+#touch .stick.activo::before, #touch .stick.activo .nub { opacity: 1; }
 
 #touch .tbtns {
   position: absolute; right: 14px; bottom: 20px; display: grid; gap: 12px;
