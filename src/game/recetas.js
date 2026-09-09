@@ -104,8 +104,11 @@ export const FORMAS = [
     patron: [[null, null, null], ['6', '6', '6'], [null, null, null]] },
   { id: 'ladrillo', nombre: 'Ladrillo (x4)', emoji: '🧱', cat: 'Básico', da: { 8: 4 },
     patron: [[null, null, null], ['3', '3', null], ['3', '3', null]] },
-  { id: 'antorcha', nombre: 'Antorcha (x4)', emoji: '🕯️', cat: 'Básico', da: { 23: 4 }, pista: 'Da luz',
+  { id: 'antorcha', nombre: 'Antorcha (x4)', emoji: '🕯️', cat: 'Básico', da: { 23: 4 }, pista: 'Para poner en las paredes',
     patron: [[null, 'carbon', null], [null, P, null], [null, null, null]] },
+  { id: 'antorcha_mano', nombre: 'Antorcha de mano', emoji: '🔥', cat: 'Herramientas', da: { antorcha: 1 },
+    pista: 'Llévala en la mano: ilumina de noche (pero los monstruos te buscan)',
+    patron: [[null, 'carbon', null], [null, 'carbon', null], [null, P, null]] },
 
   // --- Construir ---
   { id: 'puerta',   nombre: 'Puerta',        emoji: '🚪', cat: 'Construir', da: { 20: 1 }, pista: 'Se abre y cierra al tocarla',

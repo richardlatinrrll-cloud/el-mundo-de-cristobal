@@ -88,9 +88,9 @@ La clave se pide **cada vez** que se abre el juego. Solo se guardan los hashes.
 | `gemas.js` | Búsqueda de las 6 Gemas de Poder, guardián por gema (`GemQuest`) |
 | `animals.js` | 9 animales + 4 dinosaurios (`AnimalField`); caza → carne/cuero/pluma/lana |
 | `recetas.js` | recetas como FORMAS 3×3, armadura, comida, armadura de jefe |
-| `tools.js` | minado por tiempo según dureza + poder de la herramienta |
+| `tools.js` | minado por tiempo según dureza + poder de la herramienta; incluye la **Antorcha de mano** (`luz`) |
 | `viewmodel.js` | la mano con la herramienta/arma en 1ª persona |
-| `daynight.js` | ciclo día/noche por la **hora real** del dispositivo |
+| `daynight.js` | ciclo día/noche por la **hora real** del dispositivo; `esNoche()` (20:00–06:00) → de noche se triplican los monstruos |
 | `audio.js` | efectos y música phonk 100% Web Audio (sin archivos) |
 
 ### `quiz/` — estudio y progresión

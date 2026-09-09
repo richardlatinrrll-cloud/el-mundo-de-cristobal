@@ -21,6 +21,7 @@ export class ViewModel {
   _build() {
     const id = this._id;
     this.hold.clear();
+    this._llama = null;
     const skin = this._poder === 'fuerza' ? 0xffb14a : 0xd8a77a;
     const fist = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.17, 0.24), this._mat(skin));
     this.hold.add(fist);
@@ -56,6 +57,17 @@ export class ViewModel {
     } else if (id === 'arco') {
       const arco = add(new THREE.BoxGeometry(0.05, 0.62, 0.05), 0x8a6234, 0.04, 0.16, 0);
       arco.rotation.z = 0.18;
+    } else if (id === 'antorcha') {
+      add(new THREE.BoxGeometry(0.05, 0.4, 0.05), 0x6b4a2f, 0, 0.2, -0.02);   // palo
+      const llama = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.18, 0.13),
+        new THREE.MeshBasicMaterial({ color: 0xffb347 }));
+      llama.position.set(0, 0.46, -0.02);
+      this.hold.add(llama);
+      const nucleo = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.1, 0.07),
+        new THREE.MeshBasicMaterial({ color: 0xfff0b0 }));
+      nucleo.position.set(0, 0.44, -0.02);
+      this.hold.add(nucleo);
+      this._llama = llama;
     }
   }
 
@@ -82,6 +94,11 @@ export class ViewModel {
       this.hold.rotation.x = b;
       this.hold.rotation.z = 0;
       this.group.position.z = -0.72;
+    }
+    // parpadeo de la llama de la antorcha
+    if (this._llama) {
+      const f = 0.85 + Math.sin(performance.now() / 70) * 0.1 + Math.random() * 0.06;
+      this._llama.scale.set(f, 1 + (f - 0.9), f);
     }
   }
 }

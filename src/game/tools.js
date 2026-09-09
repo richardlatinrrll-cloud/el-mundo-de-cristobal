@@ -16,6 +16,7 @@ export const TOOLS = {
   espada_hierro:   { nombre: 'Espada de hierro',  emoji: '⚔️', poder: 1.2, dano: 8 },
   espada_cristal:  { nombre: 'Espada de cristal', emoji: '🔱', poder: 1.2, dano: 14 },
   arco:            { nombre: 'Arco',              emoji: '🏹', poder: 1,   dano: 2, arco: true },
+  antorcha:        { nombre: 'Antorcha',          emoji: '🔥', poder: 1,   dano: 2, luz: true },
 };
 
 export function tool(id) { return TOOLS[id] || TOOLS.mano; }

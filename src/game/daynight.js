@@ -5,15 +5,15 @@ import * as THREE from 'three';
 
 // keyframes por hora: [hora, colorCielo, intensidadSol, intensidadAmbiente]
 const CIELO = [
-  [0,  0x0b1330, 0.05, 0.16],  // medianoche
-  [5,  0x1b2350, 0.06, 0.18],  // antes del alba
+  [0,  0x0b1330, 0.05, 0.26],  // medianoche (oscuro pero se puede caminar)
+  [5,  0x1b2350, 0.06, 0.28],  // antes del alba
   [6.5,0xf2a15a, 0.55, 0.46],  // amanecer
   [8,  0x9fd0ef, 1.05, 0.82],  // mañana
   [13, 0x8fc7ff, 1.20, 0.95],  // mediodía
   [17, 0x9fc4e8, 1.00, 0.80],  // tarde
   [19, 0xef8a4a, 0.50, 0.44],  // atardecer
-  [20.5,0x33306a, 0.12, 0.22], // anochecer
-  [24, 0x0b1330, 0.05, 0.16],
+  [20.5,0x33306a, 0.12, 0.30], // anochecer
+  [24, 0x0b1330, 0.05, 0.26],
 ];
 
 function lerpHex(a, b, t) {
@@ -104,4 +104,10 @@ export class DayNight {
   }
 
   get cielo() { return this._cieloActual ?? 0x8fc7ff; }
+
+  // ¿está oscuro? (para que salgan más monstruos y sirva la antorcha)
+  esNoche() {
+    const h = this.horaActual();
+    return h < 6 || h >= 20;
+  }
 }

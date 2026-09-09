@@ -8,7 +8,7 @@ cambios** por tandas.
 
 Publicado en **GitHub Pages** (deploy automático al hacer `git push`) y en el
 **servidor casero ARGOS** por Tailscale (`http://100.111.194.61:8082`).
-Caché del service worker: `mundo-cristobal-v18`.
+Caché del service worker: `mundo-cristobal-v19`.
 
 ---
 
@@ -33,6 +33,8 @@ Caché del service worker: `mundo-cristobal-v18`.
   Mundo nuevo → kit inicial. Lo que construyes se guarda (`state.mundoEdits`,
   localStorage) y vuelve al recargar el mismo mundo. **Un mundo a la vez.**
 - **Ciclo día/noche** por la hora real del dispositivo (`daynight.js`).
+  **De noche** (20:00–06:00) los monstruos **se triplican** (hasta 48) y el
+  mundo se oscurece — conviene llevar antorcha.
 - Caminar por terreno irregular (auto-step de 1 bloque); zona de aparición
   fundida con el terreno. Respawn si te caes del mapa.
 
@@ -44,10 +46,17 @@ Caché del service worker: `mundo-cristobal-v18`.
   su forma**. Viniendo de una receta muestra **cubos fantasma** con el material
   que va en cada casilla + leyenda de lo que necesitas; si te falta algo, dice
   **dónde conseguirlo**. También hay modo libre.
-- Categorías: Básico (tablas, palos, vidrio, ladrillo, antorcha), Construir
+- Categorías: Básico (tablas, palos, vidrio, ladrillo, antorcha de pared),
+  Construir
   (puerta de 2 de alto que se abre/cierra entera, ventana, valla, escalera),
-  Herramientas (picos, hacha, pala), Armas (espadas, arco + flechas), Comida y
-  ropa (carne cocida, flechas con pluma, armadura de cuero).
+  Herramientas (picos, hacha, pala, **Antorcha de mano**), Armas (espadas,
+  arco + flechas), Comida y ropa (carne cocida, flechas con pluma, armadura
+  de cuero).
+- **Antorcha de mano** (`tools.js`, herramienta): se lleva en la mano y
+  **ilumina alrededor** (luz de verdad que sigue al jugador). Sirve para
+  moverse de noche… pero **mientras la llevas encendida de noche, TODOS los
+  monstruos te ven de lejísimos y van por ti**. Elección: ver el camino o
+  pasar desapercibido.
 - **Minerales**: vetas de carbón/hierro/oro/cristal en la piedra (más hondas y
   raras cuanto mejor el material).
 
@@ -213,3 +222,8 @@ para observar, no para morir mirando). Botón "Limpiar arena".
   aunque estuvieran lejísimos → se ocultan a >64 bloques; (3) en la Sala de
   pruebas te morías en ~10 s mirando a un jefe → la vida no baja de 1 corazón
   ahí.
+- **Noche + antorcha** — Antorcha de mano que ilumina (luz que sigue al
+  jugador). De noche (20:00–06:00) los monstruos se triplican (hasta 48, con
+  culling de distancia para el teléfono) y, si llevas la antorcha encendida,
+  te persiguen desde muy lejos. El mundo de noche se aclaró un poco para poder
+  caminar sin antorcha, pero apenas.

@@ -67,6 +67,10 @@ function vmSetTool(id) { viewModel.setTool(id, state.poderEquipado); }
 
 const dayNight = new DayNight(scene, renderer);
 
+// luz de la antorcha de mano: sigue al jugador cuando la lleva equipada
+const torchLight = new THREE.PointLight(0xffb060, 0, 11, 2);
+scene.add(torchLight);
+
 // Atlas de texturas
 const atlas = buildAtlas();
 const atlasTex = new THREE.CanvasTexture(atlas.canvas);
@@ -1078,10 +1082,27 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
-let _wasGround = true, _pasoT = 0, _lavaCd = 0;
+let _wasGround = true, _pasoT = 0, _lavaCd = 0, _eraNoche = false;
 function frame(dt) {
   if (mode === 'jugar') {
     player.update(dt, controls.state);
+
+    // --- Noche + antorcha de mano ---
+    const noche = dayNight.esNoche() && !state.mundo.creador;
+    state._noche = noche;
+    if (noche && !_eraNoche) toast('🌙 Anochece. Los monstruos se triplican…', 2200);
+    if (!noche && _eraNoche) toast('☀️ Amanece. El mundo se calma.', 1800);
+    _eraNoche = noche;
+    player._antorcha = state.herramienta === 'antorcha';
+    if (player._antorcha) {
+      const fl = 1.5 + Math.sin(performance.now() / 80) * 0.25 + Math.random() * 0.15;
+      torchLight.intensity = fl;
+      torchLight.position.set(player.pos.x, player.pos.y + 1.2, player.pos.z);
+      if (noche && !player._faroAviso) { player._faroAviso = 1; toast('🔥 Con la antorcha te ven de lejos. ¡Corre o guárdala!', 2600); }
+    } else {
+      torchLight.intensity = 0;
+      player._faroAviso = 0;
+    }
     // Manto de sombra (acción del poder invisibilidad)
     if (player._mantoT > 0) {
       player._mantoT -= dt;
@@ -1238,6 +1259,8 @@ export function jugar() {
   checkOrientacion();
   mobs.arenaMode = false;
   animals.arenaMode = false;
+  state._noche = dayNight.esNoche() && !state.mundo.creador;
+  _eraNoche = state._noche;
   if (state.mundo.creador) {
     mobs.clear(); mobs.enabled = false;
     bosses.clear();
@@ -1303,6 +1326,7 @@ function entrarArenaPrueba() {
   mobs.enabled = true;
   mobs.arenaMode = true;
   animals.arenaMode = true;
+  state._noche = false;
   mobs.clear(); bosses.clear(); gemas.clear(); animals.clear();
   if (!state.salud || state.salud <= 0) state.salud = state.saludMax;
   aplanarArena();

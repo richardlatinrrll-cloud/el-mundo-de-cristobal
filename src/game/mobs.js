@@ -49,7 +49,9 @@ export function nivelDificultad() {
 }
 
 export function cantidadEnemigos() {
-  return Math.min(6 + Math.round(nivelDificultad() * 1.15), 28);
+  const base = Math.min(6 + Math.round(nivelDificultad() * 1.15), 28);
+  // De NOCHE se triplican (tope 48 para que no ahogue el teléfono).
+  return state._noche ? Math.min(base * 3, 48) : base;
 }
 
 function tiposDisponibles() {
@@ -100,12 +102,18 @@ class Mob {
     this.catchCooldown = Math.max(0, this.catchCooldown - dt);
     this.hurt = Math.max(0, this.hurt - dt);
 
+    // Antorcha de mano + de noche = eres un faro: TODOS te buscan de lejísimos,
+    // aunque estés volando o invisible (la luz te delata).
+    const faro = player._antorcha && state._noche;
     let puedeVer = !player.flying;
     if (player.invisible) puedeVer = t.verInvisible && dist < t.view * 0.55;
+    if (faro) puedeVer = true;
+    const verR = faro ? 130 : t.view;
+    const perderR = faro ? 200 : t.lose;
 
     if (this.state === 'wander') {
-      if (puedeVer && dist < t.view) this.state = 'chase';
-    } else if (!puedeVer || dist > t.lose) {
+      if (puedeVer && dist < verR) this.state = 'chase';
+    } else if (!puedeVer || dist > perderR) {
       this.state = 'wander';
     }
 
@@ -346,7 +354,7 @@ export class MobField {
 
   // usado por el Coloso para invocar ayudantes
   spawnAt(pos, typeId = 'sombra') {
-    if (this.mobs.length > 26) return;
+    if (this.mobs.length > 50) return;
     const x = Math.floor(pos.x + (Math.random() * 6 - 3));
     const z = Math.floor(pos.z + (Math.random() * 6 - 3));
     const y = this.world.surfaceY(x, z);
@@ -361,6 +369,37 @@ export class MobField {
   update(dt, player) {
     if (!this.enabled) return;
     const t = performance.now() / 200;
+
+    // Ajustar la cantidad a la hora del día (de noche se triplica).
+    if (!this.arenaMode) {
+      this._ajusteT = (this._ajusteT ?? 0) - dt;
+      if (this._ajusteT <= 0) {
+        this._ajusteT = 2;
+        const meta = cantidadEnemigos();
+        if (this.mobs.length < meta) {
+          // aparecen de a poco, lejos del jugador
+          for (let k = 0; k < 3 && this.mobs.length < meta; k++) {
+            const s = randomSpot(this.world);
+            if (Math.hypot(s.x - player.pos.x, s.z - player.pos.z) < 24) continue;
+            const mob = new Mob(this.world, s.x, s.y, s.z, eligeTipo());
+            const mesh = makeMesh(mob.def);
+            this.mobs.push(mob); this.meshes.push(mesh); this.scene.add(mesh);
+          }
+        } else if (this.mobs.length > meta + 6) {
+          // amaneció: sacar los sobrantes más lejanos (que no te estén persiguiendo)
+          let quitar = this.mobs.length - meta;
+          for (let i = this.mobs.length - 1; i >= 0 && quitar > 0; i--) {
+            const m = this.mobs[i];
+            if (m.state === 'chase') continue;
+            if (Math.hypot(m.pos.x - player.pos.x, m.pos.z - player.pos.z) < 50) continue;
+            this.scene.remove(this.meshes[i]);
+            this.mobs.splice(i, 1); this.meshes.splice(i, 1);
+            quitar--;
+          }
+        }
+      }
+    }
+
     for (let i = this.mobs.length - 1; i >= 0; i--) {
       const mob = this.mobs[i];
       mob.update(dt, player);
