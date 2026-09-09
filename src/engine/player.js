@@ -46,9 +46,10 @@ export class Player {
   // input: {forward, right, jump, sprint} con forward/right en [-1,1]
   update(dt, input) {
     const sinY = Math.sin(this.yaw), cosY = Math.cos(this.yaw);
-    // vector de movimiento en el plano
-    let mx = input.right * cosY + input.forward * sinY;
-    let mz = input.forward * -cosY + input.right * sinY;
+    // "adelante" siempre es hacia donde mira la cámara (yaw), sin importar el giro.
+    // dirección cámara-adelante (horizontal) = (-sinY, -cosY); cámara-derecha = (cosY, -sinY)
+    let mx = -input.forward * sinY + input.right * cosY;
+    let mz = -input.forward * cosY - input.right * sinY;
     const len = Math.hypot(mx, mz);
     if (len > 1) { mx /= len; mz /= len; }
 
