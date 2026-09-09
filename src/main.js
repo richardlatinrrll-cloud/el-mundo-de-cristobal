@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import './style.css';
 import { World, CHUNK, TIPOS } from './engine/world.js';
 import { buildChunkGeometry } from './engine/mesher.js';
+import { tickFluidos } from './engine/fluidos.js';
 import { buildAtlas, BLOCKS, PLACEABLES, blockName, blockEmoji, dropFor, AIR } from './engine/blocks.js';
 import { Player } from './engine/player.js';
 import { Controls } from './engine/controls.js';
@@ -9,6 +10,7 @@ import { state, save, LIMITE_EDITS } from './game/state.js';
 import { POWERS, powerById, poderDesbloqueado } from './game/powers/registry.js';
 import { mountMenu } from './ui/menu.js';
 import { openQuiz } from './quiz/quiz-ui.js';
+import { curarConTrivia } from './ui/curar-trivia.js';
 import { mountAprender } from './quiz/progress-ui.js';
 import { mountPoderes } from './game/power-hud.js';
 import { mountPersonajes } from './skin/skin-editor.js';
@@ -332,6 +334,7 @@ hud.innerHTML = `
   <div class="boss-bar" hidden>
     <div class="boss-name">Jefe</div>
     <div class="boss-hp"><i></i></div>
+    <button class="btn-curar" hidden>❤️ Curarme (5 preguntas)</button>
   </div>
   <button class="tool-chip" title="Cambiar herramienta (T)">✋ <span class="tc-name">Mano</span></button>
   <div class="hotbar"></div>
@@ -464,6 +467,7 @@ function updateHearts() {
   armBadge.hidden = n === 0;
   armBadge.querySelector('.arm-n').textContent = n;
   btnComer.hidden = !hayComida();
+  if (typeof updateBossBar === 'function') updateBossBar();
 }
 
 function hayComida() {
@@ -557,6 +561,8 @@ function updateMobBadge() {
 }
 
 const bossBar = hud.querySelector('.boss-bar');
+const btnCurar = hud.querySelector('.btn-curar');
+let _curarCd = 0;   // enfriamiento del botón de curación con trivia
 function updateBossBar() {
   const e = bosses.estado() || gemas.estado();
   bossBar.hidden = !e;
@@ -564,6 +570,27 @@ function updateBossBar() {
     bossBar.querySelector('.boss-name').textContent = e.nombre;
     bossBar.querySelector('.boss-hp > i').style.width = `${(e.hp / e.hpMax) * 100}%`;
   }
+  // botón de curación: solo en pelea de jefe, si estás bajo de vida y sin enfriamiento
+  const puede = !!e && !state.mundo.creador && state.salud < state.saludMax * 0.7 && _curarCd <= 0;
+  btnCurar.hidden = !puede;
+  btnCurar.textContent = _curarCd > 0 ? `⏳ Curación en ${Math.ceil(_curarCd)}s` : '❤️ Curarme (5 preguntas)';
+}
+btnCurar.addEventListener('click', () => abrirCurarTrivia());
+async function abrirCurarTrivia() {
+  if (_curarCd > 0 || mode !== 'jugar') return;
+  controls.disable();
+  hud.style.display = 'none';
+  touch.classList.remove('on');
+  const { curado } = await curarConTrivia();
+  _curarCd = 30;   // no se puede spamear
+  if (curado) { state.salud = state.saludMax; toast('❤️ ¡Vida recuperada!'); }
+  else toast('Sigue peleando y vuelve a intentarlo.', 1400);
+  // volver al juego
+  hud.style.display = 'block';
+  if (controls.isTouch) touch.classList.add('on');
+  updateHearts(); updateBossBar();
+  controls.enable();
+  last = performance.now();
 }
 
 const powerPicker = hud.querySelector('.power-picker');
@@ -1006,7 +1033,7 @@ function resize() {
 addEventListener('resize', resize);
 resize();
 
-let _wasGround = true, _pasoT = 0, _lavaCd = 0;
+let _wasGround = true, _pasoT = 0, _lavaCd = 0, _fluidoT = 0.5;
 function frame(dt) {
   if (mode === 'jugar') {
     player.update(dt, controls.state);
@@ -1037,6 +1064,9 @@ function frame(dt) {
     // vida: regeneración lenta al no recibir golpes
     _regenCd = Math.max(0, _regenCd - dt);
     _invulnCd = Math.max(0, _invulnCd - dt);
+    const _cc = _curarCd;
+    _curarCd = Math.max(0, _curarCd - dt);
+    if (_cc > 0 && _curarCd === 0) updateBossBar();   // reapareció el botón
     if (_regenCd === 0 && state.salud < state.saludMax && !state.mundo.creador) {
       state.salud = Math.min(state.saludMax, state.salud + 6 * dt);
       if (Math.random() < 0.06) updateHearts();
@@ -1048,6 +1078,11 @@ function frame(dt) {
     animals.update(dt, player);
     updateMobBadge();
     updateMiniMapa(dt);
+    _fluidoT -= dt;
+    if (_fluidoT <= 0) {
+      _fluidoT = 0.35;
+      tickFluidos(world, Math.floor(player.pos.x), Math.floor(player.pos.y), Math.floor(player.pos.z));
+    }
     streamChunks();
     actualizarMinado(dt);
     actualizarFlechas(dt);

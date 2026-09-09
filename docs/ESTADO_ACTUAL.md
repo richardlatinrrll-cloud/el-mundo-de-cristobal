@@ -1,6 +1,23 @@
 # Estado actual — El Mundo de Cristóbal
 
-_Actualizado: 2026-09-09 (Parte 7)_
+_Actualizado: 2026-09-09 (Parte 8)_
+
+## Parte 8 — Más difícil, curación con trivia, fluidos
+
+- **Enemigos MUCHO más duros** (`mobs.js`, `bosses.js`, `gemas.js`): HP ×2-4
+  (Sombra 7, Bruto 24, Gigante 60, Larguirucho 26; jefes 240-520; guardianes
+  70-430), más daño, más rápidos, atacan más seguido, más cantidad
+  (`cantidadEnemigos` 6→28), el Elfo invoca de a 2.
+- **Curación con trivia en pelea de jefe**: si estás bajo el 70% de vida durante
+  una pelea de jefe/guardián, aparece el botón **❤️ Curarme (5 preguntas)**
+  (`src/ui/curar-trivia.js`). Responde 5 preguntas de cualquier tema; con 4
+  aciertos recuperas **toda la vida**. Enfriamiento de 30 s. No afecta el
+  progreso de los temas.
+- **Agua y lava CORREN** (`src/engine/fluidos.js`, tick cada 0,35 s cerca del
+  jugador): caen si hay aire debajo; el fluido "alimentado" desde arriba (una
+  caída o poza) se extiende al lado y se derrama por los bordes; agua + lava =
+  roca oscura. Acotado (presupuesto por tick, radio 18, los lagos quietos no se
+  expanden ni se vacían).
 
 **Publicado en GitHub Pages** (repo público, sitio `noindex` + pantalla de clave
 para "solo para Cristóbal"). El deploy es automático: `git push` a `main` →
@@ -276,7 +293,7 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
   reproducción de Spotify DENTRO del juego no es posible en móvil (limitación
   del SDK de Spotify), por eso es "aparte".
 - **PWA**: manifest + service worker **network-first** (`public/sw.js`, caché
-  `mundo-cristobal-v12`). `npm run build` OK (bundle ~630 KB / 172 KB gzip;
+  `mundo-cristobal-v13`). `npm run build` OK (bundle ~630 KB / 172 KB gzip;
   bancos de preguntas en chunks aparte).
 
 ## Limitaciones conocidas / pendiente

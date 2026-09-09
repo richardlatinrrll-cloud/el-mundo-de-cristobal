@@ -17,23 +17,23 @@ import { ARMADURA_JEFE, JEFE_ARMADURA } from './recetas.js';
 export const BOSSES = [
   {
     id: 'golem', nombre: 'Trol de las Rocas', power: 'fuerza', forma: 'trol',
-    hp: 130, speed: 2.3, size: 2.6, color: 0x6f7d5a, eye: 0xffd166, corner: [0, 0],
-    dano: 16, ataques: ['roca', 'pisoton'],
+    hp: 320, speed: 2.7, size: 2.6, color: 0x6f7d5a, eye: 0xffd166, corner: [0, 0],
+    dano: 26, ataques: ['roca', 'pisoton'],
   },
   {
     id: 'rayo', nombre: 'Dragón Tormenta', power: 'velocidad', forma: 'dragon',
-    hp: 95, speed: 6.4, size: 2.2, color: 0x33507e, eye: 0x9fe8ff, corner: [1, 0], float: true,
-    dano: 13, ataques: ['aliento', 'embestida'],
+    hp: 240, speed: 7.2, size: 2.2, color: 0x33507e, eye: 0x9fe8ff, corner: [1, 0], float: true,
+    dano: 22, ataques: ['aliento', 'embestida'],
   },
   {
     id: 'ojo', nombre: 'Titán Ardiente', power: 'laser', forma: 'titan',
-    hp: 155, speed: 2.4, size: 3.0, color: 0xb0442e, eye: 0xff3020, corner: [0, 1],
-    dano: 22, ataques: ['laser', 'onda', 'pisoton'],
+    hp: 380, speed: 2.8, size: 3.0, color: 0xb0442e, eye: 0xff3020, corner: [0, 1],
+    dano: 34, ataques: ['laser', 'onda', 'pisoton', 'roca'],
   },
   {
     id: 'coloso', nombre: 'Elfo Oscuro', power: 'volar', forma: 'elfo',
-    hp: 210, speed: 3.5, size: 2.3, color: 0x3a2f52, eye: 0xc07bff, corner: [1, 1], minions: true,
-    dano: 18, ataques: ['sombra', 'invocar', 'parpadeo'],
+    hp: 520, speed: 4.0, size: 2.3, color: 0x3a2f52, eye: 0xc07bff, corner: [1, 1], minions: true,
+    dano: 30, ataques: ['sombra', 'invocar', 'parpadeo', 'onda'],
   },
 ];
 
@@ -116,7 +116,7 @@ class BossEntity {
     // golpe cuerpo a cuerpo (solo si estás a su altura, no si pasas por encima)
     const dyOk = Math.abs(player.pos.y - this.pos.y) < this.height * 0.7 + 1;
     if (dist < CATCH + d.size * 0.5 && dyOk && this.catchCd === 0) {
-      this.catchCd = 1.6;
+      this.catchCd = 1.2;
       const k = player._empuje ?? 1;
       player.pos.x -= mx * 6 * k;
       player.pos.z -= mz * 6 * k;
@@ -127,7 +127,7 @@ class BossEntity {
 
     // elegir un ataque
     if (this.atkCd === 0 && dist < 26 && d.ataques?.length) {
-      this.atkCd = 2.4 + Math.random() * 2.4;
+      this.atkCd = 1.3 + Math.random() * 1.6;
       const a = d.ataques[(Math.random() * d.ataques.length) | 0];
       this._atacar(a, player, arena, mx, mz, dd);
     }
@@ -135,7 +135,7 @@ class BossEntity {
     // el Elfo Oscuro invoca ayudantes
     if (d.minions) {
       this.minionCd -= dt;
-      if (this.minionCd <= 0) { this.minionCd = 8; arena.pedirMinion?.(this.pos); }
+      if (this.minionCd <= 0) { this.minionCd = 5.5; arena.pedirMinion?.(this.pos); arena.pedirMinion?.(this.pos); }
     }
   }
 

@@ -12,29 +12,30 @@ import { toast } from '../ui/toast.js';
 // - SÚPER VELOCIDAD: dejas atrás a casi todos (el Rayo-menor no).
 // - Los golpeas con clic/⛏️ apuntándoles de cerca, o con el GRITO SÓNICO en área.
 
+// Enemigos MUCHO más duros (aguantan más, pegan más, más rápidos, más cantidad).
 const TYPES = {
-  sombra:    { nombre: 'Sombra',    hp: 3, speed: 3.4, view: 13, lose: 22, knock: 4,  dano: 6,  color: 0x2b1e3a, eye: 0xff4d4d, size: 1.0, minNivel: 0,  peso: 5 },
-  veloz:     { nombre: 'Espectro',  hp: 3, speed: 5.3, view: 10, lose: 18, knock: 3,  dano: 5,  color: 0x1e2f3a, eye: 0x4dd2ff, size: 0.9, minNivel: 3,  peso: 3, verInvisible: false },
-  saltarin:  { nombre: 'Brincón',   hp: 4, speed: 3.1, view: 12, lose: 20, knock: 4,  dano: 7,  color: 0x143a1e, eye: 0xa8e10c, size: 0.95, minNivel: 6, peso: 3, salta: true },
-  bruto:     { nombre: 'Bruto',     hp: 8, speed: 2.3, view: 14, lose: 20, knock: 9,  dano: 14, color: 0x3a1e1e, eye: 0xff8a3d, size: 1.35, minNivel: 10, peso: 2 },
-  acechador: { nombre: 'Acechador', hp: 6, speed: 3.9, view: 19, lose: 28, knock: 5,  dano: 10, color: 0x241a2e, eye: 0xff2bd0, size: 1.05, minNivel: 15, peso: 2, verInvisible: true },
+  sombra:    { nombre: 'Sombra',    hp: 7,  speed: 3.9, view: 16, lose: 26, knock: 5,  dano: 9,  color: 0x2b1e3a, eye: 0xff4d4d, size: 1.0, minNivel: 0,  peso: 5 },
+  veloz:     { nombre: 'Espectro',  hp: 7,  speed: 6.2, view: 13, lose: 22, knock: 4,  dano: 8,  color: 0x1e2f3a, eye: 0x4dd2ff, size: 0.9, minNivel: 3,  peso: 3, verInvisible: false },
+  saltarin:  { nombre: 'Brincón',   hp: 10, speed: 3.6, view: 15, lose: 24, knock: 6,  dano: 11, color: 0x143a1e, eye: 0xa8e10c, size: 0.95, minNivel: 6, peso: 3, salta: true },
+  bruto:     { nombre: 'Bruto',     hp: 24, speed: 2.7, view: 16, lose: 24, knock: 11, dano: 22, color: 0x3a1e1e, eye: 0xff8a3d, size: 1.35, minNivel: 10, peso: 2 },
+  acechador: { nombre: 'Acechador', hp: 18, speed: 4.4, view: 22, lose: 32, knock: 6,  dano: 16, color: 0x241a2e, eye: 0xff2bd0, size: 1.05, minNivel: 15, peso: 2, verInvisible: true },
   // --- Parte 4: enemigos originales grandes ---
   larguirucho: {
-    nombre: 'El Larguirucho', hp: 9, speed: 7.4, view: 26, lose: 46, knock: 5,
-    dano: 12,
+    nombre: 'El Larguirucho', hp: 26, speed: 8.2, view: 30, lose: 55, knock: 6,
+    dano: 20,
     color: 0xe9e5da, eye: 0x4be0ff, size: 1.2, minNivel: 9, peso: 1,
     verInvisible: true, forma: 'alto', congelaConMirada: true,
     grito: '👁️ El Larguirucho te atrapó. No le quites la vista de encima.',
   },
   gigante: {
-    nombre: 'El Gigante', hp: 26, speed: 1.8, view: 17, lose: 26, knock: 15, dano: 30,
+    nombre: 'El Gigante', hp: 60, speed: 2.1, view: 19, lose: 28, knock: 16, dano: 42,
     color: 0x8a7357, eye: 0xffcf6a, size: 3.1, minNivel: 14, peso: 1,
     forma: 'gigante',
     grito: '🦶 ¡EL GIGANTE te aplastó! Es lento: corre lejos.',
   },
 };
 
-const CATCH_DIST = 1.15;
+const CATCH_DIST = 1.2;
 
 export function nivelDificultad() {
   const m = state.medallas || {};
@@ -42,7 +43,7 @@ export function nivelDificultad() {
 }
 
 export function cantidadEnemigos() {
-  return Math.min(4 + Math.round(nivelDificultad() * 0.8), 20);
+  return Math.min(6 + Math.round(nivelDificultad() * 1.15), 28);
 }
 
 function tiposDisponibles() {
@@ -116,7 +117,7 @@ class Mob {
       // ¿está a la misma altura? (no "atrapa" si pasas por encima o por debajo)
       const dyOk = Math.abs(player.pos.y - this.pos.y) < this.height * 0.7 + 0.9;
       if (dist < CATCH_DIST && dyOk && this.catchCooldown === 0 && !this._mirado) {
-        this.catchCooldown = t.forma === 'gigante' ? 1.6 : 2.2;
+        this.catchCooldown = t.forma === 'gigante' ? 1.4 : 1.4;
         const k = player._empuje ?? 1;   // Gema Vital reduce el empujón
         player.pos.x -= (dx / d) * (t.knock * 0.5) * k;
         player.pos.z -= (dz / d) * (t.knock * 0.5) * k;
