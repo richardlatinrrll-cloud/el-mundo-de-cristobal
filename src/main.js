@@ -272,9 +272,9 @@ hud.innerHTML = `
   <div class="vida-row">
     <div class="hearts"></div>
     <span class="arm-badge" hidden>🛡️ <span class="arm-n">0</span></span>
-    <button class="btn-comer" hidden>🍖 Comer</button>
   </div>
   <canvas class="mini-mapa" width="150" height="150" hidden></canvas>
+  <button class="btn-comer" hidden>🍖 Comer</button>
   <div class="mob-badge" hidden>👤 <span class="mb-n">0</span> enemigo(s) persiguiéndote</div>
   <div class="modo-badge" hidden>🎨 Modo creador</div>
   <div class="boss-bar" hidden>
