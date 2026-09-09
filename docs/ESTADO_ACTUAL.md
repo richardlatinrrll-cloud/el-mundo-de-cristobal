@@ -175,8 +175,10 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
 - **Se ve el arma/herramienta en primera persona** (`src/game/viewmodel.js`):
   una mano sostiene el pico / hacha / espada / arco / martillo y **se balancea
   al atacar**. Con súper fuerza el puño brilla. Se oculta en tercera persona.
-- **Grito sónico = onda 360°**: despeja y empuja a los enemigos en todas
-  direcciones alrededor tuyo (antes era un cono hacia adelante).
+- **Grito sónico = hacia adelante** (túnel + cono), con **efecto visual**: 3
+  anillos cian que viajan al frente. **Onda Prisma = 360°** (cráter esférico),
+  con **efecto visual**: domo que crece + 3 anillos de colores en el suelo.
+  `addFx` ahora acepta `delay` para escalonar los anillos.
 - **Botón ✨ solo cuando hace algo**: aparece únicamente si tienes el grito
   sónico, el Rayo del Martillo o la Onda Prisma.
 - **Bug corregido**: los enemigos ya **no te "aplastan" si pasas por encima**
@@ -264,7 +266,7 @@ GitHub Actions (`.github/workflows/deploy.yml`) construye y publica.
   reproducción de Spotify DENTRO del juego no es posible en móvil (limitación
   del SDK de Spotify), por eso es "aparte".
 - **PWA**: manifest + service worker **network-first** (`public/sw.js`, caché
-  `mundo-cristobal-v9`). `npm run build` OK (bundle ~630 KB / 172 KB gzip;
+  `mundo-cristobal-v10`). `npm run build` OK (bundle ~630 KB / 172 KB gzip;
   bancos de preguntas en chunks aparte).
 
 ## Limitaciones conocidas / pendiente

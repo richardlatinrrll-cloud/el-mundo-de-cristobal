@@ -749,8 +749,9 @@ function activarPoderAccion() {
 
 // ---------- efectos visuales cortos ----------
 const fx = [];
-function addFx(mesh, vida, fn) {
-  mesh.userData.t = 0; mesh.userData.vida = vida; mesh.userData.fn = fn;
+function addFx(mesh, vida, fn, delay = 0) {
+  mesh.userData.t = -delay; mesh.userData.vida = vida; mesh.userData.fn = fn;
+  mesh.visible = delay <= 0;
   scene.add(mesh); fx.push(mesh);
 }
 function updateFx(dt) {
@@ -758,6 +759,8 @@ function updateFx(dt) {
   for (let i = fx.length - 1; i >= 0; i--) {
     const m = fx[i];
     m.userData.t += dt;
+    if (m.userData.t < 0) continue;
+    m.visible = true;
     const k = m.userData.t / m.userData.vida;
     if (k >= 1) { scene.remove(m); fx.splice(i, 1); continue; }
     m.userData.fn?.(m, k);
@@ -786,7 +789,7 @@ function rayoMartillo() {
   toast(nm ? `⚡ ¡RAYO! Golpeaste a ${nm}` : '⚡ ¡RAYO!');
 }
 
-// Onda Prisma (Guante de Gemas completo): barre un área enorme alrededor tuyo.
+// Onda Prisma (Guante de Gemas completo): explota en 360° alrededor tuyo.
 function ondaPrisma() {
   if (_poderCd > 0) { toast(`✊ Onda Prisma se recarga (${Math.ceil(_poderCd)}s)`, 1000); return; }
   _poderCd = 12;
@@ -802,56 +805,86 @@ function ondaPrisma() {
           world.set(bx, by, bz, AIR); registrarEdit(bx, by, bz, AIR);
         }
       }
-  const ring = new THREE.Mesh(
-    new THREE.TorusGeometry(1, 0.28, 8, 28),
-    new THREE.MeshBasicMaterial({ color: 0xdfe6ff, transparent: true })
+  // --- efecto visual: domo que crece + 3 anillos escalonados en el suelo ---
+  const domo = new THREE.Mesh(
+    new THREE.SphereGeometry(1, 22, 12, 0, Math.PI * 2, 0, Math.PI / 2),
+    new THREE.MeshBasicMaterial({ color: 0xcfe6ff, transparent: true, side: THREE.DoubleSide, depthWrite: false })
   );
-  ring.rotation.x = Math.PI / 2;
-  ring.position.set(c.x, c.y + 0.5, c.z);
-  addFx(ring, 0.7, (m, k) => { m.scale.setScalar(1 + k * 18); m.material.opacity = 0.9 * (1 - k); });
+  domo.position.set(c.x, c.y - 0.2, c.z);
+  addFx(domo, 0.55, (m, k) => { m.scale.setScalar(1 + k * 17); m.material.opacity = 0.45 * (1 - k); });
+  for (let i = 0; i < 3; i++) {
+    const col = [0xff5a3c, 0x49b0ff, 0xffffff][i];
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(1, 0.32, 8, 34),
+      new THREE.MeshBasicMaterial({ color: col, transparent: true, depthWrite: false })
+    );
+    ring.rotation.x = Math.PI / 2;
+    ring.position.set(c.x, c.y + 0.3, c.z);
+    addFx(ring, 0.7, (m, k) => { m.scale.setScalar(1 + k * 19); m.material.opacity = 0.9 * (1 - k); }, i * 0.11);
+  }
   const nm = mobs.dañoEnRadio(c, 16, 40);
   bosses.dañoEnRadio(c, 16, 40);
   gemas.dañoEnRadio(c, 16, 40);
   animals.dañoEnRadio(c, 16, 40);
+  for (const m of mobs.mobs) {
+    const ex = m.pos.x - c.x, ez = m.pos.z - c.z, ed = Math.hypot(ex, ez);
+    if (ed < 16) { m.pos.x += (ex / (ed || 1)) * 7; m.pos.z += (ez / (ed || 1)) * 7; m.vel.y = 8; }
+  }
   audio.sfx('sonico');
   toast(nm ? `✊ ¡ONDA PRISMA! ${nm} enemigos barridos` : '✊ ¡ONDA PRISMA!');
 }
 
-// Grito sónico: onda en 360° alrededor tuyo (despeja y empuja a todos).
+// Grito sónico: onda dirigida HACIA ADELANTE (despeja un túnel y golpea en cono).
 function sonicBlast() {
   if (_poderCd > 0) { toast(`💥 El grito se recarga (${Math.ceil(_poderCd)}s)`, 900); return; }
   _poderCd = 5;
-  const c = player.pos.clone();
-  const R = 4;
-  for (let dx = -R; dx <= R; dx++)
-    for (let dy = -R; dy <= R; dy++)
-      for (let dz = -R; dz <= R; dz++) {
-        if (dx * dx + dy * dy + dz * dz > R * R) continue;
-        const bx = Math.floor(c.x + dx), by = Math.floor(c.y + dy), bz = Math.floor(c.z + dz);
+  const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+  dir.y *= 0.35; dir.normalize();
+  const right = new THREE.Vector3().crossVectors(dir, new THREE.Vector3(0, 1, 0)).normalize();
+  const up = new THREE.Vector3().crossVectors(right, dir).normalize();
+  const o = new THREE.Vector3(player.pos.x, player.pos.y + 1.1, player.pos.z);
+
+  // túnel que se abre hacia adelante
+  let removed = 0;
+  for (let d = 1; d <= 9; d++)
+    for (let a = -2; a <= 2; a++)
+      for (let b = -2; b <= 2; b++) {
+        const p = o.clone().addScaledVector(dir, d).addScaledVector(right, a * 0.95).addScaledVector(up, b * 0.95);
+        const bx = Math.floor(p.x), by = Math.floor(p.y), bz = Math.floor(p.z);
         const id = world.get(bx, by, bz);
         if (id !== AIR && (BLOCKS[id]?.hard ?? 1) < 99) {
-          world.set(bx, by, bz, AIR); registrarEdit(bx, by, bz, AIR);
+          world.set(bx, by, bz, AIR); registrarEdit(bx, by, bz, AIR); removed++;
           if (!state.mundo.creador) invAdd(dropFor(id), 1);
         }
       }
-  const ring = new THREE.Mesh(
-    new THREE.TorusGeometry(1, 0.22, 8, 26),
-    new THREE.MeshBasicMaterial({ color: 0x9fe8ff, transparent: true })
-  );
-  ring.rotation.x = Math.PI / 2;
-  ring.position.set(c.x, c.y + 0.6, c.z);
-  addFx(ring, 0.55, (m, k) => { m.scale.setScalar(1 + k * 11); m.material.opacity = 0.85 * (1 - k); });
-  const nMobs = mobs.dañoEnRadio(c, 11, 4);
-  bosses.dañoEnRadio(c, 11, 10);
-  gemas.dañoEnRadio(c, 11, 10);
-  animals.dañoEnRadio(c, 11, 3);
-  // empujar a los enemigos hacia afuera
+
+  // --- efecto visual: 3 anillos que viajan hacia adelante ---
+  for (let i = 0; i < 3; i++) {
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(0.5, 0.16, 8, 24),
+      new THREE.MeshBasicMaterial({ color: 0x9fe8ff, transparent: true, depthWrite: false })
+    );
+    ring.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), dir);
+    addFx(ring, 0.5, (m, k) => {
+      m.position.copy(o).addScaledVector(dir, 1 + k * 9);
+      m.scale.setScalar(1 + k * 4.5);
+      m.material.opacity = 0.9 * (1 - k);
+    }, i * 0.08);
+  }
+
+  const nMobs = mobs.dañoEnCono(o, dir, 11, 4);
+  bosses.dañoEnCono(o, dir, 11, 10);
+  gemas.dañoEnCono(o, dir, 11, 10);
+  animals.dañoEnCono?.(o, dir, 11, 3);
+  // empujar hacia adelante a los enemigos que estén en el cono
   for (const m of mobs.mobs) {
-    const ex = m.pos.x - c.x, ez = m.pos.z - c.z, ed = Math.hypot(ex, ez);
-    if (ed < 11) { m.pos.x += (ex / (ed || 1)) * 5; m.pos.z += (ez / (ed || 1)) * 5; m.vel.y = 6; }
+    const to = new THREE.Vector3(m.pos.x - o.x, 0, m.pos.z - o.z);
+    if (to.length() < 11 && to.clone().normalize().dot(dir) > 0.55) {
+      m.pos.x += dir.x * 6; m.pos.z += dir.z * 6; m.vel.y = 6;
+    }
   }
   audio.sfx('sonico');
-  toast(nMobs ? `💥 ¡ONDA SÓNICA! ${nMobs} golpeados` : '💥 ¡ONDA SÓNICA!');
+  toast(nMobs ? `💥 ¡GRITO SÓNICO! ${nMobs} golpeados` : '💥 ¡GRITO SÓNICO!');
 }
 
 // aplicar poder equipado a los parámetros del jugador

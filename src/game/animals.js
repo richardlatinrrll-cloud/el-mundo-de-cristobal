@@ -270,6 +270,18 @@ export class AnimalField {
     return n;
   }
 
+  // grito sónico (cono hacia adelante)
+  dañoEnCono(origin, dir, range, daño) {
+    let n = 0;
+    for (const a of this.animals) {
+      const to = new THREE.Vector3(a.pos.x - origin.x, a.pos.y - origin.y, a.pos.z - origin.z);
+      if (to.length() > range) continue;
+      if (to.normalize().dot(dir) < 0.55) continue;
+      a.daño(daño); n++;
+    }
+    return n;
+  }
+
   _spawnCercaDe(player) {
     for (let tries = 0; tries < 8; tries++) {
       const ang = Math.random() * Math.PI * 2, r = 40 + Math.random() * 30;
