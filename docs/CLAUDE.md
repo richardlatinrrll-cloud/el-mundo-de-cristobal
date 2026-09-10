@@ -106,7 +106,8 @@ dorado del Súper Saya).
 `menu.js`, `toast.js`, `crafteo.js` (libro de recetas), `tablero.js` (armado 3×3
 con guía fantasma), `gemas.js` (mapa + mini-mapa), `mundos.js`, `ajustes.js`,
 `clave.js`, `curar-trivia.js` (curarse en pelea de jefe), `pruebas.js` (Sala de
-pruebas, solo con clave maestra).
+pruebas, solo con clave maestra), `cofre.js` (guardar cosas; la mochila tiene
+tope `CARGA_MAX` en main.js).
 
 ### `main.js`
 Arranque, bucle de juego (`frame`), navegación de pantallas, romper/poner

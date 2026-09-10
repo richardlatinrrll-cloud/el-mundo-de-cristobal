@@ -113,9 +113,11 @@ class BossEntity {
       if (blocked && this.onGround) this.vel.y = 8;
     }
 
-    // golpe cuerpo a cuerpo (solo si estás a su altura, no si pasas por encima)
+    // golpe cuerpo a cuerpo (solo si estás a su altura, no si pasas por encima,
+    // y no si hay un muro en medio → un refugio protege)
     const dyOk = Math.abs(player.pos.y - this.pos.y) < this.height * 0.7 + 1;
-    if (dist < CATCH + d.size * 0.5 && dyOk && this.catchCd === 0) {
+    const muro = dist > 1.6 && this._muroEntre(player);
+    if (dist < CATCH + d.size * 0.5 && dyOk && !muro && this.catchCd === 0) {
       this.catchCd = 1.2;
       const k = player._empuje ?? 1;
       player.pos.x -= mx * 6 * k;
@@ -175,6 +177,16 @@ class BossEntity {
       this.pos.z = player.pos.z + Math.sin(ang) * 3.5;
       audio.sfx('menu');
     }
+  }
+
+  _muroEntre(player) {
+    const ox = this.pos.x, oz = this.pos.z, oy = player.pos.y + 0.9;
+    const dx = player.pos.x - ox, dz = player.pos.z - oz;
+    for (let i = 1; i < 4; i++) {
+      const f = i / 4;
+      if (isSolid(this.world.get(Math.floor(ox + dx * f), Math.floor(oy), Math.floor(oz + dz * f)))) return true;
+    }
+    return false;
   }
 
   _move(axis, amount) {
@@ -489,6 +501,27 @@ export class BossArena {
     this.onHud?.();
   }
 
+  // OLEADA: aparece un jefe al azar cerca del jugador (si no hay ninguno activo).
+  oleadaJefe(player) {
+    if (this.active) return;
+    const def = BOSSES[(Math.random() * BOSSES.length) | 0];
+    const entity = new BossEntity(this.world, def);
+    const ang = Math.random() * Math.PI * 2;
+    entity.pos.set(player.pos.x + Math.cos(ang) * 14, player.pos.y + 1, player.pos.z + Math.sin(ang) * 14);
+    entity.home.copy(entity.pos);
+    const mesh = makeBossMesh(def);
+    this.scene.add(mesh);
+    this.active = { def, entity, mesh, oleada: true };
+    audio.sfx('jefe');
+    toast(`⚔️ ¡${def.nombre} se sumó a la oleada!`, 3500);
+    this.onHud?.();
+  }
+
+  // al terminar la oleada, el jefe de la oleada se retira
+  calmarOleada() {
+    if (this.active && this.active.oleada) this._flee();
+  }
+
   _start(def) {
     const entity = new BossEntity(this.world, def);
     const mesh = makeBossMesh(def);
@@ -503,12 +536,16 @@ export class BossArena {
 
   _win() {
     const def = this.active.def;
+    const eraOleada = !!this.active.oleada;
     this.scene.remove(this.active.mesh);
     this.active = null;
     for (const p of this.proyectiles) this.scene.remove(p.mesh);
     this.proyectiles = [];
-    state.jefesDerrotados = state.jefesDerrotados || [];
-    if (!state.jefesDerrotados.includes(def.id)) state.jefesDerrotados.push(def.id);
+    // el jefe de una OLEADA no cuenta como "derrotado" (su torre-baliza sigue)
+    if (!eraOleada) {
+      state.jefesDerrotados = state.jefesDerrotados || [];
+      if (!state.jefesDerrotados.includes(def.id)) state.jefesDerrotados.push(def.id);
+    }
     state.stats = state.stats || {};
     state.stats.jefes = (state.stats.jefes || 0) + 1;
     // armadura inspirada en el jefe

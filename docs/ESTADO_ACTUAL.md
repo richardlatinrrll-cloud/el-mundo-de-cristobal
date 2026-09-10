@@ -8,7 +8,7 @@ cambios** por tandas.
 
 Publicado en **GitHub Pages** (deploy automático al hacer `git push`) y en el
 **servidor casero ARGOS** por Tailscale (`http://100.111.194.61:8082`).
-Caché del service worker: `mundo-cristobal-v23`.
+Caché del service worker: `mundo-cristobal-v24`.
 
 ---
 
@@ -35,11 +35,17 @@ Caché del service worker: `mundo-cristobal-v23`.
 - **Minado por tiempo** (`tools.js`): el tiempo depende de la dureza del bloque
   y del poder de la herramienta (mano → pico madera/piedra/hierro/cristal (3×3)
   → Martillo del Trueno (3×3)). Grieta que crece.
-- **Inventario**: al romper un bloque lo recoges; solo pones lo que tienes.
-  Mundo nuevo → **kit inicial** con bloques + materiales para fabricar (palo,
-  carbón, hierro, cristal, cuero, pluma) + **antorcha de mano**. Lo que
-  construyes se guarda (`state.mundoEdits`, localStorage) y vuelve al recargar
-  el mismo mundo. **Un mundo a la vez.**
+- **Inventario con tope** (`CARGA_MAX = 250`): al romper un bloque lo recoges,
+  pero la mochila **no es infinita** — cuando se llena hay que guardar cosas en
+  un **📦 Cofre**. HUD: 🎒 X/250 (rojo si lleno). Mundo nuevo → **kit inicial**
+  con bloques + materiales para fabricar + **antorcha de mano**.
+- **📦 Cofre** (`ui/cofre.js`, receta en Construir = 8 tablas): se coloca y se
+  **abre tocándolo con 🧱**. Guarda **todo lo que quieras** (sin tope). Pantalla
+  con lo que hay dentro + tu mochila; tocas un montón para moverlo; botones
+  "Guardar todo" / "Sacar todo". El contenido se guarda por posición
+  (`state.cofres`, por mundo). No se puede romper un cofre con cosas dentro.
+- Lo que construyes se guarda (`state.mundoEdits`, localStorage) y vuelve al
+  recargar el mismo mundo. **Un mundo a la vez.**
 - **Depósitos de materiales** (`world.suministros()`): en TODOS los tipos de
   mundo hay ~16–70 (según el tamaño) **montones de material en la superficie**
   (carbón, hierro, cristal, tablas, madera, piedra, arena) con una **antorcha
@@ -83,7 +89,7 @@ Caché del service worker: `mundo-cristobal-v23`.
   Editar/ampliar sin programar: `docs/COMO_EDITAR_PREGUNTAS.md`.
 - Intento = 5 preguntas del nivel actual, 4 aciertos para subir de medalla
   (Bronce → Plata → Oro). Ciclo completo verificado.
-- **10 poderes** (`powers/registry.js`), se equipan en "Mis poderes" y se
+- **11 poderes** (`powers/registry.js`), se equipan en "Mis poderes" y se
   cambian al vuelo con el chip del HUD:
 
   | poder | requisito | efecto |
@@ -93,6 +99,7 @@ Caché del service worker: `mundo-cristobal-v23`.
   | Súper salto | 3 bronce | saltas altísimo; ✨ salto colosal |
   | Visión láser | 1 plata | ✨ rayo que rompe el bloque y golpea en línea |
   | Invisibilidad | 2 plata | las Sombras no te ven; ✨ manto 6 s |
+  | Visión Nocturna | 1 plata | de noche ves casi como de día, sin antorcha (y sin que te delate) |
   | Modo Súper Saya | 3 plata | ✨ transformación ~15 s (ver abajo) |
   | Grito sónico | 1 oro | ✨ onda hacia adelante que despeja y golpea |
   | Volar | 2 oro | vuelo libre; ✨ impulso arriba |
@@ -274,3 +281,10 @@ para observar, no para morir mirando). Botón "Limpiar arena".
   pegan a través de un muro (`_muroEntre`), así que un cuarto con paredes de 2+
   y techo protege. Render capado a los 26 más cercanos en oleada.
   `window.__game.actions.oleada()` fuerza una para probar.
+- **Oleadas ++, Visión Nocturna, mochila con tope, Cofre** — las oleadas ahora
+  traen también **4 dinosaurios depredadores** (T-Rex, Raptor, Triceratops) y
+  **un jefe al azar** (que se retira al terminar la oleada y no cuenta como
+  "derrotado"). Nuevo poder **Visión Nocturna** (1 plata): de noche ves casi
+  como de día sin antorcha. La **mochila tiene tope** (250); lo que sobra va a
+  un **Cofre** que se fabrica (8 tablas) y guarda todo. El `_muroEntre` también
+  protege de dinos y del jefe.

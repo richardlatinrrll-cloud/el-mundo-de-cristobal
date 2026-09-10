@@ -91,7 +91,7 @@ export function mountMundos({ onVolver, onCrear }) {
       sel.tamano !== state.mundo.tamano ||
       (sel.semilla | 0) !== (state.mundo.semilla | 0);
     state.mundo = { tipo: sel.tipo, tamano: sel.tamano, semilla: sel.semilla | 0, creador: !!sel.creador };
-    if (cambioBase) { state.mundoEdits = {}; state.inventario = {}; }  // mundo nuevo => desde cero
+    if (cambioBase) { state.mundoEdits = {}; state.inventario = {}; state.cofres = {}; }  // mundo nuevo => desde cero
     save();
     onCrear();
   });

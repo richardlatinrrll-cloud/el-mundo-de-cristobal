@@ -33,6 +33,12 @@ export const POWERS = [
     aplica(p) { p.invisible = true; },
   },
   {
+    id: 'vnocturna', nombre: 'Visión Nocturna', emoji: '🌗',
+    desc: 'De noche ves casi como de día, sin necesidad de antorcha (y sin que la luz te delate).',
+    req: { plata: 1 },
+    aplica(p) { p.visionNocturna = true; },
+  },
+  {
     id: 'sonico', nombre: 'Grito sónico', emoji: '💥',
     desc: 'Onda hacia adelante que despeja el terreno y golpea. (Botón ✨)',
     req: { oro: 1 },

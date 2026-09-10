@@ -119,6 +119,9 @@ export const FORMAS = [
     patron: [[P, '7', P], [P, '7', P], [null, null, null]] },
   { id: 'escalera', nombre: 'Escalera (x3)', emoji: '🪜', cat: 'Construir', da: { 25: 3 }, pista: 'Se trepa',
     patron: [[P, null, P], [P, P, P], [P, null, P]] },
+  { id: 'cofre',    nombre: 'Cofre',         emoji: '📦', cat: 'Construir', da: { 26: 1 },
+    pista: 'Guarda todas tus cosas. Tócalo con 🧱 para abrirlo.',
+    patron: [['7', '7', '7'], ['7', null, '7'], ['7', '7', '7']] },
 
   // --- Herramientas ---
   { id: 'pico_piedra',  nombre: 'Pico de piedra',  emoji: '⛏️', cat: 'Herramientas', da: { pico_piedra: 1 },

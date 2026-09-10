@@ -31,12 +31,13 @@ export const BLOCKS = {
   23:{ name: 'Antorcha',      all: '#ffcf6a', hard: 1, glow: true, alpha: true, paso: true },
   24:{ name: 'Valla',         all: '#9a6f3f', hard: 2 },
   25:{ name: 'Escalera',      all: '#a8813f', hard: 1, alpha: true, paso: true, escalera: true },
+  26:{ name: 'Cofre',         top: '#b0854c', side: '#8a6234', bottom: '#6b4a2f', hard: 2, cofre: true },
 };
 
 export const HOTBAR = [1, 3, 7, 4, 5, 6, 8, 9];
 
 // bloques que el jugador puede colocar (para el modo creador: barra completa)
-export const PLACEABLES = [1, 2, 3, 4, 6, 7, 8, 9, 11, 13, 15, 20, 22, 23, 24, 25];
+export const PLACEABLES = [1, 2, 3, 4, 6, 7, 8, 9, 11, 13, 15, 20, 22, 23, 24, 25, 26];
 
 // qué se suelta al romper `id`
 export function dropFor(id) {
@@ -57,7 +58,7 @@ export function blockEmoji(id) {
     1: '🌱', 2: '🟫', 3: '🪨', 4: '🪵', 5: '🍃', 6: '🟨',
     7: '🟧', 8: '🧱', 9: '🔷', 11: '⬜', 12: '🌵', 13: '⬛',
     14: '🔥', 15: '🌑', 16: '⚫', 17: '⚙️', 18: '🟡', 19: '💠',
-    20: '🚪', 21: '🚪', 22: '🪟', 23: '🕯️', 24: '🚧', 25: '🪜',
+    20: '🚪', 21: '🚪', 22: '🪟', 23: '🕯️', 24: '🚧', 25: '🪜', 26: '📦',
   })[id] || '⬛';
 }
 export function isSolid(id) {
@@ -285,6 +286,16 @@ function paintCell(ctx, id, row, color, def, cara) {
       ctx.strokeRect(x + 3, y + 3, CELL - 6, (CELL - 6) / 2);
       ctx.fillStyle = '#e8c24a'; ctx.fillRect(x + CELL - 8, y + CELL / 2 - 1, 3, 3); // pomo
       if (id === 21) { ctx.globalAlpha = 0.4; ctx.clearRect(x + 4, y + 4, CELL - 8, CELL - 8); ctx.globalAlpha = 1; }
+      borde(ctx, x, y); return;
+    }
+
+    case 26: { // Cofre
+      base(ctx, x, y, c, 8, 0.4);
+      ctx.strokeStyle = css(...mul(c, 0.5)); ctx.lineWidth = 2;
+      ctx.strokeRect(x + 3, y + 3, CELL - 6, CELL - 6);
+      ctx.beginPath(); ctx.moveTo(x + 3, y + CELL / 2 - 3); ctx.lineTo(x + CELL - 3, y + CELL / 2 - 3); ctx.stroke(); // tapa
+      ctx.fillStyle = '#c9b070'; ctx.fillRect(x + CELL / 2 - 2, y + CELL / 2 - 5, 4, 6); // cerrojo
+      ctx.lineWidth = 1;
       borde(ctx, x, y); return;
     }
   }

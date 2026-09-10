@@ -326,6 +326,34 @@ canvas { display: block; touch-action: none; }
 }
 #hud .oleada-banner .ol-t { font-variant-numeric: tabular-nums; opacity: .9; }
 
+#hud .carga-badge {
+  position: absolute; right: 12px; bottom: 92px;
+  background: #1c2230dd; border: 1px solid #ffffff26; border-radius: 9px;
+  padding: 5px 9px; font-size: 12px; font-weight: 700;
+}
+#hud .carga-badge.lleno { background: #7a1030ee; border-color: #ff3b6b; }
+
+.cofre-cols { display: flex; gap: 14px; flex-wrap: wrap; }
+.cofre-col { flex: 1 1 260px; min-width: 240px; }
+.cofre-col .btn { margin-top: 8px; width: 100%; }
+.cofre-carga { font-size: 12px; opacity: .7; font-weight: 500; }
+.cofre-grid {
+  display: grid; grid-template-columns: 1fr; gap: 5px;
+  max-height: 46vh; overflow-y: auto; padding: 4px;
+  background: #0e1220a0; border-radius: 10px; min-height: 60px;
+}
+.cofre-vacio { opacity: .5; text-align: center; padding: 16px; font-size: 13px; }
+.cofre-item {
+  display: grid; grid-template-columns: 30px 44px 1fr; align-items: center;
+  gap: 6px; padding: 7px 8px; border-radius: 8px; text-align: left;
+  background: var(--panel-2); border: 1px solid #ffffff1c; color: var(--ink);
+  font: inherit; cursor: pointer;
+}
+.cofre-item:hover { background: #ffffff18; }
+.cofre-item .ci-emoji { font-size: 18px; }
+.cofre-item .ci-n { font-weight: 800; font-variant-numeric: tabular-nums; }
+.cofre-item .ci-name { font-size: 12px; opacity: .85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 .semilla-input {
   width: 130px; padding: 8px 10px; border-radius: 10px;
   border: 2px solid #ffffff2a; background: var(--panel-2); color: var(--ink); font: inherit;

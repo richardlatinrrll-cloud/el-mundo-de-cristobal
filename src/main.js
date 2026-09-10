@@ -23,6 +23,7 @@ import { mountAjustes } from './ui/ajustes.js';
 import { mountCrafteo } from './ui/crafteo.js';
 import { mountTablero } from './ui/tablero.js';
 import { mountPruebas } from './ui/pruebas.js';
+import { mountCofre } from './ui/cofre.js';
 import { mountGemas, dibujarMiniMapa } from './ui/gemas.js';
 import { GemQuest, GEMAS, aplicarGemas } from './game/gemas.js';
 import { COMIDA, reduccionArmadura, ARMADURA_JEFE } from './game/recetas.js';
@@ -34,6 +35,15 @@ import { ViewModel } from './game/viewmodel.js';
 import { toast } from './ui/toast.js';
 
 const app = document.getElementById('app');
+
+// El jugador NO puede cargar cosas infinitas: hay un tope (lo que sobra se
+// guarda en un Cofre).
+const CARGA_MAX = 250;
+function invTotal() {
+  let s = 0;
+  for (const v of Object.values(state.inventario)) s += v;
+  return s;
+}
 
 // kit con que empieza un mundo nuevo normal: bloques + materiales para fabricar
 const KIT_INICIAL = {
@@ -74,6 +84,7 @@ const dayNight = new DayNight(scene, renderer);
 // luz de la antorcha de mano: sigue al jugador cuando la lleva equipada
 const torchLight = new THREE.PointLight(0xffb060, 0, 11, 2);
 scene.add(torchLight);
+const _fogVision = new THREE.Color(0x5a6b8a);   // niebla clara para la Visión Nocturna
 
 // Atlas de texturas
 const atlas = buildAtlas();
@@ -345,6 +356,7 @@ hud.innerHTML = `
     <button class="btn-curar" hidden>❤️ Curarme (5 preguntas)</button>
   </div>
   <button class="tool-chip" title="Cambiar herramienta (T)">✋ <span class="tc-name">Mano</span></button>
+  <div class="carga-badge" hidden>🎒 <span class="cg-n">0</span>/<span class="cg-max">250</span></div>
   <div class="hotbar"></div>
 `;
 app.appendChild(hud);
@@ -419,16 +431,30 @@ function regaloDeCortesia() {
   state.regaloAntorcha = true;
   if (!state.herramientas.includes('antorcha')) state.herramientas.push('antorcha');
   const extra = { palo: 18, carbon: 14, hierro: 12, cristal: 6, cuero: 6, pluma: 6, 3: 16, 7: 12 };
-  for (const [k, v] of Object.entries(extra)) state.inventario[k] = (state.inventario[k] || 0) + v;
+  for (const [k, v] of Object.entries(extra)) invAdd(k, v);   // respeta el tope
   save();
   toast('🎁 Regalo: 🔥 antorcha de mano (tecla T) + materiales para fabricar. Hay más repartidos por el mapa.', 4500);
 }
+let _avisoCarga = 0;
 function invAdd(id, n = 1) {
-  if (!id) return;
+  if (!id) return 0;
+  if (!state.mundo.creador) {
+    const libre = CARGA_MAX - invTotal();
+    if (libre <= 0) {
+      if (performance.now() - _avisoCarga > 4000) {
+        _avisoCarga = performance.now();
+        toast('🎒 Mochila llena. Fabrica un 📦 Cofre y guarda cosas ahí.', 3200);
+      }
+      updateHotbar();
+      return 0;
+    }
+    n = Math.min(n, libre);
+  }
   state.inventario[id] = (state.inventario[id] || 0) + n;
   clearTimeout(saveTimer);
   saveTimer = setTimeout(save, 1200);
   updateHotbar();
+  return n;
 }
 function invTake(id) {
   if ((state.inventario[id] || 0) <= 0) return false;
@@ -465,6 +491,16 @@ function updateHotbar() {
     return `<div class="slot ${i === hotIndex ? 'active' : ''}" title="${blockName(id)}">${blockEmoji(id)}${n}</div>`;
   }).join('');
   bar.querySelectorAll('.slot').forEach((el, i) => el.addEventListener('click', () => { hotIndex = i; updateHotbar(); }));
+  updateCargaBadge();
+}
+const cargaBadge = hud.querySelector('.carga-badge');
+function updateCargaBadge() {
+  if (state.mundo.creador) { cargaBadge.hidden = true; return; }
+  const t = invTotal();
+  cargaBadge.hidden = t < 100;   // solo aparece cuando ya llevas bastante
+  cargaBadge.querySelector('.cg-n').textContent = t;
+  cargaBadge.querySelector('.cg-max').textContent = CARGA_MAX;
+  cargaBadge.classList.toggle('lleno', t >= CARGA_MAX);
 }
 updateHotbar();
 
@@ -601,11 +637,15 @@ function iniciarOleada() {
   _oleadaT = 15 * 60;
   _avisoOleada = false;
   mobs.oleada(player);
+  animals.oleadaDinos(player, 4);   // dinos depredadores
+  bosses.oleadaJefe(player);        // + un jefe al azar
   audio.sfx('jefe');
-  toast('🌊 ¡OLEADA! Todos los monstruos vienen por ti. ¡Métete en un refugio!', 4500);
+  toast('🌊 ¡OLEADA! Monstruos, dinosaurios y un JEFE vienen por ti. ¡Métete en un refugio!', 5000);
 }
 function terminarOleada() {
   state._oleada = false;
+  animals.limpiarOleada();
+  bosses.calmarOleada();
   toast('🌊 La oleada pasó. Repara el refugio para la próxima.', 3500);
 }
 function updateOleada(dt) {
@@ -724,6 +764,15 @@ function quitarBloque(x, y, z) {
   const id = world.get(x, y, z);
   if (id === AIR) return false;
   if ((BLOCKS[id]?.hard ?? 1) >= 99 && !player.instaBreak) return false;
+  // un cofre con cosas dentro no se puede romper: hay que vaciarlo antes
+  if (id === 26) {
+    const k = `${x},${y},${z}`;
+    if (state.cofres[k] && Object.values(state.cofres[k]).some((n) => n > 0)) {
+      toast('📦 Vacía el cofre antes de romperlo (tócalo con 🧱).', 2200);
+      return false;
+    }
+    delete state.cofres[k];
+  }
   world.set(x, y, z, AIR);
   registrarEdit(x, y, z, AIR);
   if (!state.mundo.creador) {
@@ -792,6 +841,12 @@ function placeBlock() {
 
   const r = currentRay();
   if (!r) return;
+  // ¿estoy apuntando a un cofre? -> abrirlo
+  const apB = world.get(r.hit.x, r.hit.y, r.hit.z);
+  if (apB === 26) {
+    abrirCofreEnJuego(`${r.hit.x},${r.hit.y},${r.hit.z}`);
+    return;
+  }
   // ¿estoy apuntando a una puerta? -> abrir/cerrar las dos mitades
   const ap = world.get(r.hit.x, r.hit.y, r.hit.z);
   if (ap === 20 || ap === 21) {
@@ -1112,7 +1167,7 @@ export function aplicarPoderEquipado() {
   // reset a valores base
   player.speed = 4.6; player.sprintMul = 1; player.jumpV = 8.2;
   player.flying = false; player.instaBreak = false; player.reach = 6; player.invisible = false;
-  player._gemDano = 1; player._empuje = 1;
+  player._gemDano = 1; player._empuje = 1; player.visionNocturna = false;
   const id = state.poderEquipado;
   const power = id && powerById(id);
   if (power && power.aplica) power.aplica(player);
@@ -1263,6 +1318,16 @@ function frame(dt) {
     }
   }
   dayNight.update(dt, camera);
+  // poder Visión Nocturna: sube la luz ambiente y aclara la niebla para que
+  // veas de noche casi como de día
+  if (mode === 'jugar' && player.visionNocturna) {
+    dayNight.hemi.intensity = Math.max(dayNight.hemi.intensity, 0.95);
+    dayNight.sun.intensity = Math.max(dayNight.sun.intensity, 0.5);
+    if (dayNight.esNoche()) {
+      scene.fog.color.lerp(_fogVision, 0.1);
+      renderer.setClearColor(scene.fog.color);
+    }
+  }
   if (world && mode !== 'jugar') streamChunks();
   renderer.render(scene, camera);
 }
@@ -1362,6 +1427,14 @@ function abrirTableroEnJuego() {
   hud.style.display = 'none';
   touch.classList.remove('on');
   openScreen('tablero');
+}
+function abrirCofreEnJuego(key) {
+  controls.disable();
+  hud.style.display = 'none';
+  touch.classList.remove('on');
+  audio.sfx('poner');
+  openScreen('cofre');            // crea/muestra la pantalla
+  screens.cofre.abrir(key);       // carga el contenido de ESTE cofre
 }
 
 // --- Sala de pruebas (clave maestra) ---
@@ -1521,6 +1594,12 @@ function openScreen(name) {
         getWorld: () => world,
         getPlayer: () => player,
       });
+    } else if (name === 'cofre') {
+      screens[name] = mountCofre({
+        onVolver: () => volverAlJuego(),
+        cargaMax: CARGA_MAX,
+      });
+      screens[name].addEventListener('cambio', () => { updateHotbar(); });
     }
     app.appendChild(screens[name]);
   }

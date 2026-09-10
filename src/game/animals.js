@@ -117,7 +117,7 @@ class Animal {
     else if (this.estado === 'carga') {
       mx = dx / dd; mz = dz / dd; speed = d.vel * (depredador ? 1.15 : 1.6);
       const alcance = 1.2 + this.def.size * 0.4;
-      if (dist < alcance && this.cargaCd === 0) {
+      if (dist < alcance && this.cargaCd === 0 && !this._muroEntre(player)) {
         this.cargaCd = depredador ? 1.4 : 3;
         const k = player._empuje ?? 1;
         player.pos.x -= mx * 4 * k; player.pos.z -= mz * 4 * k; player.vel.y = 6 * k;
@@ -154,6 +154,17 @@ class Animal {
     const nx = Math.floor(this.pos.x + Math.sign(mx) * 0.5);
     const nz = Math.floor(this.pos.z + Math.sign(mz) * 0.5);
     return isSolid(this.world.get(nx, Math.floor(this.pos.y), nz));
+  }
+
+  // ¿hay un muro entre el animal y el jugador? (para que un refugio proteja)
+  _muroEntre(player) {
+    const ox = this.pos.x, oz = this.pos.z, oy = player.pos.y + 0.9;
+    const dx = player.pos.x - ox, dz = player.pos.z - oz;
+    for (let i = 1; i < 4; i++) {
+      const f = i / 4;
+      if (isSolid(this.world.get(Math.floor(ox + dx * f), Math.floor(oy), Math.floor(oz + dz * f)))) return true;
+    }
+    return false;
   }
 
   _move(axis, amount) {
@@ -327,6 +338,29 @@ export class AnimalField {
   clear() {
     for (const m of this.meshes) this.scene.remove(m);
     this.animals = []; this.meshes = [];
+  }
+
+  // OLEADA: aparecen dinosaurios depredadores en anillo alrededor del jugador.
+  oleadaDinos(player, n = 4) {
+    const deps = ['trex', 'raptor', 'raptor', 'triceratops'];
+    for (let i = 0; i < n; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const r = 24 + Math.random() * 20;
+      const x = Math.floor(player.pos.x + Math.cos(ang) * r);
+      const z = Math.floor(player.pos.z + Math.sin(ang) * r);
+      if (!this.world.inside(x, 0, z)) continue;
+      const y = this.world.surfaceY(x, z);
+      if (y <= 2 || y >= SY - 3) continue;
+      const a = this.spawnUno(deps[i % deps.length], x, y, z);
+      if (a) { a.estado = 'carga'; a.timer = 999; a._oleada = true; }
+    }
+  }
+
+  // al terminar la oleada se van los dinos de la oleada
+  limpiarOleada() {
+    for (let i = this.animals.length - 1; i >= 0; i--) {
+      if (this.animals[i]._oleada) { this.scene.remove(this.meshes[i]); this.animals.splice(i, 1); this.meshes.splice(i, 1); }
+    }
   }
 
   // Sala de pruebas: aparece un animal concreto (por id) al lado del jugador.

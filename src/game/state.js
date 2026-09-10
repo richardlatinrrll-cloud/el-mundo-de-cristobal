@@ -29,6 +29,8 @@ const DEFAULT = {
   mundo: { tipo: 'llanuras', tamano: 'pequeno', semilla: 12345, creador: false },
   // lo que el jugador construyó/rompió en este mundo: { "x,y,z": idBloque }
   mundoEdits: {},
+  // contenido de los cofres de este mundo: { "x,y,z": { idItem: cantidad } }
+  cofres: {},
   // bloques que el jugador tiene recogidos para construir: { "idBloque": cantidad }
   inventario: {},
   // herramientas que tiene y cuál usa
