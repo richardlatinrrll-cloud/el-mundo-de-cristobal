@@ -83,7 +83,7 @@ La clave se pide **cada vez** que se abre el juego. Solo se guardan los hashes.
 | `topics.js` | los 11 temas de estudio |
 | `powers/registry.js` | los 10 poderes y sus requisitos (`req` en medallas, o `gema`) |
 | `power-hud.js` | pantalla "Mis poderes" |
-| `mobs.js` | 8 enemigos por tipo, escalan con tu nivel de medallas (`MobField`) |
+| `mobs.js` | 8 enemigos (el Autómata es GIGANTE), escalan con las medallas; `oleada()` = horda cada ~15 min; `_muroEntre` = un muro te protege (`MobField`) |
 | `bosses.js` | 4 jefes en zonas con baliza; el poder correcto hace 3× daño; ataques propios (`BossArena`) |
 | `gemas.js` | Búsqueda de las 6 Gemas de Poder, guardián por gema (`GemQuest`) |
 | `animals.js` | 9 animales + 4 dinosaurios (`AnimalField`); caza → carne/cuero/pluma/lana |

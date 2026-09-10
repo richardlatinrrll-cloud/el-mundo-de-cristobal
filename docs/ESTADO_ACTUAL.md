@@ -8,7 +8,7 @@ cambios** por tandas.
 
 Publicado en **GitHub Pages** (deploy automático al hacer `git push`) y en el
 **servidor casero ARGOS** por Tailscale (`http://100.111.194.61:8082`).
-Caché del service worker: `mundo-cristobal-v22`.
+Caché del service worker: `mundo-cristobal-v23`.
 
 ---
 
@@ -122,8 +122,18 @@ Caché del service worker: `mundo-cristobal-v22`.
   medallas: Sombra, Espectro (rápido), Brincón (salta), Bruto (tanque),
   Acechador (ve lejos, detecta parte de la invisibilidad), **El Larguirucho**
   (se frena mientras lo miras, corre cuando no), **El Gigante** (lento, te manda
-  a volar, pisotón telegrafiado), **El Autómata** (robot con 4 brazos-cuchilla
-  giratorios, ve la invisibilidad, nivel 12+).
+  a volar, pisotón telegrafiado), **El Autómata GIGANTE** (robot enorme —más
+  alto que El Gigante— con 4 brazos-cuchilla, brazos larguísimos, mucha vida,
+  ve la invisibilidad).
+- **Un muro (2+ bloques) te protege de verdad**: los enemigos no pueden pegarte
+  si hay un bloque sólido en medio, aunque el brazo sea largo (`_muroEntre`).
+  Así un refugio con paredes y techo funciona.
+- **OLEADAS** (`main.js`, `mobs.oleada()`): cada cierto tiempo (la 1ª a los ~8
+  min, después cada 15) llega una **oleada de ~60 monstruos** de todos los
+  tipos (incluidos gigantes) que aparecen alrededor tuyo y te persiguen todos
+  a la vez — casi inunda el mapa. Aviso 1 minuto antes; banner con cuenta atrás
+  (dura 3 min); toast al terminar. **Hay que refugiarse.** Rendimiento: solo se
+  dibujan los ~26 más cercanos (los demás igual atacan).
 - **4 jefes** (`bosses.js`) en torres-baliza que aparecen al desbloquear su
   poder: **Trol de las Rocas** (fuerza), **Dragón Tormenta** (velocidad),
   **Titán Ardiente** (láser), **Elfo Oscuro** (volar). Mucha vida, ataques
@@ -257,3 +267,10 @@ para observar, no para morir mirando). Botón "Limpiar arena".
   en main.js, flag `state.regaloAntorcha`). El kit inicial de mundos nuevos
   también trae materiales + antorcha. Y `world.suministros()` reparte montones
   de material con antorcha-baliza por la superficie de todos los mapas.
+- **Oleadas + Autómata gigante + refugio de verdad** — cada ~15 min (1ª a los
+  ~8) llega una oleada de ~60 monstruos de todos los tipos que te persiguen a
+  la vez (banner con cuenta atrás, aviso 1 min antes, dura 3 min). El Autómata
+  ahora es GIGANTE (más alto que El Gigante, vida 150). Los enemigos ya no
+  pegan a través de un muro (`_muroEntre`), así que un cuarto con paredes de 2+
+  y techo protege. Render capado a los 26 más cercanos en oleada.
+  `window.__game.actions.oleada()` fuerza una para probar.

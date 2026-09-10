@@ -337,6 +337,7 @@ hud.innerHTML = `
   <canvas class="mini-mapa" width="150" height="150" hidden></canvas>
   <button class="btn-comer" hidden>🍖 Comer</button>
   <div class="mob-badge" hidden>👤 <span class="mb-n">0</span> enemigo(s) persiguiéndote</div>
+  <div class="oleada-banner" hidden>🌊 ¡OLEADA! <span class="ol-t"></span></div>
   <div class="modo-badge" hidden>🎨 Modo creador</div>
   <div class="boss-bar" hidden>
     <div class="boss-name">Jefe</div>
@@ -584,6 +585,45 @@ function updateMobBadge() {
   const n = mobs.chasing();
   mobBadge.hidden = n === 0;
   if (n) mobBadge.querySelector('.mb-n').textContent = n;
+}
+
+// ---------- Oleadas ----------
+// Cada cierto tiempo llega una OLEADA: casi inunda el mapa de monstruos y hay
+// que refugiarse (un cuarto con paredes de 2+ y techo aguanta). La 1ª a los
+// ~8 min para descubrir la mecánica; después cada 15 min.
+const oleadaBanner = hud.querySelector('.oleada-banner');
+let _oleadaT = 8 * 60;        // segundos para la próxima oleada
+let _oleadaFin = 0;           // performance.now()/1000 en que termina la actual
+let _avisoOleada = false;
+function iniciarOleada() {
+  state._oleada = true;
+  _oleadaFin = performance.now() / 1000 + 180;   // dura 3 minutos
+  _oleadaT = 15 * 60;
+  _avisoOleada = false;
+  mobs.oleada(player);
+  audio.sfx('jefe');
+  toast('🌊 ¡OLEADA! Todos los monstruos vienen por ti. ¡Métete en un refugio!', 4500);
+}
+function terminarOleada() {
+  state._oleada = false;
+  toast('🌊 La oleada pasó. Repara el refugio para la próxima.', 3500);
+}
+function updateOleada(dt) {
+  if (state.mundo.creador) { oleadaBanner.hidden = true; return; }
+  if (state._oleada) {
+    const quedan = Math.max(0, Math.ceil(_oleadaFin - performance.now() / 1000));
+    oleadaBanner.hidden = false;
+    oleadaBanner.querySelector('.ol-t').textContent = `${Math.floor(quedan / 60)}:${String(quedan % 60).padStart(2, '0')}`;
+    if (quedan <= 0) { terminarOleada(); oleadaBanner.hidden = true; }
+    return;
+  }
+  oleadaBanner.hidden = true;
+  _oleadaT -= dt;
+  if (_oleadaT <= 60 && !_avisoOleada) {
+    _avisoOleada = true;
+    toast('⚠️ ¡Se acerca una OLEADA en 1 minuto! Encierra un cuarto con paredes de 2 de alto y techo.', 6000);
+  }
+  if (_oleadaT <= 0) iniciarOleada();
 }
 
 const bossBar = hud.querySelector('.boss-bar');
@@ -1123,6 +1163,7 @@ function frame(dt) {
       torchLight.intensity = 0;
       player._faroAviso = 0;
     }
+    updateOleada(dt);
     // Manto de sombra (acción del poder invisibilidad)
     if (player._mantoT > 0) {
       player._mantoT -= dt;
@@ -1534,5 +1575,5 @@ window.__game = {
   get bosses() { return bosses; },
   get animals() { return animals; },
   get gemas() { return gemas; },
-  actions: { romper: breakBlock, poner: placeBlock, poder: activarPoderAccion, comer, dañar: dañarJugador },
+  actions: { romper: breakBlock, poner: placeBlock, poder: activarPoderAccion, comer, dañar: dañarJugador, oleada: iniciarOleada },
 };

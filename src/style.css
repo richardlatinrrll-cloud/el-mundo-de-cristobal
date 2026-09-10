@@ -318,6 +318,14 @@ canvas { display: block; touch-action: none; }
   padding: 6px 12px; font-weight: 700; font-size: 13px;
 }
 
+#hud .oleada-banner {
+  position: absolute; top: 90px; right: 12px;
+  background: #7a1030ee; border: 2px solid #ff3b6b; border-radius: 11px;
+  padding: 8px 13px; font-weight: 800; font-size: 14px; letter-spacing: .3px;
+  text-shadow: 0 1px 3px #000; animation: pulseBad .8s infinite;
+}
+#hud .oleada-banner .ol-t { font-variant-numeric: tabular-nums; opacity: .9; }
+
 .semilla-input {
   width: 130px; padding: 8px 10px; border-radius: 10px;
   border: 2px solid #ffffff2a; background: var(--panel-2); color: var(--ink); font: inherit;

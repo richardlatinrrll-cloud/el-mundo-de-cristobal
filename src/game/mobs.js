@@ -34,10 +34,10 @@ const TYPES = {
     grito: '🦶 ¡EL GIGANTE te aplastó! Es lento: corre lejos.',
   },
   automata: {
-    nombre: 'El Autómata', hp: 70, speed: 3.0, view: 22, lose: 36, knock: 12, dano: 24,
-    color: 0x6b7280, eye: 0x35f0ff, size: 1.9, minNivel: 12, peso: 1,
+    nombre: 'El Autómata', hp: 150, speed: 2.6, view: 26, lose: 40, knock: 20, dano: 36,
+    color: 0x6b7280, eye: 0x35f0ff, size: 3.7, minNivel: 12, peso: 1,
     forma: 'automata', verInvisible: true,
-    grito: '🤖 ¡EL AUTÓMATA te barrió con sus brazos!',
+    grito: '🤖 ¡EL AUTÓMATA GIGANTE te barrió con sus brazos!',
   },
 };
 
@@ -50,7 +50,8 @@ export function nivelDificultad() {
 
 export function cantidadEnemigos() {
   const base = Math.min(6 + Math.round(nivelDificultad() * 1.15), 28);
-  // De NOCHE se triplican (tope 48 para que no ahogue el teléfono).
+  // OLEADA: casi inunda el mapa (tope 62). De NOCHE se triplican (tope 48).
+  if (state._oleada) return Math.min(base * 3 + 22, 62);
   return state._noche ? Math.min(base * 3, 48) : base;
 }
 
@@ -130,9 +131,13 @@ class Mob {
       }
       // ¿está a la misma altura? (no "atrapa" si pasas por encima o por debajo)
       const dyOk = Math.abs(player.pos.y - this.pos.y) < this.height * 0.7 + 0.9;
-      // el Autómata tiene brazos largos: alcanza más lejos
-      const alcance = t.forma === 'automata' ? CATCH_DIST + 1.6 : CATCH_DIST;
-      if (dist < alcance && dyOk && this.catchCooldown === 0 && !this._mirado) {
+      // el Autómata GIGANTE tiene brazos larguísimos: alcanza mucho más lejos
+      const alcance = t.forma === 'automata' ? CATCH_DIST + t.size * 0.9
+        : t.forma === 'gigante' ? CATCH_DIST + t.size * 0.5 : CATCH_DIST;
+      // ¿hay un muro entre el monstruo y el jugador? entonces NO alcanza
+      // (así un refugio con paredes de verdad protege, aunque el brazo sea largo)
+      const muro = dist > 1.4 && this._muroEntre(player);
+      if (dist < alcance && dyOk && !muro && this.catchCooldown === 0 && !this._mirado) {
         this.catchCooldown = t.forma === 'automata' ? 0.9 : 1.4;
         const k = player._empuje ?? 1;   // Gema Vital reduce el empujón
         player.pos.x -= (dx / d) * (t.knock * 0.5) * k;
@@ -145,7 +150,7 @@ class Mob {
       if (t.forma === 'gigante') {
         this._stompCd = (this._stompCd ?? 3) - dt;
         this._stompT = Math.max(0, (this._stompT ?? 0) - dt);
-        if (this._stompCd <= 0 && dist < 5 && dyOk) {
+        if (this._stompCd <= 0 && dist < 5 && dyOk && !this._muroEntre(player)) {
           this._stompCd = 3.6;
           this._stompT = 0.55;
           const k = player._empuje ?? 1;
@@ -183,6 +188,19 @@ class Mob {
     if (blocked && this.onGround && !this._stepped) this.vel.y = t.salta ? 9 : 5;
 
     if (this.pos.y < -6) this.respawn();
+  }
+
+  // ¿hay un bloque sólido en la línea entre el monstruo y el jugador?
+  // (muestrea unos puntos a la altura del pecho del jugador)
+  _muroEntre(player) {
+    const ox = this.pos.x, oz = this.pos.z, oy = player.pos.y + 0.9;
+    const dx = player.pos.x - ox, dz = player.pos.z - oz;
+    const pasos = 4;
+    for (let i = 1; i < pasos; i++) {
+      const f = i / pasos;
+      if (isSolid(this.world.get(Math.floor(ox + dx * f), Math.floor(oy), Math.floor(oz + dz * f)))) return true;
+    }
+    return false;
   }
 
   _blockedAhead(mx, mz) {
@@ -367,7 +385,7 @@ export class MobField {
 
   // usado por el Coloso para invocar ayudantes
   spawnAt(pos, typeId = 'sombra') {
-    if (this.mobs.length > 50) return;
+    if (this.mobs.length > (state._oleada ? 66 : 50)) return;
     const x = Math.floor(pos.x + (Math.random() * 6 - 3));
     const z = Math.floor(pos.z + (Math.random() * 6 - 3));
     const y = this.world.surfaceY(x, z);
@@ -377,6 +395,36 @@ export class MobField {
     this.mobs.push(mob);
     this.meshes.push(mesh);
     this.scene.add(mesh);
+  }
+
+  // OLEADA: aparece un anillo enorme de monstruos alrededor del jugador, todos
+  // persiguiéndolo. Incluye algunos gigantes. Se llama al empezar la oleada.
+  oleada(player) {
+    const faltan = Math.max(20, cantidadEnemigos() - this.mobs.length);
+    // tipos "normales" (sin gigantes) con su peso, para el grueso de la horda
+    const normales = Object.entries(TYPES).filter(([id]) => id !== 'automata' && id !== 'gigante');
+    const totalPeso = normales.reduce((s, [, d]) => s + d.peso, 0);
+    for (let i = 0; i < faltan; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const r = 26 + Math.random() * 24;
+      const x = Math.floor(player.pos.x + Math.cos(ang) * r);
+      const z = Math.floor(player.pos.z + Math.sin(ang) * r);
+      if (!this.world.inside(x, 0, z)) continue;
+      const y = this.world.surfaceY(x, z);
+      if (y <= 2 || y >= SY - 3) continue;
+      let t;
+      if (i % 9 === 0) {                       // ~1 de cada 9 = gigante
+        t = Math.random() < 0.5 ? 'automata' : 'gigante';
+      } else {                                 // el resto: normal, por peso
+        let r2 = Math.random() * totalPeso;
+        t = normales[0][0];
+        for (const [id, d] of normales) { r2 -= d.peso; if (r2 <= 0) { t = id; break; } }
+      }
+      const mob = new Mob(this.world, x, y, z, t);
+      mob.state = 'chase';
+      const mesh = makeMesh(mob.def);
+      this.mobs.push(mob); this.meshes.push(mesh); this.scene.add(mesh);
+    }
   }
 
   update(dt, player) {
@@ -413,14 +461,25 @@ export class MobField {
       }
     }
 
+    // Rendimiento: en una oleada hay decenas de monstruos encima; dibujar solo
+    // los ~26 más cercanos (los demás siguen atacando, pero no se renderizan).
+    let limiteRender = Infinity;
+    if (this.mobs.length > 30) {
+      const ds = this.mobs.map((m, i) => [Math.hypot(m.pos.x - player.pos.x, m.pos.z - player.pos.z), i]);
+      ds.sort((a, b) => a[0] - b[0]);
+      const permitido = new Set(ds.slice(0, 26).map(([, i]) => i));
+      limiteRender = permitido;
+    }
+
     for (let i = this.mobs.length - 1; i >= 0; i--) {
       const mob = this.mobs[i];
       mob.update(dt, player);
       if (mob.dead) { this._kill(i); continue; }
       const mesh = this.meshes[i];
       if (!mesh) continue;
-      // no dibujar ni animar los que están lejos (rendimiento en el teléfono)
-      const lejos = Math.hypot(mob.pos.x - player.pos.x, mob.pos.z - player.pos.z) > 64;
+      // no dibujar ni animar los que están lejos o de sobra (rendimiento en el teléfono)
+      const lejos = Math.hypot(mob.pos.x - player.pos.x, mob.pos.z - player.pos.z) > 64
+        || (limiteRender !== Infinity && !limiteRender.has(i));
       if (lejos) {
         if (mesh.visible) mesh.visible = false;
         continue;
