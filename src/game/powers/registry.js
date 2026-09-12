@@ -58,6 +58,14 @@ export const POWERS = [
     req: { plata: 3 },
     accion: 'furia',
   },
+  {
+    id: 'ovnitrix', nombre: 'Ovnitrix', emoji: '🛸',
+    desc: 'Te transformas en un alienígena hecho con el ADN de un enemigo que ya ' +
+      'derrotaste (dura 60 s). Al principio sale uno al azar; con 3 o más ADN ' +
+      'escaneados puedes elegir cuál usar. Botón ✨: transformarte.',
+    req: { oro: 3 },
+    accion: 'ovnitrix',
+  },
   // --- poderes de las gemas: se activan con el botón ✨ ---
   {
     id: 'rayo_martillo', nombre: 'Rayo del Martillo', emoji: '⚡',

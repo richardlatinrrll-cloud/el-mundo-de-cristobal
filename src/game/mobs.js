@@ -4,6 +4,7 @@ import { SX, SZ, SY } from '../engine/world.js';
 import { state, save } from './state.js';
 import { audio } from './audio.js';
 import { toast } from '../ui/toast.js';
+import { capturarEspecimen } from './powers/ovnitrix.js';
 
 // Enemigos por tipo. Aparecen más y más difíciles a medida que subes de nivel
 // (nivel = total de medallas bronce+plata+oro acumuladas).
@@ -508,12 +509,14 @@ export class MobField {
   }
 
   _kill(i) {
+    const tipo = this.mobs[i].type;
     this.scene.remove(this.meshes[i]);
     this.mobs.splice(i, 1);
     this.meshes.splice(i, 1);
     state.stats = state.stats || {};
     state.stats.derrotados = (state.stats.derrotados || 0) + 1;
     save();
+    capturarEspecimen(tipo);   // Ovnitrix: escanea el ADN de este enemigo
     // reponer uno nuevo tras un rato para que el mundo no se vacíe
     setTimeout(() => {
       if (!this.enabled || this.arenaMode || this.mobs.length >= cantidadEnemigos()) return;

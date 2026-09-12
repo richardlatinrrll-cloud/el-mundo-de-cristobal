@@ -31,6 +31,9 @@ const DEFAULT = {
   mundoEdits: {},
   // contenido de los cofres de este mundo: { "x,y,z": { idItem: cantidad } }
   cofres: {},
+  // Ovnitrix: especies (enemigos/jefes/dinosaurios) ya derrotadas y
+  // disponibles para transformarse en ellas
+  ovnitrix: { capturados: [] },
   // bloques que el jugador tiene recogidos para construir: { "idBloque": cantidad }
   inventario: {},
   // herramientas que tiene y cuál usa
@@ -73,6 +76,8 @@ function load() {
       herramienta: parsed.herramienta || 'mano',
       gemas: parsed.gemas || [],
       jefesDerrotados: parsed.jefesDerrotados || [],
+      cofres: parsed.cofres || {},
+      ovnitrix: { capturados: (parsed.ovnitrix?.capturados) || [] },
       armadura: parsed.armadura || [],
       salud: parsed.salud ?? 100,
       saludMax: parsed.saludMax ?? 100,

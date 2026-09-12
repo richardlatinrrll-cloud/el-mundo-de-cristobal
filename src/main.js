@@ -24,6 +24,8 @@ import { mountCrafteo } from './ui/crafteo.js';
 import { mountTablero } from './ui/tablero.js';
 import { mountPruebas } from './ui/pruebas.js';
 import { mountCofre } from './ui/cofre.js';
+import { mountOvnitrix } from './ui/ovnitrix.js';
+import { alienDef, especimenesCapturados, puedeElegir, DURACION_S as OVNITRIX_DURACION_S } from './game/powers/ovnitrix.js';
 import { mountGemas, dibujarMiniMapa } from './ui/gemas.js';
 import { GemQuest, GEMAS, aplicarGemas } from './game/gemas.js';
 import { COMIDA, reduccionArmadura, ARMADURA_JEFE } from './game/recetas.js';
@@ -759,6 +761,14 @@ addEventListener('keydown', (e) => {
   if (mode === 'jugar' && e.code === 'KeyV') player._thirdPerson = !player._thirdPerson;
 });
 
+// ¿hay un cofre CON COSAS DENTRO en (x,y,z)? Los poderes de área (grito
+// sónico, onda prisma) no deben poder volarlo: se perdería su contenido.
+function esCofreConCosas(x, y, z) {
+  if (world.get(x, y, z) !== 26) return false;
+  const cof = state.cofres[`${x},${y},${z}`];
+  return !!cof && Object.values(cof).some((n) => n > 0);
+}
+
 // quita un bloque en (x,y,z), lo recoge y suena. Devuelve true si rompió algo.
 function quitarBloque(x, y, z) {
   const id = world.get(x, y, z);
@@ -766,12 +776,11 @@ function quitarBloque(x, y, z) {
   if ((BLOCKS[id]?.hard ?? 1) >= 99 && !player.instaBreak) return false;
   // un cofre con cosas dentro no se puede romper: hay que vaciarlo antes
   if (id === 26) {
-    const k = `${x},${y},${z}`;
-    if (state.cofres[k] && Object.values(state.cofres[k]).some((n) => n > 0)) {
+    if (esCofreConCosas(x, y, z)) {
       toast('📦 Vacía el cofre antes de romperlo (tócalo con 🧱).', 2200);
       return false;
     }
-    delete state.cofres[k];
+    delete state.cofres[`${x},${y},${z}`];
   }
   world.set(x, y, z, AIR);
   registrarEdit(x, y, z, AIR);
@@ -901,6 +910,7 @@ function activarPoderAccion() {
     case 'invisible':     mantoSombra(); break;
     case 'volar':         impulsoVuelo(); break;
     case 'furia':         modoFuria(); break;
+    case 'ovnitrix':      activarOvnitrix(); break;
   }
 }
 
@@ -938,6 +948,54 @@ function modoFuria() {          // Modo Súper Saya
   addFx(anillo, 0.8, (m, k) => { m.scale.setScalar(1 + k * 9); m.material.opacity = 0.7 * (1 - k); });
   audio.sfx('grito');
   toast('⚡ ¡MODO SÚPER SAYA! (15 s)');
+}
+
+// aura del Ovnitrix (cambia de color según el alien activo)
+const auraOvnitrix = new THREE.Mesh(
+  new THREE.SphereGeometry(1, 16, 12),
+  new THREE.MeshBasicMaterial({ color: 0x35f0ff, transparent: true, opacity: 0.22, depthWrite: false, side: THREE.BackSide })
+);
+auraOvnitrix.visible = false; auraOvnitrix.renderOrder = 2; scene.add(auraOvnitrix);
+
+function activarOvnitrix() {
+  const capturados = especimenesCapturados();
+  if (!capturados.length) {
+    toast('🛸 El Ovnitrix no tiene ADN escaneado todavía. Derrota enemigos para escanearlos.', 2600);
+    return;
+  }
+  if (puedeElegir()) {
+    abrirSelectorOvnitrix();
+  } else {
+    transformarEnAlien(capturados[(Math.random() * capturados.length) | 0]);
+  }
+}
+
+function abrirSelectorOvnitrix() {
+  controls.disable();
+  hud.style.display = 'none';
+  touch.classList.remove('on');
+  openScreen('ovnitrix');
+}
+
+function transformarEnAlien(id) {
+  const alien = alienDef(id);
+  if (!alien) return;
+  _poderCd = 20;
+  player._ovnitrixT = OVNITRIX_DURACION_S;
+  player._ovnitrixAlien = id;
+  aplicarPoderEquipado();       // recalcula stats con el alien activo
+  auraOvnitrix.material.color.setHex(alien.color);
+  const flash = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12),
+    new THREE.MeshBasicMaterial({ color: alien.color, transparent: true, depthWrite: false }));
+  flash.position.copy(player.pos).add(new THREE.Vector3(0, 1, 0));
+  addFx(flash, 0.6, (m, k) => { m.scale.setScalar(1 + k * 7); m.material.opacity = 0.7 * (1 - k); });
+  const anillo = new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.24, 8, 24),
+    new THREE.MeshBasicMaterial({ color: alien.color, transparent: true, depthWrite: false }));
+  anillo.rotation.x = Math.PI / 2;
+  anillo.position.copy(player.pos).add(new THREE.Vector3(0, 0.3, 0));
+  addFx(anillo, 0.8, (m, k) => { m.scale.setScalar(1 + k * 9); m.material.opacity = 0.7 * (1 - k); });
+  audio.sfx('menu');
+  toast(`🛸 ¡${alien.emoji} ${alien.nombre}! (${OVNITRIX_DURACION_S} s)`);
 }
 
 // --- acciones de cada poder ---
@@ -1076,7 +1134,7 @@ function ondaPrisma() {
         if (dx * dx + dy * dy + dz * dz > R * R) continue;
         const bx = Math.floor(c.x + dx), by = Math.floor(c.y + dy), bz = Math.floor(c.z + dz);
         const bid = world.get(bx, by, bz);
-        if (bid !== AIR && (BLOCKS[bid]?.hard ?? 1) < 99) {
+        if (bid !== AIR && (BLOCKS[bid]?.hard ?? 1) < 99 && !esCofreConCosas(bx, by, bz)) {
           world.set(bx, by, bz, AIR); registrarEdit(bx, by, bz, AIR);
         }
       }
@@ -1127,7 +1185,7 @@ function sonicBlast() {
         const p = o.clone().addScaledVector(dir, d).addScaledVector(right, a * 0.95).addScaledVector(up, b * 0.95);
         const bx = Math.floor(p.x), by = Math.floor(p.y), bz = Math.floor(p.z);
         const id = world.get(bx, by, bz);
-        if (id !== AIR && (BLOCKS[id]?.hard ?? 1) < 99) {
+        if (id !== AIR && (BLOCKS[id]?.hard ?? 1) < 99 && !esCofreConCosas(bx, by, bz)) {
           world.set(bx, by, bz, AIR); registrarEdit(bx, by, bz, AIR); removed++;
           if (!state.mundo.creador) invAdd(dropFor(id), 1);
         }
@@ -1177,6 +1235,21 @@ export function aplicarPoderEquipado() {
     player.jumpV = Math.max(player.jumpV, 15);
     player._gemDano = Math.max(player._gemDano || 1, 2.2);
     player._empuje = Math.min(player._empuje ?? 1, 0.5);
+  }
+  if (player._ovnitrixT > 0) {        // Ovnitrix: transformado en un alien
+    const alien = alienDef(player._ovnitrixAlien);
+    const s = alien?.stats;
+    if (s) {
+      if (s.sprintMul) player.sprintMul = Math.max(player.sprintMul, s.sprintMul);
+      if (s.jumpV) player.jumpV = Math.max(player.jumpV, s.jumpV);
+      if (s.gemDano) player._gemDano = Math.max(player._gemDano || 1, s.gemDano);
+      if (s.empuje != null) player._empuje = Math.min(player._empuje ?? 1, s.empuje);
+      if (s.flying) player.flying = true;
+      if (s.invisible) player.invisible = true;
+      if (s.instaBreak) player.instaBreak = true;
+      if (s.visionNocturna) player.visionNocturna = true;
+      if (s.reach) player.reach = Math.max(player.reach, s.reach);
+    }
   }
   if (state.mundo.creador) {          // modo creador: vuelas y rompes al toque
     player.flying = true; player.instaBreak = true; player.reach = 8;
@@ -1252,6 +1325,23 @@ function frame(dt) {
         aplicarPoderEquipado();
       }
     } else if (auraFuria.visible) auraFuria.visible = false;
+    // Ovnitrix: transformación activa (buff mientras dure, luego vuelve a la normalidad)
+    if (player._ovnitrixT > 0) {
+      const antes = player._ovnitrixT;
+      player._ovnitrixT -= dt;
+      auraOvnitrix.visible = true;
+      auraOvnitrix.position.set(player.pos.x, player.pos.y + 0.9, player.pos.z);
+      const pulso = 1.05 + Math.sin(performance.now() / 90) * 0.12;
+      auraOvnitrix.scale.set(1.1 * pulso, 1.5 * pulso, 1.1 * pulso);
+      auraOvnitrix.material.opacity = 0.2 + Math.sin(performance.now() / 55) * 0.08;
+      if (antes > 10 && player._ovnitrixT <= 10) toast('🛸 El Ovnitrix va a apagarse…', 1000);
+      if (player._ovnitrixT <= 0) {
+        player._ovnitrixT = 0;
+        auraOvnitrix.visible = false;
+        toast('🛸 Volviste a la normalidad.', 1300);
+        aplicarPoderEquipado();
+      }
+    } else if (auraOvnitrix.visible) auraOvnitrix.visible = false;
     const moving = Math.abs(controls.state.forward) + Math.abs(controls.state.right) > 0.1;
     // sonido de salto y de pisadas
     if (_wasGround && !player.onGround && player.vel.y > 1) audio.sfx('saltar');
@@ -1600,6 +1690,11 @@ function openScreen(name) {
         cargaMax: CARGA_MAX,
       });
       screens[name].addEventListener('cambio', () => { updateHotbar(); });
+    } else if (name === 'ovnitrix') {
+      screens[name] = mountOvnitrix({
+        onVolver: () => volverAlJuego(),
+        onElegir: (id) => { transformarEnAlien(id); volverAlJuego(); },
+      });
     }
     app.appendChild(screens[name]);
   }

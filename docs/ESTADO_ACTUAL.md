@@ -8,7 +8,7 @@ cambios** por tandas.
 
 Publicado en **GitHub Pages** (deploy automático al hacer `git push`) y en el
 **servidor casero ARGOS** por Tailscale (`http://100.111.194.61:8082`).
-Caché del service worker: `mundo-cristobal-v24`.
+Caché del service worker: `mundo-cristobal-v25`.
 
 ---
 
@@ -105,6 +105,7 @@ Caché del service worker: `mundo-cristobal-v24`.
   | Volar | 2 oro | vuelo libre; ✨ impulso arriba |
   | Rayo del Martillo | Gema Centella | ✨ cae un rayo donde apuntas |
   | Onda Prisma | las 6 gemas | ✨ explosión 360° que barre enemigos |
+  | Ovnitrix | 3 oro | ✨ te transformas en un alien hecho con el ADN de un enemigo ya derrotado (60 s) |
 
 - **Botón ✨**: aparece con cualquier poder equipado y activa ese poder. **No**
   mueve la herramienta (eso es solo el botón ⛏️). El láser solo dispara con ✨.
@@ -221,6 +222,39 @@ para observar, no para morir mirando). Botón "Limpiar arena".
 
 ---
 
+## Ovnitrix
+
+- **`game/powers/ovnitrix.js`**: catálogo `ALIENS` con un alien por cada
+  especie capturable (8 enemigos + 4 jefes + 4 dinosaurios = 16), cada uno con
+  su propio combo de estadísticas (`sprintMul`, `jumpV`, `gemDano`, `empuje`,
+  `flying`, `invisible`, `instaBreak`, `reach`, `visionNocturna`).
+  `capturarEspecimen(id)` se llama al derrotar un enemigo/jefe/dinosaurio
+  (`mobs.js _kill`, `bosses.js _win`, `animals.js _kill` solo dinosaurios) y
+  guarda el id en `state.ovnitrix.capturados` (persistente, sin duplicados),
+  con un toast de "ADN escaneado" la primera vez.
+- **Activación** (`main.js`, poder `ovnitrix`, req. 3 medallas de oro): con
+  menos de `UMBRAL_CONTROL` (3) especies escaneadas, el botón ✨ transforma en
+  una **al azar**; con 3 o más, abre una pantalla (`ui/ovnitrix.js`) para
+  **elegir** cuál. La transformación dura 60 s (`player._ovnitrixT`), con aura
+  de color propio del alien (`auraOvnitrix`, sigue al jugador) y aviso a los
+  10 s de que se acaba. Si no hay ninguna especie escaneada, avisa que hace
+  falta derrotar enemigos primero.
+- No es una habilidad activa por alien (sería mucho más trabajo): cada alien
+  dura los 60 s como un combo de estadísticas pasivas (velocidad, salto, daño,
+  resistencia al empuje, y algunos con vuelo/invisibilidad/romper al toque).
+
+## Cofre — arreglo
+
+- **Bug real encontrado y arreglado**: Grito sónico y Onda Prisma destruían
+  bloques en área con `world.set(...)` directo, **sin pasar por la comprobación
+  de "cofre con cosas dentro"** que sí tiene el picado normal. Si usabas esos
+  poderes cerca de un cofre lleno, el bloque desaparecía y su contenido quedaba
+  huérfano en `state.cofres` (inaccesible: parecía que el cofre "perdía todo").
+  Arreglado con un helper compartido `esCofreConCosas(x,y,z)` que ambos poderes
+  ahora respetan (`main.js`). El guardado normal del cofre (`ui/cofre.js`
+  `mover()` llama a `save()` en cada movimiento) ya persistía bien en
+  localStorage — verificado con recarga real de página.
+
 ## Registro de cambios
 
 - **Base** — Mundo jugable, física, romper/poner, inventario, quiz + progresión,
@@ -288,3 +322,8 @@ para observar, no para morir mirando). Botón "Limpiar arena".
   como de día sin antorcha. La **mochila tiene tope** (250); lo que sobra va a
   un **Cofre** que se fabrica (8 tablas) y guarda todo. El `_muroEntre` también
   protege de dinos y del jefe.
+- **Ovnitrix + arreglo del Cofre** — nuevo poder (3 oro): te transformas en un
+  alien hecho con el ADN de un enemigo/jefe/dinosaurio ya derrotado (60 s); al
+  azar con pocas especies escaneadas, a elección con 3 o más. Se arregló un bug
+  real: Grito sónico y Onda Prisma podían destruir un cofre lleno sin la
+  comprobación de seguridad, dejando su contenido huérfano e inaccesible.

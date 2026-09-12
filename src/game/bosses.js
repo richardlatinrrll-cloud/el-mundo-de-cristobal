@@ -6,6 +6,7 @@ import { audio } from './audio.js';
 import { powerById, cumpleRequisito } from './powers/registry.js';
 import { toast } from '../ui/toast.js';
 import { ARMADURA_JEFE, JEFE_ARMADURA } from './recetas.js';
+import { capturarEspecimen } from './powers/ovnitrix.js';
 
 // Zonas con jefes. Aparecen (una torre-baliza de color en el mapa) cuando
 // desbloqueas el poder asociado. Al acercarte empieza la pelea.
@@ -545,6 +546,7 @@ export class BossArena {
     if (!eraOleada) {
       state.jefesDerrotados = state.jefesDerrotados || [];
       if (!state.jefesDerrotados.includes(def.id)) state.jefesDerrotados.push(def.id);
+      capturarEspecimen(def.id);   // Ovnitrix: escanea el ADN del jefe
     }
     state.stats = state.stats || {};
     state.stats.jefes = (state.stats.jefes || 0) + 1;

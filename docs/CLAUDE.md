@@ -81,7 +81,8 @@ La clave se pide **cada vez** que se abre el juego. Solo se guardan los hashes.
 |---|---|
 | `state.js` | estado global + guardado en localStorage (`save()` es no-op si `maestro`) |
 | `topics.js` | los 11 temas de estudio |
-| `powers/registry.js` | los 10 poderes y sus requisitos (`req` en medallas, o `gema`) |
+| `powers/registry.js` | los poderes y sus requisitos (`req` en medallas, o `gema`) |
+| `powers/ovnitrix.js` | catálogo de 16 alienígenas (uno por enemigo/jefe/dinosaurio capturable) + `capturarEspecimen()` |
 | `power-hud.js` | pantalla "Mis poderes" |
 | `mobs.js` | 8 enemigos (el Autómata es GIGANTE), escalan con las medallas; `oleada()` = horda cada ~15 min; `_muroEntre` = un muro te protege (`MobField`) |
 | `bosses.js` | 4 jefes en zonas con baliza; el poder correcto hace 3× daño; ataques propios (`BossArena`) |
@@ -107,7 +108,8 @@ dorado del Súper Saya).
 con guía fantasma), `gemas.js` (mapa + mini-mapa), `mundos.js`, `ajustes.js`,
 `clave.js`, `curar-trivia.js` (curarse en pelea de jefe), `pruebas.js` (Sala de
 pruebas, solo con clave maestra), `cofre.js` (guardar cosas; la mochila tiene
-tope `CARGA_MAX` en main.js).
+tope `CARGA_MAX` en main.js), `ovnitrix.js` (elegir en qué alien transformarse,
+solo aparece con 3+ especies escaneadas).
 
 ### `main.js`
 Arranque, bucle de juego (`frame`), navegación de pantallas, romper/poner
