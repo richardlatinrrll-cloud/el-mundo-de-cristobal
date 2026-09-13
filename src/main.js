@@ -25,7 +25,8 @@ import { mountTablero } from './ui/tablero.js';
 import { mountPruebas } from './ui/pruebas.js';
 import { mountCofre } from './ui/cofre.js';
 import { mountOvnitrix } from './ui/ovnitrix.js';
-import { alienDef, especimenesCapturados, puedeElegir, DURACION_S as OVNITRIX_DURACION_S } from './game/powers/ovnitrix.js';
+import { alienDef, aliensDisponibles, puedeElegir, DURACION_S as OVNITRIX_DURACION_S } from './game/powers/ovnitrix.js';
+import { makeMesh as makeAlienBody } from './game/mobs.js';
 import { mountGemas, dibujarMiniMapa } from './ui/gemas.js';
 import { GemQuest, GEMAS, aplicarGemas } from './game/gemas.js';
 import { COMIDA, reduccionArmadura, ARMADURA_JEFE } from './game/recetas.js';
@@ -950,23 +951,23 @@ function modoFuria() {          // Modo Súper Saya
   toast('⚡ ¡MODO SÚPER SAYA! (15 s)');
 }
 
-// aura del Ovnitrix (cambia de color según el alien activo)
+// aura suave del Ovnitrix (encima de la forma del alien, cambia de color)
 const auraOvnitrix = new THREE.Mesh(
   new THREE.SphereGeometry(1, 16, 12),
-  new THREE.MeshBasicMaterial({ color: 0x35f0ff, transparent: true, opacity: 0.22, depthWrite: false, side: THREE.BackSide })
+  new THREE.MeshBasicMaterial({ color: 0x35f0ff, transparent: true, opacity: 0.18, depthWrite: false, side: THREE.BackSide })
 );
 auraOvnitrix.visible = false; auraOvnitrix.renderOrder = 2; scene.add(auraOvnitrix);
 
+// hitbox y ojo normales del jugador (para volver a la normalidad al revertir)
+const PLAYER_RADIUS = player.radius, PLAYER_HEIGHT = player.height, PLAYER_EYE = player.eye;
+let alienMesh = null;   // malla de la forma del alien activo (reemplaza al avatar)
+
 function activarOvnitrix() {
-  const capturados = especimenesCapturados();
-  if (!capturados.length) {
-    toast('🛸 El Ovnitrix no tiene ADN escaneado todavía. Derrota enemigos para escanearlos.', 2600);
-    return;
-  }
+  const disponibles = aliensDisponibles();
   if (puedeElegir()) {
     abrirSelectorOvnitrix();
   } else {
-    transformarEnAlien(capturados[(Math.random() * capturados.length) | 0]);
+    transformarEnAlien(disponibles[(Math.random() * disponibles.length) | 0]);
   }
 }
 
@@ -983,19 +984,40 @@ function transformarEnAlien(id) {
   _poderCd = 20;
   player._ovnitrixT = OVNITRIX_DURACION_S;
   player._ovnitrixAlien = id;
+  // se ve la transformación en tercera persona; luego vuelve a la vista de antes
+  player._vistaAntesOvnitrix = player._thirdPerson === true;
+  player._thirdPerson = true;
+  // toma la forma y el tamaño real del alien (colisión + modelo)
+  const s = alien.visual.size;
+  player.radius = PLAYER_RADIUS * s;
+  player.height = PLAYER_HEIGHT * s;
+  player.eye = PLAYER_EYE * s;
+  if (alienMesh) scene.remove(alienMesh);
+  alienMesh = makeAlienBody(alien.visual);
+  scene.add(alienMesh);
   aplicarPoderEquipado();       // recalcula stats con el alien activo
-  auraOvnitrix.material.color.setHex(alien.color);
+  auraOvnitrix.material.color.setHex(alien.visual.eye);
   const flash = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12),
-    new THREE.MeshBasicMaterial({ color: alien.color, transparent: true, depthWrite: false }));
+    new THREE.MeshBasicMaterial({ color: alien.visual.color, transparent: true, depthWrite: false }));
   flash.position.copy(player.pos).add(new THREE.Vector3(0, 1, 0));
   addFx(flash, 0.6, (m, k) => { m.scale.setScalar(1 + k * 7); m.material.opacity = 0.7 * (1 - k); });
   const anillo = new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.24, 8, 24),
-    new THREE.MeshBasicMaterial({ color: alien.color, transparent: true, depthWrite: false }));
+    new THREE.MeshBasicMaterial({ color: alien.visual.color, transparent: true, depthWrite: false }));
   anillo.rotation.x = Math.PI / 2;
   anillo.position.copy(player.pos).add(new THREE.Vector3(0, 0.3, 0));
   addFx(anillo, 0.8, (m, k) => { m.scale.setScalar(1 + k * 9); m.material.opacity = 0.7 * (1 - k); });
   audio.sfx('menu');
   toast(`🛸 ¡${alien.emoji} ${alien.nombre}! (${OVNITRIX_DURACION_S} s)`);
+}
+
+function revertirOvnitrix() {
+  player._ovnitrixT = 0;
+  player._thirdPerson = player._vistaAntesOvnitrix === true;
+  player.radius = PLAYER_RADIUS; player.height = PLAYER_HEIGHT; player.eye = PLAYER_EYE;
+  if (alienMesh) { scene.remove(alienMesh); alienMesh = null; }
+  auraOvnitrix.visible = false;
+  toast('🛸 Volviste a la normalidad.', 1300);
+  aplicarPoderEquipado();
 }
 
 // --- acciones de cada poder ---
@@ -1325,22 +1347,24 @@ function frame(dt) {
         aplicarPoderEquipado();
       }
     } else if (auraFuria.visible) auraFuria.visible = false;
-    // Ovnitrix: transformación activa (buff mientras dure, luego vuelve a la normalidad)
+    // Ovnitrix: transformación activa (toma la forma del alien mientras dure)
     if (player._ovnitrixT > 0) {
       const antes = player._ovnitrixT;
       player._ovnitrixT -= dt;
-      auraOvnitrix.visible = true;
-      auraOvnitrix.position.set(player.pos.x, player.pos.y + 0.9, player.pos.z);
-      const pulso = 1.05 + Math.sin(performance.now() / 90) * 0.12;
-      auraOvnitrix.scale.set(1.1 * pulso, 1.5 * pulso, 1.1 * pulso);
-      auraOvnitrix.material.opacity = 0.2 + Math.sin(performance.now() / 55) * 0.08;
-      if (antes > 10 && player._ovnitrixT <= 10) toast('🛸 El Ovnitrix va a apagarse…', 1000);
-      if (player._ovnitrixT <= 0) {
-        player._ovnitrixT = 0;
-        auraOvnitrix.visible = false;
-        toast('🛸 Volviste a la normalidad.', 1300);
-        aplicarPoderEquipado();
+      const alienVis = alienDef(player._ovnitrixAlien)?.visual;
+      const s = alienVis?.size ?? 1;
+      if (alienMesh) {
+        alienMesh.visible = player._thirdPerson === true;
+        alienMesh.position.set(player.pos.x, player.pos.y, player.pos.z);
+        alienMesh.rotation.y = player.yaw + Math.PI;
       }
+      auraOvnitrix.visible = player._thirdPerson === true;
+      auraOvnitrix.position.set(player.pos.x, player.pos.y + 0.9 * s, player.pos.z);
+      const pulso = 1.05 + Math.sin(performance.now() / 90) * 0.12;
+      auraOvnitrix.scale.set(1.1 * pulso * s, 1.5 * pulso * s, 1.1 * pulso * s);
+      auraOvnitrix.material.opacity = 0.18 + Math.sin(performance.now() / 55) * 0.07;
+      if (antes > 10 && player._ovnitrixT <= 10) toast('🛸 El Ovnitrix va a apagarse…', 1000);
+      if (player._ovnitrixT <= 0) revertirOvnitrix();
     } else if (auraOvnitrix.visible) auraOvnitrix.visible = false;
     const moving = Math.abs(controls.state.forward) + Math.abs(controls.state.right) > 0.1;
     // sonido de salto y de pisadas
@@ -1742,12 +1766,13 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
 
 // exponer para debug
 window.__game = {
-  state, POWERS, jugar, crearMundo, dayNight, controls,
+  state, POWERS, jugar, crearMundo, dayNight, controls, camera,
   get world() { return world; },
   get player() { return player; },
   get mobs() { return mobs; },
   get bosses() { return bosses; },
   get animals() { return animals; },
   get gemas() { return gemas; },
+  get alienMesh() { return alienMesh; },
   actions: { romper: breakBlock, poner: placeBlock, poder: activarPoderAccion, comer, dañar: dañarJugador, oleada: iniciarOleada },
 };

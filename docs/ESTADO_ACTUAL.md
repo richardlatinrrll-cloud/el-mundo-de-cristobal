@@ -1,6 +1,6 @@
 # Estado actual — El Mundo de Cristóbal
 
-_Actualizado: 2026-09-09_
+_Actualizado: 2026-09-12_
 
 Contexto y mapa del código: `docs/CLAUDE.md`. Este archivo describe **qué hay
 hecho hoy** (todo verificado en el navegador) y, al final, el **registro de
@@ -8,7 +8,7 @@ cambios** por tandas.
 
 Publicado en **GitHub Pages** (deploy automático al hacer `git push`) y en el
 **servidor casero ARGOS** por Tailscale (`http://100.111.194.61:8082`).
-Caché del service worker: `mundo-cristobal-v25`.
+Caché del service worker: `mundo-cristobal-v26`.
 
 ---
 
@@ -105,7 +105,7 @@ Caché del service worker: `mundo-cristobal-v25`.
   | Volar | 2 oro | vuelo libre; ✨ impulso arriba |
   | Rayo del Martillo | Gema Centella | ✨ cae un rayo donde apuntas |
   | Onda Prisma | las 6 gemas | ✨ explosión 360° que barre enemigos |
-  | Ovnitrix | 3 oro | ✨ te transformas en un alien hecho con el ADN de un enemigo ya derrotado (60 s) |
+  | Ovnitrix | 3 oro | ✨ tomas la forma y tamaño de un alien (3 base + 7 que hay que derrotar primero), 60 s |
 
 - **Botón ✨**: aparece con cualquier poder equipado y activa ese poder. **No**
   mueve la herramienta (eso es solo el botón ⛏️). El láser solo dispara con ✨.
@@ -224,24 +224,32 @@ para observar, no para morir mirando). Botón "Limpiar arena".
 
 ## Ovnitrix
 
-- **`game/powers/ovnitrix.js`**: catálogo `ALIENS` con un alien por cada
-  especie capturable (8 enemigos + 4 jefes + 4 dinosaurios = 16), cada uno con
-  su propio combo de estadísticas (`sprintMul`, `jumpV`, `gemDano`, `empuje`,
-  `flying`, `invisible`, `instaBreak`, `reach`, `visionNocturna`).
-  `capturarEspecimen(id)` se llama al derrotar un enemigo/jefe/dinosaurio
-  (`mobs.js _kill`, `bosses.js _win`, `animals.js _kill` solo dinosaurios) y
-  guarda el id en `state.ovnitrix.capturados` (persistente, sin duplicados),
-  con un toast de "ADN escaneado" la primera vez.
-- **Activación** (`main.js`, poder `ovnitrix`, req. 3 medallas de oro): con
-  menos de `UMBRAL_CONTROL` (3) especies escaneadas, el botón ✨ transforma en
-  una **al azar**; con 3 o más, abre una pantalla (`ui/ovnitrix.js`) para
-  **elegir** cuál. La transformación dura 60 s (`player._ovnitrixT`), con aura
-  de color propio del alien (`auraOvnitrix`, sigue al jugador) y aviso a los
-  10 s de que se acaba. Si no hay ninguna especie escaneada, avisa que hace
-  falta derrotar enemigos primero.
-- No es una habilidad activa por alien (sería mucho más trabajo): cada alien
-  dura los 60 s como un combo de estadísticas pasivas (velocidad, salto, daño,
-  resistencia al empuje, y algunos con vuelo/invisibilidad/romper al toque).
+- **10 aliens** (`game/powers/ovnitrix.js`, catálogo `ALIENS`): **3 base**
+  (Calorox 🔥, Rafaguero 💨, Roquetón 🪨) disponibles desde que desbloqueas el
+  poder, sin hacer nada. **7 de especímenes** (Voltarión, Sombrizo, Congelim,
+  Alado, Elastiko, Espinoide, Titanoide): son enemigos nuevos y raros
+  (`alienigena: true` en `game/mobs.js`, spawnean mezclados con los demás según
+  tu nivel) — al derrotar uno por primera vez queda escaneado para siempre
+  (`capturarEspecimen()`, llamado desde `mobs.js _kill`).
+- **Transformación real** (`main.js`): cada alien tiene un `visual`
+  (tamaño/color/ojos/forma) que se pasa a `makeMesh()` de `game/mobs.js` — el
+  MISMO constructor de malla de los enemigos — así el jugador **toma
+  literalmente esa forma**, reemplazando su avatar normal mientras dura.
+  También cambia el tamaño real de colisión (`player.radius/height/eye`
+  escalados por el `size` del alien). Dura 60 s (`player._ovnitrixT`), con una
+  aura suave del color del alien encima, y aviso a los 10 s de que se acaba.
+  Fuerza la vista en 3ª persona para poder verte transformado (vuelve a la
+  vista de antes al terminar).
+- **Azar vs. elegir**: con menos de `UMBRAL_CONTROL` (3) especímenes
+  escaneados, el botón ✨ transforma en uno al azar (entre los 3 base + lo que
+  hayas escaneado); con 3 o más, abre una pantalla (`ui/ovnitrix.js`) para
+  **elegir** cuál usar.
+- No es una habilidad activa por alien (serían 10 ataques especiales
+  distintos, mucho más trabajo): cada uno da un combo de estadísticas pasivas
+  (velocidad, salto, daño, resistencia al empuje, y algunos con vuelo,
+  invisibilidad o romper bloques al toque) mientras dura la forma.
+- `especimenesEscaneados()` filtra ids que ya no existan en el catálogo (por
+  si cambia en el futuro, para no dejar huérfanos guardados de partidas viejas).
 
 ## Cofre — arreglo
 
@@ -322,8 +330,15 @@ para observar, no para morir mirando). Botón "Limpiar arena".
   como de día sin antorcha. La **mochila tiene tope** (250); lo que sobra va a
   un **Cofre** que se fabrica (8 tablas) y guarda todo. El `_muroEntre` también
   protege de dinos y del jefe.
-- **Ovnitrix + arreglo del Cofre** — nuevo poder (3 oro): te transformas en un
-  alien hecho con el ADN de un enemigo/jefe/dinosaurio ya derrotado (60 s); al
-  azar con pocas especies escaneadas, a elección con 3 o más. Se arregló un bug
-  real: Grito sónico y Onda Prisma podían destruir un cofre lleno sin la
-  comprobación de seguridad, dejando su contenido huérfano e inaccesible.
+- **Ovnitrix + arreglo del Cofre** — nuevo poder (3 oro): 3 aliens base
+  (Calorox, Rafaguero, Roquetón) + 7 que hay que derrotar primero (nuevos
+  enemigos raros: Voltarión, Sombrizo, Congelim, Alado, Elastiko, Espinoide,
+  Titanoide). Se arregló un bug real: Grito sónico y Onda Prisma podían
+  destruir un cofre lleno sin la comprobación de seguridad, dejando su
+  contenido huérfano e inaccesible.
+- **Ovnitrix: transformación real** — la primera versión solo daba un aura y
+  estadísticas; ahora el jugador **toma la forma y el tamaño de verdad** del
+  alien (reutiliza el constructor de malla de los enemigos), con hitbox
+  escalada. Rediseño del catálogo a 10 aliens curados (3 base + 7 de
+  especímenes nuevos) en vez de reusar los 16 enemigos/jefes/dinosaurios
+  existentes.

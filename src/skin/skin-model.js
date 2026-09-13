@@ -241,7 +241,8 @@ export function updateAvatar(player, dt, moving) {
     p.legR.rotation.x = -sw; p.legL.rotation.x = sw;
   }
 
-  avatar.visible = player._thirdPerson === true;
+  // en el Ovnitrix el jugador toma la forma del alien: se oculta el avatar normal
+  avatar.visible = player._thirdPerson === true && !((player._ovnitrixT || 0) > 0);
   if (!avatar.visible) return;   // el resto (posición, opacidad) solo si se ve
 
   avatar.position.set(player.pos.x, player.pos.y, player.pos.z);

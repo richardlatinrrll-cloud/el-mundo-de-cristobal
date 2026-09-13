@@ -82,7 +82,7 @@ La clave se pide **cada vez** que se abre el juego. Solo se guardan los hashes.
 | `state.js` | estado global + guardado en localStorage (`save()` es no-op si `maestro`) |
 | `topics.js` | los 11 temas de estudio |
 | `powers/registry.js` | los poderes y sus requisitos (`req` en medallas, o `gema`) |
-| `powers/ovnitrix.js` | catálogo de 16 alienígenas (uno por enemigo/jefe/dinosaurio capturable) + `capturarEspecimen()` |
+| `powers/ovnitrix.js` | catálogo de 10 alienígenas (3 base + 7 de especímenes, `alienigena: true` en `mobs.js`) + `capturarEspecimen()` |
 | `power-hud.js` | pantalla "Mis poderes" |
 | `mobs.js` | 8 enemigos (el Autómata es GIGANTE), escalan con las medallas; `oleada()` = horda cada ~15 min; `_muroEntre` = un muro te protege (`MobField`) |
 | `bosses.js` | 4 jefes en zonas con baliza; el poder correcto hace 3× daño; ataques propios (`BossArena`) |

@@ -40,6 +40,38 @@ const TYPES = {
     forma: 'automata', verInvisible: true,
     grito: '🤖 ¡EL AUTÓMATA GIGANTE te barrió con sus brazos!',
   },
+  // --- especímenes del Ovnitrix: raros, al derrotarlos quedan escaneados
+  // (ver game/powers/ovnitrix.js) para poder transformarte en ellos ---
+  voltarion: {
+    nombre: 'Voltarión', hp: 16, speed: 4.0, view: 17, lose: 26, knock: 5, dano: 14,
+    color: 0x3355ff, eye: 0xccffff, size: 1.0, minNivel: 4, peso: 1, alienigena: true,
+  },
+  sombrizo: {
+    nombre: 'Sombrizo', hp: 14, speed: 4.2, view: 18, lose: 28, knock: 5, dano: 12,
+    color: 0x2b1e3a, eye: 0xff4d4d, size: 0.95, minNivel: 5, peso: 1, alienigena: true,
+  },
+  congelim: {
+    nombre: 'Congelim', hp: 20, speed: 3.0, view: 16, lose: 24, knock: 6, dano: 15,
+    color: 0x8fd8ff, eye: 0xffffff, size: 1.05, minNivel: 7, peso: 1, alienigena: true,
+  },
+  alado: {
+    nombre: 'Alado', hp: 15, speed: 5.0, view: 20, lose: 30, knock: 4, dano: 13,
+    color: 0x8a5a2e, eye: 0xffe14d, size: 0.9, minNivel: 8, peso: 1, alienigena: true,
+  },
+  elastiko: {
+    nombre: 'Elastiko', hp: 22, speed: 5.5, view: 20, lose: 32, knock: 6, dano: 16,
+    color: 0xe9e5da, eye: 0x4be0ff, size: 1.15, minNivel: 10, peso: 1, alienigena: true,
+    forma: 'alto',
+  },
+  espinoide: {
+    nombre: 'Espinoide', hp: 26, speed: 2.8, view: 17, lose: 24, knock: 8, dano: 20,
+    color: 0x3a1e1e, eye: 0xff8a3d, size: 1.2, minNivel: 11, peso: 1, alienigena: true,
+  },
+  titanoide: {
+    nombre: 'Titanoide', hp: 45, speed: 2.4, view: 22, lose: 34, knock: 12, dano: 24,
+    color: 0xb0442e, eye: 0xff3020, size: 1.6, minNivel: 13, peso: 1, alienigena: true,
+    forma: 'gigante',
+  },
 };
 
 const CATCH_DIST = 1.2;
@@ -264,7 +296,7 @@ function randomSpot(world) {
   return { x: 8, y: world.surfaceY(8, 8), z: 8 };
 }
 
-function makeMesh(def) {
+export function makeMesh(def) {
   const g = new THREE.Group();
   const s = def.size;
   const partesMat = [];

@@ -1,4 +1,4 @@
-import { especimenesCapturados, alienDef } from '../game/powers/ovnitrix.js';
+import { aliensDisponibles, alienDef } from '../game/powers/ovnitrix.js';
 
 // Pantalla del Ovnitrix: elegir en qué alien transformarse, entre las
 // especies ya escaneadas (enemigos/jefes/dinosaurios derrotados).
@@ -19,15 +19,7 @@ export function mountOvnitrix({ onVolver, onElegir }) {
   el.refresh = () => {
     const list = el.querySelector('[data-list]');
     list.innerHTML = '';
-    const ids = especimenesCapturados();
-    if (!ids.length) {
-      const p = document.createElement('p');
-      p.className = 'sub';
-      p.textContent = 'Todavía no escaneaste ningún enemigo.';
-      list.appendChild(p);
-      return;
-    }
-    for (const id of ids) {
+    for (const id of aliensDisponibles()) {
       const a = alienDef(id);
       if (!a) continue;
       const d = document.createElement('div');

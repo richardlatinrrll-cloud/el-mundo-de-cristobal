@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { isSolid } from '../engine/blocks.js';
 import { SX, SZ, SY } from '../engine/world.js';
-import { capturarEspecimen, DINOS_CAPTURABLES } from './powers/ovnitrix.js';
 
 // Animales pacíficos que vagan por el mundo. Algunos huyen del jugador,
 // otros lo ignoran, y un par pueden dar un empujón si te acercas demasiado.
@@ -407,7 +406,6 @@ export class AnimalField {
     this.animals.splice(i, 1);
     this.meshes.splice(i, 1);
     if (a.def.botin) this.onBotin?.(a.def.botin, a.def.nombre);
-    if (DINOS_CAPTURABLES.includes(a.id)) capturarEspecimen(a.id);   // Ovnitrix
   }
 
   // golpe del jugador: apunta con la mirada. Devuelve true si acertó.
