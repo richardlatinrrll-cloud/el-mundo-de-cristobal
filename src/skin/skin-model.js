@@ -38,22 +38,49 @@ function part(w, h, d, rects, mat) {
 // Escala: 1 pixel = 0.06 unidades  → personaje ~1.7 de alto
 const S = 0.06;
 
+// color promedio de un rect de la textura (para las extremidades redondeadas,
+// que ya no llevan la textura pixel a pixel sino un tono sólido de la piel).
+function colorPromedio(canvas, x, y, w, h) {
+  try {
+    const ctx = canvas.getContext('2d');
+    const { data } = ctx.getImageData(x, y, w, h);
+    let r = 0, g = 0, b = 0, n = 0;
+    for (let i = 0; i < data.length; i += 4) { r += data[i]; g += data[i + 1]; b += data[i + 2]; n++; }
+    if (!n) return 0xc8a074;
+    return ((r / n) << 16) | ((g / n) << 8) | (b / n);
+  } catch { return 0xc8a074; }
+}
+
+// brazo o pierna redondeados (cápsula) en vez de la caja de Minecraft, con el
+// tono de la manga/pantalón promediado desde la skin pixel a pixel.
+function extremidad(canvas, rect, w, len) {
+  const color = colorPromedio(canvas, rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]);
+  const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.85, metalness: 0.02 });
+  const radius = w / 2;
+  const m = new THREE.Mesh(new THREE.CapsuleGeometry(radius, Math.max(0.02, len - radius * 2), 4, 8), mat);
+  return m;
+}
+
 export function makeAvatar(texture) {
-  const mat = new THREE.MeshLambertMaterial({ map: texture, transparent: true, alphaTest: 0.5 });
+  const mat = new THREE.MeshStandardMaterial({ map: texture, transparent: true, alphaTest: 0.5, roughness: 0.9, metalness: 0 });
   const g = new THREE.Group();
+  const canvas = texture.image;
 
   const head = part(8 * S, 8 * S, 8 * S, UV.head, mat);
   head.position.y = (12 + 6 + 4) * S;
   const body = part(8 * S, 12 * S, 4 * S, UV.body, mat);
   body.position.y = (12 + 6) * S;
-  const armR = part(4 * S, 12 * S, 4 * S, UV.armR, mat);
-  armR.position.set(-6 * S, (12 + 6) * S, 0);
-  const armL = part(4 * S, 12 * S, 4 * S, UV.armL, mat);
-  armL.position.set(6 * S, (12 + 6) * S, 0);
-  const legR = part(4 * S, 12 * S, 4 * S, UV.legR, mat);
+  // brazos y piernas: cápsulas redondeadas con el tono de la manga/pantalón/
+  // piel de la skin (ya no cajas), para una silueta más humana
+  const armR = extremidad(canvas, [44, 20, 48, 32], 4 * S, 12 * S);
+  armR.position.set(-6 * S, (12 + 6) * S, 0); armR.rotation.z = 0.05;
+  const armL = extremidad(canvas, [36, 52, 40, 64], 4 * S, 12 * S);
+  armL.position.set(6 * S, (12 + 6) * S, 0); armL.rotation.z = -0.05;
+  const legR = extremidad(canvas, [4, 20, 8, 32], 4 * S, 12 * S);
   legR.position.set(-2 * S, 6 * S, 0);
-  const legL = part(4 * S, 12 * S, 4 * S, UV.legL, mat);
+  const legL = extremidad(canvas, [20, 52, 24, 64], 4 * S, 12 * S);
   legL.position.set(2 * S, 6 * S, 0);
+  const miembroMats = [armR.material, armL.material, legR.material, legL.material];
 
   // --- pelo dorado del Modo Súper Saya (oculto hasta la transformación) ---
   const peloSaya = new THREE.Group();
@@ -76,7 +103,7 @@ export function makeAvatar(texture) {
   head.add(peloSaya);
 
   g.add(head, body, armR, armL, legR, legL);
-  g.userData = { head, body, armR, armL, legR, legL, mat, peloSaya };
+  g.userData = { head, body, armR, armL, legR, legL, mat, miembroMats, peloSaya };
   return g;
 }
 
@@ -250,4 +277,5 @@ export function updateAvatar(player, dt, moving) {
   avatar.rotation.y = player.yaw + Math.PI;
   const opacity = player.invisible ? 0.15 : 1;
   p.mat.opacity = opacity; p.mat.transparent = opacity < 1 ? true : p.mat.transparent;
+  for (const m of p.miembroMats) { m.opacity = opacity; m.transparent = opacity < 1 ? true : m.transparent; }
 }

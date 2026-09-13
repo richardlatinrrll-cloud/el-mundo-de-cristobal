@@ -8,7 +8,7 @@ cambios** por tandas.
 
 Publicado en **GitHub Pages** (deploy automático al hacer `git push`) y en el
 **servidor casero ARGOS** por Tailscale (`http://100.111.194.61:8082`).
-Caché del service worker: `mundo-cristobal-v27`.
+Caché del service worker: `mundo-cristobal-v28`.
 
 ---
 
@@ -172,6 +172,17 @@ Caché del service worker: `mundo-cristobal-v27`.
   exportar PNG. Varias skins guardadas.
 - **3ª persona** (tecla V / botón 👁️ / ajuste): el monigote se ve de espaldas;
   la cámara se acerca si hay un bloque detrás.
+- **Cuerpo con extremidades redondeadas** (`skin-model.js`, pedido de Richard
+  para que el jugador se vea "más realista"): cabeza y torso siguen siendo
+  cajas con la textura pixel-art de la skin tal cual (cara y diseño de la
+  ropa intactos, todas las skins ya creadas se siguen viendo igual ahí), pero
+  brazos y piernas ahora son **cápsulas** (`THREE.CapsuleGeometry`) con un
+  color sólido promediado a partir de la zona de manga/pantalón de esa misma
+  skin (`colorPromedio()`), en vez de la caja rectangular de Minecraft.
+  Material `MeshStandardMaterial` (mejor respuesta a la luz que antes). Es el
+  primer paso de un pedido más grande ("que los personajes y enemigos se vean
+  más reales"); si funciona bien, el mismo enfoque se puede llevar a los
+  enemigos.
 
 ## Controles y ajustes
 
@@ -367,3 +378,8 @@ para observar, no para morir mirando). Botón "Limpiar arena".
   Calorox puede lanzar una **bola de lava** (✨ ya transformado). Roquetón y
   Titanoide (tamaño > 1.2) rompen un área de bloques al picar, no solo el
   apuntado, para poder pasar por el túnel que cavan.
+- **Jugador con extremidades redondeadas** — primer paso de "personajes y
+  enemigos más realistas": brazos y piernas del jugador pasan de caja a
+  cápsula (`skin-model.js`), color tomado de la propia skin. Cabeza y torso
+  siguen igual (misma textura pixel-art, ninguna skin se rompe). Piloto antes
+  de decidir si se extiende a los enemigos.
