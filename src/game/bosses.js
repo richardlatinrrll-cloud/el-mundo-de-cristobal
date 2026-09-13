@@ -6,6 +6,7 @@ import { audio } from './audio.js';
 import { powerById, cumpleRequisito } from './powers/registry.js';
 import { toast } from '../ui/toast.js';
 import { ARMADURA_JEFE, JEFE_ARMADURA } from './recetas.js';
+import { capsula } from '../engine/creature-parts.js';
 
 // Zonas con jefes. Aparecen (una torre-baliza de color en el mapa) cuando
 // desbloqueas el poder asociado. Al acercarte empieza la pelea.
@@ -245,6 +246,14 @@ function makeBossMesh(def) {
     if (rot) m.rotation.set(rot[0] || 0, rot[1] || 0, rot[2] || 0);
     g.add(m); mats.push(m.material); return m;
   };
+  // igual que add(), pero con una cápsula redondeada en vez de una caja
+  // (para brazos y piernas: se nota menos "de bloque")
+  const addR = (w, h, d, color, x, y, z, rot) => {
+    const m = capsula(w * s, h * s, d * s, color);
+    m.position.set(x * s, y * s, z * s);
+    if (rot) m.rotation.set(rot[0] || 0, rot[1] || 0, rot[2] || 0);
+    g.add(m); mats.push(m.material); return m;
+  };
   const eyeMat = new THREE.MeshBasicMaterial({ color: def.eye });
   const eye = (x, y, z, sz = 0.16) => { const e = new THREE.Mesh(new THREE.BoxGeometry(sz * s, sz * s, 0.06), eyeMat); e.position.set(x * s, y * s, z * s); g.add(e); };
   const pincho = (color, x, y, z, len, rot) => add(0.12, len, 0.12, color, x, y, z, rot);
@@ -255,12 +264,12 @@ function makeBossMesh(def) {
     add(1.5, 0.4, 1.06, cL, 0, 1.75, 0);              // pectoral
     add(0.7, 0.6, 0.65, cL, 0, 2.15, 0.05);           // cabeza
     add(0.75, 0.25, 0.4, cD, 0, 1.9, 0.25);           // mandíbula
-    add(0.42, 1.7, 0.42, c, -1.02, 1.0, 0);           // brazos
-    add(0.42, 1.7, 0.42, c, 1.02, 1.0, 0);
-    add(0.5, 0.5, 0.5, cD, -1.02, 0.2, 0);            // puños
-    add(0.5, 0.5, 0.5, cD, 1.02, 0.2, 0);
-    add(0.55, 1.0, 0.55, cD, -0.4, 0.45, 0);          // piernas
-    add(0.55, 1.0, 0.55, cD, 0.4, 0.45, 0);
+    addR(0.42, 1.7, 0.42, c, -1.02, 1.0, 0);          // brazos
+    addR(0.42, 1.7, 0.42, c, 1.02, 1.0, 0);
+    addR(0.5, 0.5, 0.5, cD, -1.02, 0.2, 0);           // puños
+    addR(0.5, 0.5, 0.5, cD, 1.02, 0.2, 0);
+    addR(0.55, 1.0, 0.55, cD, -0.4, 0.45, 0);         // piernas
+    addR(0.55, 1.0, 0.55, cD, 0.4, 0.45, 0);
     for (let i = -1; i <= 1; i++) pincho(0x6b5a44, i * 0.4, 2.05, -0.4, 0.5, [-0.3, 0, 0]); // crin de púas
     add(0.22, 0.34, 0.22, 0xf2ead6, -0.22, 1.86, 0.42); // colmillos
     add(0.22, 0.34, 0.22, 0xf2ead6, 0.22, 1.86, 0.42);
@@ -280,8 +289,8 @@ function makeBossMesh(def) {
     add(0.14, 0.14, 0.5, cD, 0, 0.85, -2.3, [0.3, 0, 0]); // punta de cola
     const wL = add(1.6, 0.07, 1.0, 0x27406b, -1.05, 1.35, -0.1);
     const wR = add(1.6, 0.07, 1.0, 0x27406b, 1.05, 1.35, -0.1);
-    add(0.35, 1.0, 0.35, cD, -0.55, 0.5, 0.3);        // patas
-    add(0.35, 1.0, 0.35, cD, 0.55, 0.5, 0.3);
+    addR(0.35, 1.0, 0.35, cD, -0.55, 0.5, 0.3);       // patas
+    addR(0.35, 1.0, 0.35, cD, 0.55, 0.5, 0.3);
     g.userData.alas = [wL, wR];
     eye(-0.17, 2.0, 2.32, 0.13); eye(0.17, 2.0, 2.32, 0.13);
   } else if (def.forma === 'titan') {
@@ -290,12 +299,12 @@ function makeBossMesh(def) {
     add(1.4, 0.35, 1.13, shade(0xff8a3d, 1.3), 0, 1.75, 0);
     add(0.85, 0.85, 0.8, cL, 0, 2.75, 0);             // cabeza
     add(0.9, 0.25, 0.5, cD, 0, 2.45, 0.2);            // ceño
-    add(0.58, 1.65, 0.58, c, -1.22, 1.45, 0);         // brazos
-    add(0.58, 1.65, 0.58, c, 1.22, 1.45, 0);
-    add(0.95, 0.8, 0.95, 0xff8a3d, -1.22, 0.5, 0);    // puños ardientes
-    add(0.95, 0.8, 0.95, 0xff8a3d, 1.22, 0.5, 0);
-    add(0.7, 1.1, 0.75, cD, -0.5, 0.5, 0);            // piernas
-    add(0.7, 1.1, 0.75, cD, 0.5, 0.5, 0);
+    addR(0.58, 1.65, 0.58, c, -1.22, 1.45, 0);        // brazos
+    addR(0.58, 1.65, 0.58, c, 1.22, 1.45, 0);
+    addR(0.95, 0.8, 0.95, 0xff8a3d, -1.22, 0.5, 0);   // puños ardientes
+    addR(0.95, 0.8, 0.95, 0xff8a3d, 1.22, 0.5, 0);
+    addR(0.7, 1.1, 0.75, cD, -0.5, 0.5, 0);           // piernas
+    addR(0.7, 1.1, 0.75, cD, 0.5, 0.5, 0);
     for (let i = -1; i <= 1; i++) pincho(cD, i * 0.55, 3.15, -0.1, 0.55, [-0.15, 0, i * 0.15]); // corona de rocas
     eye(-0.2, 2.85, 0.42, 0.24); eye(0.2, 2.85, 0.42, 0.24);
   } else { // elfo oscuro
@@ -307,10 +316,10 @@ function makeBossMesh(def) {
     add(0.64, 0.56, 0.62, 0x201a30, 0, 2.18, -0.06);  // capucha
     pincho(0x201a30, -0.28, 2.35, -0.1, 0.45, [0.1, 0, -0.5]); // puntas de capucha
     pincho(0x201a30, 0.28, 2.35, -0.1, 0.45, [0.1, 0, 0.5]);
-    add(0.32, 1.15, 0.32, cD, -0.42, 0.9, 0);         // brazos
-    add(0.32, 1.15, 0.32, cD, 0.42, 0.9, 0);
-    add(0.34, 1.2, 0.34, 0x201a30, -0.22, 0.55, 0);   // piernas
-    add(0.34, 1.2, 0.34, 0x201a30, 0.22, 0.55, 0);
+    addR(0.32, 1.15, 0.32, cD, -0.42, 0.9, 0);        // brazos
+    addR(0.32, 1.15, 0.32, cD, 0.42, 0.9, 0);
+    addR(0.34, 1.2, 0.34, 0x201a30, -0.22, 0.55, 0);  // piernas
+    addR(0.34, 1.2, 0.34, 0x201a30, 0.22, 0.55, 0);
     add(0.1, 2.4, 0.1, 0x4a3a5a, 0.55, 1.4, 0.12);    // bastón
     const orb = new THREE.Mesh(new THREE.OctahedronGeometry(0.24 * s), new THREE.MeshBasicMaterial({ color: def.eye }));
     orb.position.set(0.55 * s, 2.7 * s, 0.12 * s); g.add(orb);

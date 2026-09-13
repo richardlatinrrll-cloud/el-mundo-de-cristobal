@@ -6,6 +6,7 @@ import { audio } from './audio.js';
 import { toast } from '../ui/toast.js';
 import { capturarEspecimen } from './powers/ovnitrix.js';
 import { tieneModeloPropio, makeAlienMesh } from './powers/alien-models.js';
+import { capsula } from '../engine/creature-parts.js';
 
 // Enemigos por tipo. Aparecen más y más difíciles a medida que subes de nivel
 // (nivel = total de medallas bronce+plata+oro acumuladas).
@@ -316,9 +317,10 @@ export function makeMesh(def) {
     body.position.y = 1.8 * s;
     head = new THREE.Mesh(new THREE.BoxGeometry(0.6 * s, 0.55 * s, 0.55 * s), mat());
     head.position.y = 3.5 * s;
-    const armGeo = new THREE.BoxGeometry(0.16 * s, 2.0 * s, 0.16 * s);
-    const aL = new THREE.Mesh(armGeo, mat()); aL.position.set(-0.38 * s, 2.0 * s, 0);
-    const aR = new THREE.Mesh(armGeo, mat()); aR.position.set(0.38 * s, 2.0 * s, 0);
+    const aL = capsula(0.16 * s, 2.0 * s, 0.16 * s, def.color); partesMat.push(aL.material);
+    aL.position.set(-0.38 * s, 2.0 * s, 0);
+    const aR = capsula(0.16 * s, 2.0 * s, 0.16 * s, def.color); partesMat.push(aR.material);
+    aR.position.set(0.38 * s, 2.0 * s, 0);
     g.add(aL, aR);
     eSize = 0.2 * s; eLpos = [-0.14 * s, 3.55 * s, 0.28 * s]; eRpos = [0.14 * s, 3.55 * s, 0.28 * s];
   } else if (def.forma === 'gigante') {
@@ -331,15 +333,17 @@ export function makeMesh(def) {
     head.position.y = 2.3 * s;
     const mand = new THREE.Mesh(new THREE.BoxGeometry(0.7 * s, 0.22 * s, 0.6 * s), mat());
     mand.position.set(0, 1.98 * s, 0.12 * s);
-    const legGeo = new THREE.BoxGeometry(0.52 * s, 1.05 * s, 0.55 * s);
-    const lL = new THREE.Mesh(legGeo, mat()); lL.position.set(-0.36 * s, 0.5 * s, 0);
-    const lR = new THREE.Mesh(legGeo, mat()); lR.position.set(0.36 * s, 0.5 * s, 0);
+    const lL = capsula(0.52 * s, 1.05 * s, 0.55 * s, def.color); partesMat.push(lL.material);
+    lL.position.set(-0.36 * s, 0.5 * s, 0);
+    const lR = capsula(0.52 * s, 1.05 * s, 0.55 * s, def.color); partesMat.push(lR.material);
+    lR.position.set(0.36 * s, 0.5 * s, 0);
     // brazos (pivotan desde el hombro para la animación del pisotón)
-    const armGeo = new THREE.BoxGeometry(0.42 * s, 1.5 * s, 0.42 * s);
     const brazoIzq = new THREE.Group(), brazoDer = new THREE.Group();
-    const aL = new THREE.Mesh(armGeo, mat()); aL.position.y = -0.75 * s; brazoIzq.add(aL);
-    const aR = new THREE.Mesh(armGeo, mat()); aR.position.y = -0.75 * s; brazoDer.add(aR);
-    const puñoGeo = new THREE.BoxGeometry(0.55 * s, 0.5 * s, 0.55 * s);
+    const aL = capsula(0.42 * s, 1.5 * s, 0.42 * s, def.color); partesMat.push(aL.material);
+    aL.position.y = -0.75 * s; brazoIzq.add(aL);
+    const aR = capsula(0.42 * s, 1.5 * s, 0.42 * s, def.color); partesMat.push(aR.material);
+    aR.position.y = -0.75 * s; brazoDer.add(aR);
+    const puñoGeo = new THREE.SphereGeometry(0.32 * s, 10, 8);
     const pL = new THREE.Mesh(puñoGeo, mat()); pL.position.y = -1.55 * s; brazoIzq.add(pL);
     const pR = new THREE.Mesh(puñoGeo, mat()); pR.position.y = -1.55 * s; brazoDer.add(pR);
     brazoIzq.position.set(-0.9 * s, 2.0 * s, 0);
@@ -378,9 +382,9 @@ export function makeMesh(def) {
     g.userData.brazos4 = brazos4;
     eSize = 0.16 * s; eLpos = [-0.14 * s, 1.55 * s, 0.4 * s]; eRpos = [0.14 * s, 1.55 * s, 0.4 * s];
   } else {
-    body = new THREE.Mesh(new THREE.BoxGeometry(0.7 * s, 0.9 * s, 0.5 * s), mat());
+    body = capsula(0.7 * s, 0.9 * s, 0.5 * s, def.color); partesMat.push(body.material);
     body.position.y = 0.75 * s;
-    head = new THREE.Mesh(new THREE.BoxGeometry(0.55 * s, 0.5 * s, 0.5 * s), mat());
+    head = new THREE.Mesh(new THREE.SphereGeometry(0.3 * s, 12, 10), mat());
     head.position.y = 1.45 * s;
     eSize = 0.12 * s; eLpos = [-0.13 * s, 1.5 * s, 0.26 * s]; eRpos = [0.13 * s, 1.5 * s, 0.26 * s];
   }

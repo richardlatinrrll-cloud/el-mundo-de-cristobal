@@ -1,6 +1,6 @@
 # Estado actual — El Mundo de Cristóbal
 
-_Actualizado: 2026-09-13_
+_Actualizado: 2026-09-13 (tarde)_
 
 Contexto y mapa del código: `docs/CLAUDE.md`. Este archivo describe **qué hay
 hecho hoy** (todo verificado en el navegador) y, al final, el **registro de
@@ -8,7 +8,7 @@ cambios** por tandas.
 
 Publicado en **GitHub Pages** (deploy automático al hacer `git push`) y en el
 **servidor casero ARGOS** por Tailscale (`http://100.111.194.61:8082`).
-Caché del service worker: `mundo-cristobal-v28`.
+Caché del service worker: `mundo-cristobal-v29`.
 
 ---
 
@@ -181,8 +181,10 @@ Caché del service worker: `mundo-cristobal-v28`.
   skin (`colorPromedio()`), en vez de la caja rectangular de Minecraft.
   Material `MeshStandardMaterial` (mejor respuesta a la luz que antes). Es el
   primer paso de un pedido más grande ("que los personajes y enemigos se vean
-  más reales"); si funciona bien, el mismo enfoque se puede llevar a los
-  enemigos.
+  más reales"); confirmado que funcionó, se extendió a **todos** los
+  enemigos, jefes y animales (`engine/creature-parts.js` `capsula()`,
+  reutilizada en `mobs.js`/`bosses.js`/`animals.js`): brazos y piernas
+  redondeados, torso/cabeza/cuernos/alas/adornos siguen siendo cajas.
 
 ## Controles y ajustes
 
@@ -383,3 +385,14 @@ para observar, no para morir mirando). Botón "Limpiar arena".
   cápsula (`skin-model.js`), color tomado de la propia skin. Cabeza y torso
   siguen igual (misma textura pixel-art, ninguna skin se rompe). Piloto antes
   de decidir si se extiende a los enemigos.
+- **Extendido a todos los enemigos, jefes y animales** — nuevo
+  `engine/creature-parts.js` con `capsula()`, un reemplazo directo de "caja"
+  para brazos/piernas que ya usan `mobs.js`, `bosses.js` y `animals.js`
+  (mismo color, mismo lugar, solo redondeado). Cubre los 5 enemigos comunes
+  genéricos (cuerpo→cápsula, cabeza→esfera), los brazos/piernas de El
+  Larguirucho y El Gigante, los 4 jefes, los 9 animales y los 4 dinosaurios.
+  El Autómata se dejó tal cual (robot anguloso a propósito). Torso, cabeza,
+  cuernos, alas, colas, capas y demás adornos siguen siendo cajas — solo se
+  redondearon las extremidades, que es lo que más se notaba "de bloque".
+  Verificado sin errores en los 24 tipos (construcción directa de cada
+  malla) y visualmente en el jugador y el Trol de las Rocas.
