@@ -834,7 +834,7 @@ function actualizarMinado(dt) {
   grieta.material.opacity = 0.15 + frac * 0.5;
 
   if (_minProg >= total) {
-    const area = tool(state.herramienta).area || 0;
+    const area = (tool(state.herramienta).area || 0) + ovnitrixMineBonus();
     let rotos = 0;
     for (let dx = -area; dx <= area; dx++)
       for (let dy = -area; dy <= area; dy++)
@@ -963,12 +963,56 @@ const PLAYER_RADIUS = player.radius, PLAYER_HEIGHT = player.height, PLAYER_EYE =
 let alienMesh = null;   // malla de la forma del alien activo (reemplaza al avatar)
 
 function activarOvnitrix() {
+  if (player._ovnitrixT > 0) { usarHabilidadAlien(); return; }   // ya transformado: usa su ataque
   const disponibles = aliensDisponibles();
   if (puedeElegir()) {
     abrirSelectorOvnitrix();
   } else {
     transformarEnAlien(disponibles[(Math.random() * disponibles.length) | 0]);
   }
+}
+
+// ataque especial del alien activo (no todos tienen uno)
+function usarHabilidadAlien() {
+  const alien = alienDef(player._ovnitrixAlien);
+  if (alien?.especial === 'lava') { bolaDeLava(); return; }
+  toast(`${alien?.emoji || '🛸'} ${alien?.nombre || 'Este alien'} no tiene un ataque especial.`, 1400);
+}
+
+// Calorox: bola de lava que viaja hacia donde miras y explota
+function bolaDeLava() {
+  _poderCd = 3;
+  const dir = _dirMirada();
+  const o = new THREE.Vector3(player.pos.x, player.pos.y + player.eye, player.pos.z);
+  const r = player.raycast(14);
+  const dest = r
+    ? new THREE.Vector3(r.hit.x + 0.5, r.hit.y + 0.5, r.hit.z + 0.5)
+    : o.clone().addScaledVector(dir, 14);
+  const bola = new THREE.Mesh(new THREE.SphereGeometry(0.3, 10, 8),
+    new THREE.MeshBasicMaterial({ color: 0xff5a1e }));
+  bola.position.copy(o);
+  scene.add(bola);
+  const dur = Math.max(0.15, o.distanceTo(dest) / 22);
+  addFx(bola, dur, (m, k) => { m.position.copy(o).lerp(dest, k); });
+  audio.sfx('golpe');
+  setTimeout(() => {
+    const flash = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 10),
+      new THREE.MeshBasicMaterial({ color: 0xff8a3d, transparent: true, depthWrite: false }));
+    flash.position.copy(dest);
+    addFx(flash, 0.5, (m, k) => { m.scale.setScalar(1 + k * 5); m.material.opacity = 0.8 * (1 - k); });
+    const n = mobs.dañoEnRadio(dest, 3.5, 16) + bosses.dañoEnRadio(dest, 3.5, 18)
+      + gemas.dañoEnRadio(dest, 3.5, 18) + animals.dañoEnRadio(dest, 3.5, 14);
+    audio.sfx('sonico');
+    toast(n ? `🔥 ¡BOLA DE LAVA! ${n} golpeados` : '🔥 ¡BOLA DE LAVA!');
+  }, dur * 1000);
+}
+
+// aliens grandes (Roquetón, Titanoide…) rompen un área a su medida para
+// poder pasar por el túnel que cavan, no solo el bloque apuntado
+function ovnitrixMineBonus() {
+  if (player._ovnitrixT <= 0) return 0;
+  const size = alienDef(player._ovnitrixAlien)?.visual.size || 1;
+  return size > 1.2 ? Math.max(0, Math.ceil(size) - 1) : 0;
 }
 
 function abrirSelectorOvnitrix() {

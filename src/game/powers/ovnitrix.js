@@ -22,48 +22,49 @@ export const ALIENS = {
   // --- 3 aliens base: disponibles desde el principio ---
   calorox: {
     nombre: 'Calorox', emoji: '🔥', base: true,
-    visual: { size: 1.1, color: 0xd94a1e, eye: 0xffdd55 },
+    visual: { size: 1.1, color: 0xd94a1e, eye: 0xffdd55, forma: 'calorox' },
     stats: { gemDano: 1.9, sprintMul: 1.2 },
+    especial: 'lava',
   },
   rafaguero: {
     nombre: 'Rafaguero', emoji: '💨', base: true,
-    visual: { size: 0.85, color: 0x2f8fd9, eye: 0xdfffff },
+    visual: { size: 0.85, color: 0x2f8fd9, eye: 0xdfffff, forma: 'rafaguero' },
     stats: { sprintMul: 2.6, jumpV: 10 },
   },
   roqueton: {
     nombre: 'Roquetón', emoji: '🪨', base: true,
-    visual: { size: 1.4, color: 0x6f7d5a, eye: 0xffcf6a, forma: 'gigante' },
+    visual: { size: 1.4, color: 0x6f7d5a, eye: 0xffcf6a, forma: 'roqueton' },
     stats: { gemDano: 1.6, empuje: 0.4, jumpV: 12 },
   },
   // --- 7 aliens de especímenes: hay que derrotarlos primero (game/mobs.js) ---
   voltarion: {
     nombre: 'Voltarión', emoji: '⚡',
-    visual: { size: 1.0, color: 0x3355ff, eye: 0xccffff },
+    visual: { size: 1.0, color: 0x3355ff, eye: 0xccffff, forma: 'voltarion' },
     stats: { gemDano: 1.5, sprintMul: 1.5 },
   },
   sombrizo: {
     nombre: 'Sombrizo', emoji: '👻',
-    visual: { size: 0.95, color: 0x2b1e3a, eye: 0xff4d4d },
+    visual: { size: 0.95, color: 0x2b1e3a, eye: 0xff4d4d, forma: 'sombrizo' },
     stats: { invisible: true, sprintMul: 1.6 },
   },
   congelim: {
     nombre: 'Congelim', emoji: '❄️',
-    visual: { size: 1.05, color: 0x8fd8ff, eye: 0xffffff },
+    visual: { size: 1.05, color: 0x8fd8ff, eye: 0xffffff, forma: 'congelim' },
     stats: { empuje: 0.5, gemDano: 1.4, jumpV: 10 },
   },
   alado: {
     nombre: 'Alado', emoji: '🦅',
-    visual: { size: 0.9, color: 0x8a5a2e, eye: 0xffe14d },
+    visual: { size: 0.9, color: 0x8a5a2e, eye: 0xffe14d, forma: 'alado' },
     stats: { flying: true, sprintMul: 1.4 },
   },
   elastiko: {
     nombre: 'Elastiko', emoji: '🤸',
-    visual: { size: 1.15, color: 0xe9e5da, eye: 0x4be0ff, forma: 'alto' },
+    visual: { size: 1.15, color: 0xe9e5da, eye: 0x4be0ff, forma: 'elastiko' },
     stats: { reach: 10, sprintMul: 1.8 },
   },
   espinoide: {
     nombre: 'Espinoide', emoji: '🦔',
-    visual: { size: 1.2, color: 0x3a1e1e, eye: 0xff8a3d },
+    visual: { size: 1.2, color: 0x3a1e1e, eye: 0xff8a3d, forma: 'espinoide' },
     stats: { gemDano: 1.7, empuje: 0.5 },
   },
   titanoide: {

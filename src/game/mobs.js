@@ -5,6 +5,7 @@ import { state, save } from './state.js';
 import { audio } from './audio.js';
 import { toast } from '../ui/toast.js';
 import { capturarEspecimen } from './powers/ovnitrix.js';
+import { tieneModeloPropio, makeAlienMesh } from './powers/alien-models.js';
 
 // Enemigos por tipo. Aparecen más y más difíciles a medida que subes de nivel
 // (nivel = total de medallas bronce+plata+oro acumuladas).
@@ -45,27 +46,32 @@ const TYPES = {
   voltarion: {
     nombre: 'Voltarión', hp: 16, speed: 4.0, view: 17, lose: 26, knock: 5, dano: 14,
     color: 0x3355ff, eye: 0xccffff, size: 1.0, minNivel: 4, peso: 1, alienigena: true,
+    forma: 'voltarion',
   },
   sombrizo: {
     nombre: 'Sombrizo', hp: 14, speed: 4.2, view: 18, lose: 28, knock: 5, dano: 12,
     color: 0x2b1e3a, eye: 0xff4d4d, size: 0.95, minNivel: 5, peso: 1, alienigena: true,
+    forma: 'sombrizo',
   },
   congelim: {
     nombre: 'Congelim', hp: 20, speed: 3.0, view: 16, lose: 24, knock: 6, dano: 15,
     color: 0x8fd8ff, eye: 0xffffff, size: 1.05, minNivel: 7, peso: 1, alienigena: true,
+    forma: 'congelim',
   },
   alado: {
     nombre: 'Alado', hp: 15, speed: 5.0, view: 20, lose: 30, knock: 4, dano: 13,
     color: 0x8a5a2e, eye: 0xffe14d, size: 0.9, minNivel: 8, peso: 1, alienigena: true,
+    forma: 'alado',
   },
   elastiko: {
     nombre: 'Elastiko', hp: 22, speed: 5.5, view: 20, lose: 32, knock: 6, dano: 16,
     color: 0xe9e5da, eye: 0x4be0ff, size: 1.15, minNivel: 10, peso: 1, alienigena: true,
-    forma: 'alto',
+    forma: 'elastiko',
   },
   espinoide: {
     nombre: 'Espinoide', hp: 26, speed: 2.8, view: 17, lose: 24, knock: 8, dano: 20,
     color: 0x3a1e1e, eye: 0xff8a3d, size: 1.2, minNivel: 11, peso: 1, alienigena: true,
+    forma: 'espinoide',
   },
   titanoide: {
     nombre: 'Titanoide', hp: 45, speed: 2.4, view: 22, lose: 34, knock: 12, dano: 24,
@@ -297,6 +303,7 @@ function randomSpot(world) {
 }
 
 export function makeMesh(def) {
+  if (tieneModeloPropio(def.forma)) return makeAlienMesh(def);
   const g = new THREE.Group();
   const s = def.size;
   const partesMat = [];

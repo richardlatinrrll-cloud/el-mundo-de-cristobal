@@ -83,6 +83,7 @@ La clave se pide **cada vez** que se abre el juego. Solo se guardan los hashes.
 | `topics.js` | los 11 temas de estudio |
 | `powers/registry.js` | los poderes y sus requisitos (`req` en medallas, o `gema`) |
 | `powers/ovnitrix.js` | catálogo de 10 alienígenas (3 base + 7 de especímenes, `alienigena: true` en `mobs.js`) + `capturarEspecimen()` |
+| `powers/alien-models.js` | mallas propias y detalladas de cada alien (usadas por `mobs.js makeMesh` y por la transformación del jugador) |
 | `power-hud.js` | pantalla "Mis poderes" |
 | `mobs.js` | 8 enemigos (el Autómata es GIGANTE), escalan con las medallas; `oleada()` = horda cada ~15 min; `_muroEntre` = un muro te protege (`MobField`) |
 | `bosses.js` | 4 jefes en zonas con baliza; el poder correcto hace 3× daño; ataques propios (`BossArena`) |

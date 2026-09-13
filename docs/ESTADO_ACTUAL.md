@@ -1,6 +1,6 @@
 # Estado actual — El Mundo de Cristóbal
 
-_Actualizado: 2026-09-12_
+_Actualizado: 2026-09-13_
 
 Contexto y mapa del código: `docs/CLAUDE.md`. Este archivo describe **qué hay
 hecho hoy** (todo verificado en el navegador) y, al final, el **registro de
@@ -8,7 +8,7 @@ cambios** por tandas.
 
 Publicado en **GitHub Pages** (deploy automático al hacer `git push`) y en el
 **servidor casero ARGOS** por Tailscale (`http://100.111.194.61:8082`).
-Caché del service worker: `mundo-cristobal-v26`.
+Caché del service worker: `mundo-cristobal-v27`.
 
 ---
 
@@ -244,10 +244,29 @@ para observar, no para morir mirando). Botón "Limpiar arena".
   escaneados, el botón ✨ transforma en uno al azar (entre los 3 base + lo que
   hayas escaneado); con 3 o más, abre una pantalla (`ui/ovnitrix.js`) para
   **elegir** cuál usar.
-- No es una habilidad activa por alien (serían 10 ataques especiales
-  distintos, mucho más trabajo): cada uno da un combo de estadísticas pasivas
-  (velocidad, salto, daño, resistencia al empuje, y algunos con vuelo,
-  invisibilidad o romper bloques al toque) mientras dura la forma.
+- Cada alien da un combo de estadísticas pasivas (velocidad, salto, daño,
+  resistencia al empuje, vuelo, invisibilidad o romper bloques al toque)
+  mientras dura la forma. **Calorox tiene además un ataque activo**: con ✨ ya
+  transformado lanza una **bola de lava** (`bolaDeLava()` en `main.js`) que
+  viaja hacia donde miras y explota en área (cooldown 3 s). Es el único con
+  ataque propio por ahora; el botón ✨ mientras estás transformado usa la
+  habilidad especial del alien si tiene una, si no avisa que no tiene.
+- **Minado a su tamaño**: los aliens grandes (tamaño > 1.2, Roquetón y
+  Titanoide) rompen un área de bloques (no solo el apuntado) al picar, para
+  poder pasar por el túnel — reutiliza el mismo sistema de "área" que ya
+  tienen los picos buenos (`ovnitrixMineBonus()` se suma al `area` de la
+  herramienta en `actualizarMinado`).
+- **Diseños propios por alien** (`game/powers/alien-models.js`): cada uno
+  tiene una silueta distinta (Calorox con corona de llamas, Rafaguero
+  aerodinámico con aletas, Roquetón de rocas apiladas con grietas
+  brillantes, Voltarión con núcleo y rayos en zigzag, Sombrizo fantasma sin
+  piernas, Congelim de cristales de hielo, Alado con alas grandes, Elastiko
+  con extremidades en cadena de segmentos, Espinoide cubierto de púas en
+  todas direcciones). Titanoide reutiliza la silueta de "El Gigante"
+  (`forma: 'gigante'`, ya tenía buen detalle). Se usan igual para el enemigo
+  salvaje y para la transformación del jugador (mismo `makeMesh()` en
+  `game/mobs.js`, que delega a `alien-models.js` cuando la `forma` es una de
+  estas).
 - `especimenesEscaneados()` filtra ids que ya no existan en el catálogo (por
   si cambia en el futuro, para no dejar huérfanos guardados de partidas viejas).
 
@@ -342,3 +361,9 @@ para observar, no para morir mirando). Botón "Limpiar arena".
   escalada. Rediseño del catálogo a 10 aliens curados (3 base + 7 de
   especímenes nuevos) en vez de reusar los 16 enemigos/jefes/dinosaurios
   existentes.
+- **Ovnitrix: diseños propios, ataque de Calorox, minado a su tamaño** — cada
+  alien tiene ahora una silueta distinta y más elaborada
+  (`game/powers/alien-models.js`) en vez del humanoide genérico repetido.
+  Calorox puede lanzar una **bola de lava** (✨ ya transformado). Roquetón y
+  Titanoide (tamaño > 1.2) rompen un área de bloques al picar, no solo el
+  apuntado, para poder pasar por el túnel que cavan.
