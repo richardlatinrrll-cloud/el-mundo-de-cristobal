@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { isSolid } from '../engine/blocks.js';
 import { SX, SZ, SY } from '../engine/world.js';
-import { capsula } from '../engine/creature-parts.js';
+import { capsula, matCriatura } from '../engine/creature-parts.js';
 
 // Animales pacíficos que vagan por el mundo. Algunos huyen del jugador,
 // otros lo ignoran, y un par pueden dar un empujón si te acercas demasiado.
@@ -215,8 +215,7 @@ function makeMesh(def) {
   const c = def.color, cD = _sh(c, 0.78), cL = _sh(c, 1.15);
   const mats = [];
   const box = (w, h, d, col, x, y, z, rot) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w * s, h * s, d * s),
-      new THREE.MeshLambertMaterial({ color: col }));
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w * s, h * s, d * s), matCriatura(col));
     m.position.set(x * s, y * s, z * s);
     if (rot) m.rotation.set(rot[0] || 0, rot[1] || 0, rot[2] || 0);
     g.add(m); mats.push(m.material); return m;

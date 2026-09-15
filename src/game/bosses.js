@@ -6,7 +6,7 @@ import { audio } from './audio.js';
 import { powerById, cumpleRequisito } from './powers/registry.js';
 import { toast } from '../ui/toast.js';
 import { ARMADURA_JEFE, JEFE_ARMADURA } from './recetas.js';
-import { capsula } from '../engine/creature-parts.js';
+import { capsula, matCriatura } from '../engine/creature-parts.js';
 
 // Zonas con jefes. Aparecen (una torre-baliza de color en el mapa) cuando
 // desbloqueas el poder asociado. Al acercarte empieza la pelea.
@@ -239,7 +239,7 @@ function makeBossMesh(def) {
   const c = def.color;
   const cD = shade(c, 0.72), cL = shade(c, 1.22);
   const mats = [];
-  const box = (w, h, d, color) => new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color }));
+  const box = (w, h, d, color) => new THREE.Mesh(new THREE.BoxGeometry(w, h, d), matCriatura(color));
   const add = (w, h, d, color, x, y, z, rot) => {
     const m = box(w * s, h * s, d * s, color);
     m.position.set(x * s, y * s, z * s);
@@ -250,6 +250,22 @@ function makeBossMesh(def) {
   // (para brazos y piernas: se nota menos "de bloque")
   const addR = (w, h, d, color, x, y, z, rot) => {
     const m = capsula(w * s, h * s, d * s, color);
+    m.position.set(x * s, y * s, z * s);
+    if (rot) m.rotation.set(rot[0] || 0, rot[1] || 0, rot[2] || 0);
+    g.add(m); mats.push(m.material); return m;
+  };
+  // igual que add()/addR(), pero sin "madurar" el color: para brillos de
+  // fuego/lava que deben verse vivos, no apagados
+  const vividMat = (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.5, emissive: color, emissiveIntensity: 0.35 });
+  const addV = (w, h, d, color, x, y, z, rot) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w * s, h * s, d * s), vividMat(color));
+    m.position.set(x * s, y * s, z * s);
+    if (rot) m.rotation.set(rot[0] || 0, rot[1] || 0, rot[2] || 0);
+    g.add(m); mats.push(m.material); return m;
+  };
+  const addRV = (w, h, d, color, x, y, z, rot) => {
+    const radius = Math.max(w, d) * s / 2, largo = Math.max(0.02, h * s - radius * 2);
+    const m = new THREE.Mesh(new THREE.CapsuleGeometry(radius, largo, 4, 8), vividMat(color));
     m.position.set(x * s, y * s, z * s);
     if (rot) m.rotation.set(rot[0] || 0, rot[1] || 0, rot[2] || 0);
     g.add(m); mats.push(m.material); return m;
@@ -295,14 +311,14 @@ function makeBossMesh(def) {
     eye(-0.17, 2.0, 2.32, 0.13); eye(0.17, 2.0, 2.32, 0.13);
   } else if (def.forma === 'titan') {
     add(1.7, 1.9, 1.1, c, 0, 1.4, 0);                 // torso
-    add(1.75, 0.6, 1.14, 0xff8a3d, 0, 1.0, 0);        // grieta ardiente
-    add(1.4, 0.35, 1.13, shade(0xff8a3d, 1.3), 0, 1.75, 0);
+    addV(1.75, 0.6, 1.14, 0xff8a3d, 0, 1.0, 0);       // grieta ardiente
+    addV(1.4, 0.35, 1.13, shade(0xff8a3d, 1.3), 0, 1.75, 0);
     add(0.85, 0.85, 0.8, cL, 0, 2.75, 0);             // cabeza
     add(0.9, 0.25, 0.5, cD, 0, 2.45, 0.2);            // ceño
     addR(0.58, 1.65, 0.58, c, -1.22, 1.45, 0);        // brazos
     addR(0.58, 1.65, 0.58, c, 1.22, 1.45, 0);
-    addR(0.95, 0.8, 0.95, 0xff8a3d, -1.22, 0.5, 0);   // puños ardientes
-    addR(0.95, 0.8, 0.95, 0xff8a3d, 1.22, 0.5, 0);
+    addRV(0.95, 0.8, 0.95, 0xff8a3d, -1.22, 0.5, 0);  // puños ardientes
+    addRV(0.95, 0.8, 0.95, 0xff8a3d, 1.22, 0.5, 0);
     addR(0.7, 1.1, 0.75, cD, -0.5, 0.5, 0);           // piernas
     addR(0.7, 1.1, 0.75, cD, 0.5, 0.5, 0);
     for (let i = -1; i <= 1; i++) pincho(cD, i * 0.55, 3.15, -0.1, 0.55, [-0.15, 0, i * 0.15]); // corona de rocas

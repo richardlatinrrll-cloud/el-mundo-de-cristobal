@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { matCriatura } from '../../engine/creature-parts.js';
 
 // Modelos propios y más detallados para los alienígenas del Ovnitrix (y los
 // enemigos "espécimen" que los dan). Cada uno tiene una silueta distinta,
@@ -12,7 +13,7 @@ import * as THREE from 'three';
 
 function partesComunes() {
   const mats = [];
-  const mat = (color) => { const m = new THREE.MeshLambertMaterial({ color }); mats.push(m); return m; };
+  const mat = (color) => { const m = matCriatura(color); mats.push(m); return m; };
   const glow = (color) => new THREE.MeshBasicMaterial({ color });
   return { mats, mat, glow };
 }
@@ -137,15 +138,15 @@ function sombrizo(s, color, eye) {
   const g = new THREE.Group();
   const { mats } = partesComunes();
   const velo = new THREE.Mesh(new THREE.ConeGeometry(0.42 * s, 1.15 * s, 8, 1, true),
-    new THREE.MeshLambertMaterial({ color, transparent: true, opacity: 0.72 }));
+    matCriatura(color, { transparent: true, opacity: 0.72 }));
   mats.push(velo.material);
   velo.rotation.x = Math.PI; velo.position.y = 0.85 * s;
   const cabeza = new THREE.Mesh(new THREE.SphereGeometry(0.3 * s, 12, 8),
-    new THREE.MeshLambertMaterial({ color, transparent: true, opacity: 0.85 }));
+    matCriatura(color, { transparent: true, opacity: 0.85 }));
   mats.push(cabeza.material);
   cabeza.position.y = 1.32 * s;
   const jironGeo = new THREE.ConeGeometry(0.1 * s, 0.35 * s, 5, 1, true);
-  const jMat = new THREE.MeshLambertMaterial({ color, transparent: true, opacity: 0.55 });
+  const jMat = matCriatura(color, { transparent: true, opacity: 0.55 });
   mats.push(jMat);
   for (const [x, z] of [[-0.18, 0], [0, 0.05], [0.18, 0]]) {
     const j = new THREE.Mesh(jironGeo, jMat);

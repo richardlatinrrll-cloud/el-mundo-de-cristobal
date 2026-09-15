@@ -75,7 +75,7 @@ La clave se pide **cada vez** que se abre el juego. Solo se guardan los hashes.
 | `controls.js` | teclado+ratón (pointer lock) y táctil (joystick dinámico + botones) |
 | `blocks.js` | catálogo de bloques + atlas de texturas procedurales |
 | `fluidos.js` | **fluidos con niveles** (sim tipo Minecraft): FUENTE vs CORRIENTE, agua rellena huecos, lava corre y se enfría, no inunda. `world.fluid` = Map de niveles. Tick cada 0,25 s cerca del jugador |
-| `creature-parts.js` | `capsula()`: brazos/piernas redondeados reutilizados por `mobs.js`, `bosses.js` y `animals.js` (parte de hacer personajes/enemigos "más realistas") |
+| `creature-parts.js` | `capsula()` (brazos/piernas redondeados) + `madurar()`/`matCriatura()` (colores menos "de dibujo animado", material con mejor luz) reutilizados por `mobs.js`, `bosses.js`, `animals.js` y `powers/alien-models.js` |
 
 ### `game/` — lógica del juego
 | archivo | qué hace |

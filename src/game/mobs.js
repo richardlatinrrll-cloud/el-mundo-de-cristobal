@@ -6,7 +6,7 @@ import { audio } from './audio.js';
 import { toast } from '../ui/toast.js';
 import { capturarEspecimen } from './powers/ovnitrix.js';
 import { tieneModeloPropio, makeAlienMesh } from './powers/alien-models.js';
-import { capsula } from '../engine/creature-parts.js';
+import { capsula, matCriatura } from '../engine/creature-parts.js';
 
 // Enemigos por tipo. Aparecen más y más difíciles a medida que subes de nivel
 // (nivel = total de medallas bronce+plata+oro acumuladas).
@@ -308,7 +308,7 @@ export function makeMesh(def) {
   const g = new THREE.Group();
   const s = def.size;
   const partesMat = [];
-  const mat = () => { const m = new THREE.MeshLambertMaterial({ color: def.color }); partesMat.push(m); return m; };
+  const mat = () => { const m = matCriatura(def.color); partesMat.push(m); return m; };
   let body, head, eLpos, eRpos, eSize, brazos = null;
 
   if (def.forma === 'alto') {
@@ -382,11 +382,12 @@ export function makeMesh(def) {
     g.userData.brazos4 = brazos4;
     eSize = 0.16 * s; eLpos = [-0.14 * s, 1.55 * s, 0.4 * s]; eRpos = [0.14 * s, 1.55 * s, 0.4 * s];
   } else {
-    body = capsula(0.7 * s, 0.9 * s, 0.5 * s, def.color); partesMat.push(body.material);
-    body.position.y = 0.75 * s;
-    head = new THREE.Mesh(new THREE.SphereGeometry(0.3 * s, 12, 10), mat());
-    head.position.y = 1.45 * s;
-    eSize = 0.12 * s; eLpos = [-0.13 * s, 1.5 * s, 0.26 * s]; eRpos = [0.13 * s, 1.5 * s, 0.26 * s];
+    // cuerpo más esbelto y cabeza más chica que antes (menos "chibi")
+    body = capsula(0.6 * s, 1.1 * s, 0.46 * s, def.color); partesMat.push(body.material);
+    body.position.y = 0.68 * s;
+    head = new THREE.Mesh(new THREE.SphereGeometry(0.24 * s, 12, 10), mat());
+    head.position.y = 1.55 * s;
+    eSize = 0.1 * s; eLpos = [-0.11 * s, 1.58 * s, 0.21 * s]; eRpos = [0.11 * s, 1.58 * s, 0.21 * s];
   }
 
   const eyeMat = new THREE.MeshBasicMaterial({ color: def.eye });

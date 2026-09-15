@@ -8,7 +8,7 @@ cambios** por tandas.
 
 Publicado en **GitHub Pages** (deploy automático al hacer `git push`) y en el
 **servidor casero ARGOS** por Tailscale (`http://100.111.194.61:8082`).
-Caché del service worker: `mundo-cristobal-v29`.
+Caché del service worker: `mundo-cristobal-v30`.
 
 ---
 
@@ -232,6 +232,16 @@ para observar, no para morir mirando). Botón "Limpiar arena".
 - Guardar varios mundos con nombre.
 - Recompensas visibles por derrotar jefes (trofeos, skins) en un menú.
 - Más arte y partículas en jefes y efectos.
+- **Pregunta abierta (2026-09-15): ¿modelos 3D reales?** Se hicieron tres
+  pasadas de "más realista" con geometría procedural propia (cápsulas,
+  colores madurados, proporciones menos "chibi") y a Richard todavía le
+  siguen pareciendo infantiles los diseños. El siguiente salto de verdad
+  (piel/tela con textura, esculpido, animación con peso) ya no es ajustar
+  parámetros: implica modelos 3D hechos por alguien o de un banco de assets
+  (CC0/gratis), más un sistema de carga GLTF + animación esquelética que hoy
+  no existe (todo es ensamblado de cajas/cápsulas a mano). Cambia la
+  identidad "todo generado, sin recursos externos" del proyecto. Pendiente
+  decidir con Richard si vale la pena ese camino.
 
 ---
 
@@ -396,3 +406,15 @@ para observar, no para morir mirando). Botón "Limpiar arena".
   redondearon las extremidades, que es lo que más se notaba "de bloque".
   Verificado sin errores en los 24 tipos (construcción directa de cada
   malla) y visualmente en el jugador y el Trol de las Rocas.
+- **Colores "madurados"** (Richard: los diseños se sienten "demasiado
+  infantiles") — `engine/creature-parts.js` `madurar(hex)`: baja saturación y
+  brillo conservando el matiz (de "rojo de crayola" a un tono más
+  terroso/serio). Se aplica automáticamente al color base de piel/pelaje en
+  `mobs.js`, `bosses.js`, `animals.js` y `powers/alien-models.js` (dentro de
+  sus helpers `mat()`/`box()`/`capsula()`, sin tocar cada dato de color a
+  mano). Los ojos y los brillos (núcleo del Autómata, orbe del Elfo, fuego de
+  Calorox) NO se maduran — deben seguir vivos. Excepción añadida: la grieta y
+  los puños ardientes del Titán Ardiente (`addV`/`addRV` en `bosses.js`) se
+  dejaron sin madurar, si no perdían el efecto de brasa encendida. También se
+  afinaron las proporciones del enemigo genérico (cuerpo más esbelto, cabeza
+  más chica — menos "chibi").
