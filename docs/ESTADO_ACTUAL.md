@@ -1,6 +1,6 @@
 # Estado actual — El Mundo de Cristóbal
 
-_Actualizado: 2026-09-13 (tarde)_
+_Actualizado: 2026-09-16_
 
 Contexto y mapa del código: `docs/CLAUDE.md`. Este archivo describe **qué hay
 hecho hoy** (todo verificado en el navegador) y, al final, el **registro de
@@ -8,7 +8,7 @@ cambios** por tandas.
 
 Publicado en **GitHub Pages** (deploy automático al hacer `git push`) y en el
 **servidor casero ARGOS** por Tailscale (`http://100.111.194.61:8082`).
-Caché del service worker: `mundo-cristobal-v30`.
+Caché del service worker: `mundo-cristobal-v31`.
 
 ---
 
@@ -185,6 +185,25 @@ Caché del service worker: `mundo-cristobal-v30`.
   enemigos, jefes y animales (`engine/creature-parts.js` `capsula()`,
   reutilizada en `mobs.js`/`bosses.js`/`animals.js`): brazos y piernas
   redondeados, torso/cabeza/cuernos/alas/adornos siguen siendo cajas.
+- **🎒 Ropa y accesorios que se desbloquean estudiando** (`skin/cosmeticos.js`,
+  pedido de Richard mostrando una imagen de referencia con un personaje de
+  cabeza voxel + cuerpo con ropa bien definida): **15 prendas** en 4 lugares
+  — 🧢 cabeza (gorro de lana, gorra, sombrero explorador, casco de acero,
+  corona), 👕 cuerpo (polera, polerón, armadura de cuero, armadura de acero),
+  👖 piernas (pantalón cargo, pantalón camuflado, grebas) y 👓 cara (anteojos,
+  antifaz, goggles). Se desbloquean solas al subir el **total de medallas**
+  (bronce+plata+oro de todos los temas, el mismo número que ya usan los
+  poderes) — sin tocar cada una a mano: `cosmeticoDesbloqueado()` compara ese
+  total contra el umbral de cada prenda. Toast de "nueva ropa desbloqueada"
+  al terminar un intento de quiz que suba de medalla y cruce un umbral
+  (`startQuiz()` en `main.js`). Se equipan (un máximo por lugar, tocar de
+  nuevo para sacárselo) desde la pantalla **Personajes** → sección "Ropa y
+  accesorios" (mismo estilo visual que "Mis poderes": bloqueado/equipado). Las
+  prendas son mallas propias (`makeCosmeticoMesh()`) que se agregan como
+  **hijas** de `head`/`body`/`legR`/`legL` del avatar — así siguen gratis la
+  animación de caminar/girar que ya tenía cada parte, sin código nuevo de
+  animación. `state.cosmeticos.equipados` se guarda; lo desbloqueado NO se
+  guarda (se recalcula siempre desde `medallas`, no puede desincronizarse).
 
 ## Controles y ajustes
 
@@ -235,13 +254,18 @@ para observar, no para morir mirando). Botón "Limpiar arena".
 - **Pregunta abierta (2026-09-15): ¿modelos 3D reales?** Se hicieron tres
   pasadas de "más realista" con geometría procedural propia (cápsulas,
   colores madurados, proporciones menos "chibi") y a Richard todavía le
-  siguen pareciendo infantiles los diseños. El siguiente salto de verdad
+  seguían pareciendo infantiles los diseños. El siguiente salto de verdad
   (piel/tela con textura, esculpido, animación con peso) ya no es ajustar
   parámetros: implica modelos 3D hechos por alguien o de un banco de assets
   (CC0/gratis), más un sistema de carga GLTF + animación esquelética que hoy
   no existe (todo es ensamblado de cajas/cápsulas a mano). Cambia la
-  identidad "todo generado, sin recursos externos" del proyecto. Pendiente
-  decidir con Richard si vale la pena ese camino.
+  identidad "todo generado, sin recursos externos" del proyecto. Sigue
+  pendiente decidir con Richard si vale la pena ese camino — el 2026-09-16
+  mandó una imagen de referencia (cabeza voxel + cuerpo con proporciones y
+  ropa "de verdad") y en vez de eso se priorizó construir el **sistema de
+  ropa desbloqueable** (ver sección "Personajes"), que aporta variedad visual
+  real sin salir de lo procedural. La pregunta de fondo (¿vale la pena un
+  pipeline de assets 3D externos?) sigue abierta.
 
 ---
 
@@ -418,3 +442,9 @@ para observar, no para morir mirando). Botón "Limpiar arena".
   dejaron sin madurar, si no perdían el efecto de brasa encendida. También se
   afinaron las proporciones del enemigo genérico (cuerpo más esbelto, cabeza
   más chica — menos "chibi").
+- **Ropa y accesorios desbloqueables** — 15 prendas (gorros/sombreros,
+  poleras/polerones/armaduras, pantalones, anteojos/máscaras) que se
+  desbloquean solas al subir el total de medallas y se equipan desde
+  "Personajes"; se ven puestas en el jugador (mallas propias colgadas del
+  avatar). Empuja el pedido de "más realista" por el lado de la variedad
+  visual (ropa de verdad) en vez de seguir esculpiendo el cuerpo base.

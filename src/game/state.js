@@ -34,6 +34,9 @@ const DEFAULT = {
   // Ovnitrix: especies (enemigos/jefes/dinosaurios) ya derrotadas y
   // disponibles para transformarse en ellas
   ovnitrix: { capturados: [] },
+  // ropa y accesorios equipados por lugar: { cabeza, cuerpo, piernas, cara }
+  // (el desbloqueo no se guarda: se calcula solo desde `medallas`)
+  cosmeticos: { equipados: {} },
   // bloques que el jugador tiene recogidos para construir: { "idBloque": cantidad }
   inventario: {},
   // herramientas que tiene y cuál usa
@@ -78,6 +81,7 @@ function load() {
       jefesDerrotados: parsed.jefesDerrotados || [],
       cofres: parsed.cofres || {},
       ovnitrix: { capturados: (parsed.ovnitrix?.capturados) || [] },
+      cosmeticos: { equipados: { ...(parsed.cosmeticos?.equipados || {}) } },
       armadura: parsed.armadura || [],
       salud: parsed.salud ?? 100,
       saludMax: parsed.saludMax ?? 100,

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { state } from '../game/state.js';
+import { equipadoEn, makeCosmeticoMesh } from './cosmeticos.js';
 
 // Layout de skin estilo Minecraft 64x64 (una sola capa, brazos clásicos 4px).
 export const SKIN_W = 64, SKIN_H = 64;
@@ -101,6 +102,18 @@ export function makeAvatar(texture) {
   spike(3.4, 1.8, 0.2, 7, 0, -0.95);
   peloSaya.visible = false;
   head.add(peloSaya);
+
+  // --- ropa y accesorios equipados (se desbloquean estudiando) ---
+  const ponerCosmetico = (slot, parent) => {
+    const id = equipadoEn(state, slot);
+    const m = id && makeCosmeticoMesh(id);
+    if (m) parent.add(m);
+  };
+  ponerCosmetico('cabeza', head);
+  ponerCosmetico('cara', head);
+  ponerCosmetico('cuerpo', body);
+  ponerCosmetico('piernas', legR);
+  ponerCosmetico('piernas', legL);
 
   g.add(head, body, armR, armL, legR, legL);
   g.userData = { head, body, armR, armL, legR, legL, mat, miembroMats, peloSaya };

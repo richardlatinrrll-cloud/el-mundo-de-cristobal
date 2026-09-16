@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { state, save } from '../game/state.js';
 import { SKIN_W, SKIN_H, makeAvatar, drawDefaultSkin, paintSkin, PRESETS_SKIN } from './skin-model.js';
+import { COSMETICOS, SLOTS, SLOT_NOMBRE, nivelTotal, cosmeticoDesbloqueado, equiparCosmetico, equipadoEn } from './cosmeticos.js';
 import { toast } from '../ui/toast.js';
 
 const PALETTE = [
@@ -69,6 +70,11 @@ export function mountPersonajes({ onVolver }) {
     </div>
     <p class="hint">Skins guardadas (toca para usarla):</p>
     <div class="skins-strip" data-strip></div>
+
+    <h2 style="margin-top:18px">🎒 Ropa y accesorios</h2>
+    <p class="sub">Se desbloquean solos a medida que subes de nivel estudiando (medallas
+      bronce+plata+oro de todos los temas). Toca uno puesto para quitártelo.</p>
+    <div data-cosmeticos></div>
   `;
   el.querySelector('[data-volver]').addEventListener('click', () => { stopPreview(); onVolver(); });
 
@@ -273,11 +279,56 @@ export function mountPersonajes({ onVolver }) {
     renderer.render(scene, cam);
   }
   function refreshPreview() { if (previewTex) previewTex.needsUpdate = true; drawGuides(); }
+  // la ropa se arma al crear el avatar (no se puede prender/apagar sola):
+  // rearmarlo entero cuando cambia lo equipado
+  function refreshAvatar() {
+    if (!scene || !previewTex) return;
+    scene.remove(avatar);
+    avatar = makeAvatar(previewTex);
+    scene.add(avatar);
+  }
   function stopPreview() { cancelAnimationFrame(raf); if (renderer) renderer.dispose(); renderer = scene = cam = avatar = previewTex = null; }
   addEventListener('resize', () => renderer && sizePreview());
   el.querySelectorAll('[data-rot]').forEach((b) => b.addEventListener('click', () => {
     rot = +b.dataset.rot * 0.03;
   }));
+
+  // ropa y accesorios
+  const cosmeticosEl = el.querySelector('[data-cosmeticos]');
+  function renderCosmeticos() {
+    cosmeticosEl.innerHTML = '';
+    const nivel = nivelTotal(state);
+    for (const slot of SLOTS) {
+      const h = document.createElement('p');
+      h.className = 'pr-h';
+      h.textContent = SLOT_NOMBRE[slot];
+      cosmeticosEl.appendChild(h);
+      const list = document.createElement('div');
+      list.className = 'power-list';
+      const puesto = equipadoEn(state, slot);
+      for (const [id, c] of Object.entries(COSMETICOS)) {
+        if (c.slot !== slot) continue;
+        const ok = cosmeticoDesbloqueado(id, state);
+        const equipado = puesto === id;
+        const row = document.createElement('div');
+        row.className = `power ${ok ? '' : 'locked'} ${equipado ? 'equipped' : ''}`;
+        row.innerHTML = `
+          <div class="emoji">${c.emoji}</div>
+          <div class="info">
+            <div class="p-name">${c.nombre}</div>
+            <div class="p-req">${ok ? (equipado ? 'Puesto' : 'Toca para ponértelo') : `🔒 ${c.medallas} medallas en total (llevas ${nivel})`}</div>
+          </div>
+          <button class="btn small ${equipado ? '' : 'secondary'}" ${ok ? '' : 'disabled'} data-btn>
+            ${equipado ? 'Quitar' : ok ? 'Poner' : 'Bloqueado'}
+          </button>`;
+        if (ok) row.querySelector('[data-btn]').addEventListener('click', () => {
+          equiparCosmetico(state, id); save(); renderCosmeticos(); refreshAvatar();
+        });
+        list.appendChild(row);
+      }
+      cosmeticosEl.appendChild(list);
+    }
+  }
 
   // guardar / skins
   const strip = el.querySelector('[data-strip]');
@@ -334,6 +385,7 @@ export function mountPersonajes({ onVolver }) {
     const active = state.skins.find((s) => s.id === state.skinActiva);
     loadIntoCanvas(active?.png || null);
     renderStrip();
+    renderCosmeticos();
     if (!renderer) startPreview();
     setTimeout(sizePreview, 60);
   };

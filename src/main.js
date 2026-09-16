@@ -14,6 +14,7 @@ import { curarConTrivia } from './ui/curar-trivia.js';
 import { mountAprender } from './quiz/progress-ui.js';
 import { mountPoderes } from './game/power-hud.js';
 import { mountPersonajes } from './skin/skin-editor.js';
+import { COSMETICOS, nivelTotal } from './skin/cosmeticos.js';
 import { applySkinToPlayer, updateAvatar } from './skin/skin-model.js';
 import { MobField } from './game/mobs.js';
 import { BossArena } from './game/bosses.js';
@@ -1776,9 +1777,18 @@ function closeAllScreens() {
 
 async function startQuiz(topicId) {
   closeAllScreens();
+  const nivelAntes = nivelTotal(state);
   const res = await openQuiz(topicId);
   // al cerrar el quiz volvemos a "Aprender" y refrescamos
-  if (res?.subioNivel) toast(`🏅 ¡Subiste a ${res.nivel.toUpperCase()} en ${res.tema}!`);
+  if (res?.subioNivel) {
+    toast(`🏅 ¡Subiste a ${res.nivel.toUpperCase()} en ${res.tema}!`);
+    const nivelAhora = nivelTotal(state);
+    for (const [id, c] of Object.entries(COSMETICOS)) {
+      if (c.medallas > nivelAntes && c.medallas <= nivelAhora) {
+        setTimeout(() => toast(`🎒 ¡Nueva ropa desbloqueada: ${c.emoji} ${c.nombre}! (Personajes)`, 2800), 900);
+      }
+    }
+  }
   openScreen('aprender');
 }
 

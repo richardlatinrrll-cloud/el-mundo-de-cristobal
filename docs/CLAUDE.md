@@ -102,8 +102,10 @@ La clave se pide **cada vez** que se abre el juego. Solo se guardan los hashes.
 `banks/*.json` (**677 preguntas**, un archivo por tema, ~20 por nivel, 7º–8º básico).
 
 ### `skin/` — personajes
-`skin-editor.js` (editor pixel-art 64×64), `skin-model.js` (avatar 3D + pelo
-dorado del Súper Saya).
+`skin-editor.js` (editor pixel-art 64×64 + sección "Ropa y accesorios"),
+`skin-model.js` (avatar 3D + pelo dorado del Súper Saya + engancha la ropa
+equipada), `cosmeticos.js` (catálogo de 15 prendas en 4 lugares, desbloqueo
+por total de medallas, mallas propias colgadas del avatar).
 
 ### `ui/` — pantallas
 `menu.js`, `toast.js`, `crafteo.js` (libro de recetas), `tablero.js` (armado 3×3
