@@ -1,6 +1,6 @@
 # Estado actual — El Mundo de Cristóbal
 
-_Actualizado: 2026-09-16 (tarde)_
+_Actualizado: 2026-09-21_
 
 Contexto y mapa del código: `docs/CLAUDE.md`. Este archivo describe **qué hay
 hecho hoy** (todo verificado en el navegador) y, al final, el **registro de
@@ -8,7 +8,7 @@ cambios** por tandas.
 
 Publicado en **GitHub Pages** (deploy automático al hacer `git push`) y en el
 **servidor casero ARGOS** por Tailscale (`http://100.111.194.61:8082`).
-Caché del service worker: `mundo-cristobal-v32`.
+Caché del service worker: `mundo-cristobal-v33`.
 
 ---
 
@@ -490,3 +490,15 @@ para observar, no para morir mirando). Botón "Limpiar arena".
   Ahora tienen enfriamientos separados, la bola sale de la mano (no de la
   cámara) y además deja un charco de lava real en el mundo (sin perforar el
   suelo) que se enfría solo.
+- **Dos colores nuevos en la paleta del HUD** (`style.css`): `--ring`
+  (`#5ec8ff`, celeste) y `--glow` (`#ff4fd8`, magenta). Antes "seleccionado/
+  equipado" y "botón de acción" usaban el mismo dorado (`--accent`); ahora el
+  dorado queda solo para botones/medallas y `--ring` marca lo que está
+  elegido (hotbar, herramienta, poder equipado, ropa puesta, skin activa,
+  celda llena del tablero). `--glow` se usa en los momentos de más energía:
+  la barra de progreso del quiz (degradé dorado→magenta) y el emoji 🏅 solo
+  cuando subís de nivel de verdad (no en el 💪 de consuelo). Surgió de
+  revisar la paleta de `ui-ux-pro-max-skill` (repo de referencia agregado a
+  `pack-5-skills`) contra la del juego — el esquema base (navy + dorado) ya
+  calzaba bien con lo que esa librería recomienda para trivia/arcade, así que
+  no se cambió de raíz, solo estos dos agregados puntuales.

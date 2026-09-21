@@ -120,7 +120,7 @@ export function openQuiz(topicId) {
 
       wrap.innerHTML = `
         <div class="modal">
-          <div class="medal">${paso ? '🏅' : '💪'}</div>
+          <div class="medal${subio ? ' subio' : ''}">${paso ? '🏅' : '💪'}</div>
           <div class="result-big">${aciertos} / ${intento.preguntas.length} correctas</div>
           <p class="hint" style="text-align:center">
             ${subio ? `¡Subiste a nivel <b>${nivelNuevo.toUpperCase()}</b> en ${intento.tema}!`
