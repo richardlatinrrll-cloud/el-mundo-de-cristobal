@@ -54,6 +54,8 @@ export function mountPersonajes({ onVolver }) {
       </div>
       <div class="preview-col">
         <canvas id="skin-preview"></canvas>
+        <p class="hint" style="text-align:center;margin:2px 0 0">👆 Toca la cabeza/cuerpo/piernas
+          del muñeco para cambiarle la ropa puesta ahí</p>
         <div class="row" style="gap:6px;margin-top:4px">
           <button class="btn small secondary" data-rot="-1">⟲</button>
           <button class="btn small secondary" data-rot="0">⏸️</button>
@@ -256,8 +258,9 @@ export function mountPersonajes({ onVolver }) {
     sizePreview();
     scene = new THREE.Scene();
     cam = new THREE.PerspectiveCamera(32, 1, 0.1, 20);
-    cam.position.set(0, 1, 3.4);
-    cam.lookAt(0, 0.95, 0);
+    // de cuerpo entero (cabeza a pies) para poder tocar cualquier parte
+    cam.position.set(0, 0.9, 4.4);
+    cam.lookAt(0, 0.82, 0);
     scene.add(new THREE.HemisphereLight(0xffffff, 0x445, 1.4));
     const dl = new THREE.DirectionalLight(0xffffff, 0.75); dl.position.set(2, 4, 3); scene.add(dl);
     previewTex = new THREE.CanvasTexture(canvas);
@@ -289,6 +292,41 @@ export function mountPersonajes({ onVolver }) {
   }
   function stopPreview() { cancelAnimationFrame(raf); if (renderer) renderer.dispose(); renderer = scene = cam = avatar = previewTex = null; }
   addEventListener('resize', () => renderer && sizePreview());
+
+  // --- editar la ropa tocando directo el avatar 3D (no la lista de abajo) ---
+  function itemsDeSlot(slot) {
+    return Object.keys(COSMETICOS).filter((id) => COSMETICOS[id].slot === slot && cosmeticoDesbloqueado(id, state));
+  }
+  function ciclarSlot(slot) {
+    const items = itemsDeSlot(slot);
+    if (!items.length) { toast('🔒 Nada desbloqueado ahí todavía. ¡Sigue estudiando!', 1800); return; }
+    const opciones = [null, ...items];
+    const actual = equipadoEn(state, slot);
+    const next = opciones[(opciones.indexOf(actual) + 1) % opciones.length];
+    state.cosmeticos = state.cosmeticos || { equipados: {} };
+    state.cosmeticos.equipados = state.cosmeticos.equipados || {};
+    state.cosmeticos.equipados[slot] = next;
+    save();
+    renderCosmeticos();
+    refreshAvatar();
+    toast(next ? `${COSMETICOS[next].emoji} ${COSMETICOS[next].nombre}` : '(nada puesto ahí)', 1400);
+  }
+  // franjas verticales de la vista previa (de arriba a abajo: gorro, cara,
+  // cuerpo, piernas) — más fácil de tocar que acertarle a la malla exacta,
+  // sobre todo con el muñeco girando solo
+  const FRANJAS = [[0, 0.24, 'cabeza'], [0.24, 0.4, 'cara'], [0.4, 0.6, 'cuerpo'], [0.6, 1, 'piernas']];
+  function onPreviewTap(e) {
+    if (!avatar) return;
+    e.preventDefault();
+    const r = previewCanvas.getBoundingClientRect();
+    const ev = e.changedTouches ? e.changedTouches[0] : e;
+    const fy = (ev.clientY - r.top) / r.height;
+    const franja = FRANJAS.find(([y0, y1]) => fy >= y0 && fy < y1);
+    if (franja) ciclarSlot(franja[2]);
+  }
+  previewCanvas.style.cursor = 'pointer';
+  previewCanvas.addEventListener('click', onPreviewTap);
+  previewCanvas.addEventListener('touchend', onPreviewTap, { passive: false });
   el.querySelectorAll('[data-rot]').forEach((b) => b.addEventListener('click', () => {
     rot = +b.dataset.rot * 0.03;
   }));

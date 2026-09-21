@@ -31,10 +31,12 @@ export const ALIENS = {
     visual: { size: 0.85, color: 0x2f8fd9, eye: 0xdfffff, forma: 'rafaguero' },
     stats: { sprintMul: 2.6, jumpV: 10 },
   },
-  roqueton: {
-    nombre: 'Roquetón', emoji: '🪨', base: true,
-    visual: { size: 1.4, color: 0x6f7d5a, eye: 0xffcf6a, forma: 'roqueton' },
-    stats: { gemDano: 1.6, empuje: 0.4, jumpV: 12 },
+  diamantoide: {
+    nombre: 'Diamantoide', emoji: '💎', base: true,
+    visual: { size: 1.4, color: 0xa0e8f0, eye: 0xffffff, forma: 'diamantoide' },
+    // pesado y resistente, no ágil: mucha fuerza y casi no te empujan, pero
+    // menos veloz y salta menos que en tu forma normal (a propósito)
+    stats: { gemDano: 2.2, empuje: 0.2, sprintMul: 0.75, jumpV: 6 },
   },
   // --- 7 aliens de especímenes: hay que derrotarlos primero (game/mobs.js) ---
   voltarion: {

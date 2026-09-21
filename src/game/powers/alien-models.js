@@ -77,28 +77,31 @@ function rafaguero(s, color, eye) {
   return g;
 }
 
-// --- Roquetón: torso de rocas apiladas, grietas brillantes ---
-function roqueton(s, color, eye) {
+// --- Diamantoide: cuerpo pesado y anguloso tallado como una gema, facetas
+// brillantes (pesado y resistente, no ágil — ver stats en ovnitrix.js) ---
+function diamantoide(s, color, eye) {
   const g = new THREE.Group();
   const { mats, mat, glow } = partesComunes();
-  const base = new THREE.Mesh(new THREE.BoxGeometry(0.95 * s, 0.55 * s, 0.75 * s), mat(color));
+  const gemaMat = () => { const m = new THREE.MeshStandardMaterial({ color, roughness: 0.12, metalness: 0.1 }); mats.push(m); return m; };
+  const base = new THREE.Mesh(new THREE.BoxGeometry(0.95 * s, 0.55 * s, 0.75 * s), gemaMat());
   base.position.set(0, 0.32 * s, 0); base.rotation.y = 0.2;
-  const medio = new THREE.Mesh(new THREE.BoxGeometry(0.78 * s, 0.5 * s, 0.62 * s), mat(color));
-  medio.position.set(0.04 * s, 0.75 * s, -0.02 * s); medio.rotation.y = -0.15;
-  const head = new THREE.Mesh(new THREE.BoxGeometry(0.56 * s, 0.5 * s, 0.5 * s), mat(color));
-  head.position.set(-0.03 * s, 1.18 * s, 0); head.rotation.y = 0.1;
+  const medio = new THREE.Mesh(new THREE.OctahedronGeometry(0.44 * s), gemaMat());
+  medio.position.set(0.04 * s, 0.78 * s, -0.02 * s); medio.rotation.y = -0.15;
+  const head = new THREE.Mesh(new THREE.OctahedronGeometry(0.32 * s), gemaMat());
+  head.position.set(-0.03 * s, 1.24 * s, 0); head.rotation.y = 0.1;
   const brazoGeo = new THREE.BoxGeometry(0.3 * s, 0.4 * s, 0.3 * s);
-  const bL = new THREE.Mesh(brazoGeo, mat(color)); bL.position.set(-0.58 * s, 0.6 * s, 0);
-  const bR = new THREE.Mesh(brazoGeo, mat(color)); bR.position.set(0.58 * s, 0.6 * s, 0);
-  const grietaMat = glow(eye);
-  const grieta = (x, y, z, w, h) => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w * s, h * s, 0.02 * s), grietaMat);
-    m.position.set(x * s, y * s, z * s);
+  const bL = new THREE.Mesh(brazoGeo, gemaMat()); bL.position.set(-0.58 * s, 0.6 * s, 0); bL.rotation.z = 0.15;
+  const bR = new THREE.Mesh(brazoGeo, gemaMat()); bR.position.set(0.58 * s, 0.6 * s, 0); bR.rotation.z = -0.15;
+  // facetas talladas: triángulos delgados que brillan, como el filo de una gema
+  const facetaMat = glow(0xffffff);
+  const faceta = (x, y, z, w, h, rz) => {
+    const m = new THREE.Mesh(new THREE.ConeGeometry(w * s, h * s, 3), facetaMat);
+    m.position.set(x * s, y * s, z * s); m.rotation.z = rz || 0; m.rotation.x = Math.PI / 2;
     g.add(m);
   };
-  grieta(-0.1, 1.2, 0.26, 0.05, 0.22);
-  grieta(0.12, 1.14, 0.26, 0.16, 0.04);
-  grieta(-0.2, 0.34, 0.39, 0.05, 0.3);
+  faceta(-0.12, 1.26, 0.3, 0.08, 0.14, 0.3);
+  faceta(0.14, 1.22, 0.28, 0.07, 0.12, -0.4);
+  faceta(-0.22, 0.36, 0.4, 0.09, 0.16, 0.5);
   g.add(base, medio, head, bL, bR);
   g.userData = { body: medio, mats, brazos: null, brazos4: null };
   return g;
@@ -266,7 +269,7 @@ function espinoide(s, color, eye) {
   return g;
 }
 
-const BUILDERS = { calorox, rafaguero, roqueton, voltarion, sombrizo, congelim, alado, elastiko, espinoide };
+const BUILDERS = { calorox, rafaguero, diamantoide, voltarion, sombrizo, congelim, alado, elastiko, espinoide };
 
 export function tieneModeloPropio(forma) {
   return !!BUILDERS[forma];

@@ -899,6 +899,9 @@ function tieneAccionPoder() {
 function activarPoderAccion() {
   const id = state.poderEquipado;
   if (!id) return;
+  // el Ovnitrix maneja sus propios enfriamientos (transformarse y usar la
+  // habilidad del alien son cosas distintas, cada una con su tiempo)
+  if (id === 'ovnitrix') { activarOvnitrix(); return; }
   if (_poderCd > 0) { toast(`⏳ Poder listo en ${Math.ceil(_poderCd)}s`, 800); return; }
   // el botón ✨ NO mueve la herramienta (eso es solo del botón ⛏️)
   switch (id) {
@@ -912,7 +915,6 @@ function activarPoderAccion() {
     case 'invisible':     mantoSombra(); break;
     case 'volar':         impulsoVuelo(); break;
     case 'furia':         modoFuria(); break;
-    case 'ovnitrix':      activarOvnitrix(); break;
   }
 }
 
@@ -962,9 +964,20 @@ auraOvnitrix.visible = false; auraOvnitrix.renderOrder = 2; scene.add(auraOvnitr
 // hitbox y ojo normales del jugador (para volver a la normalidad al revertir)
 const PLAYER_RADIUS = player.radius, PLAYER_HEIGHT = player.height, PLAYER_EYE = player.eye;
 let alienMesh = null;   // malla de la forma del alien activo (reemplaza al avatar)
+// el Ovnitrix tiene DOS enfriamientos separados: transformarse y usar la
+// habilidad del alien activo. Antes compartían uno solo (20 s) y por eso
+// Calorox no podía lanzar lava recién transformado: el botón ✨ seguía
+// "en enfriamiento" durante los 20 s enteros.
+let _ovnitrixTransformCd = 0;
+let _ovnitrixAbilityCd = 0;
 
 function activarOvnitrix() {
-  if (player._ovnitrixT > 0) { usarHabilidadAlien(); return; }   // ya transformado: usa su ataque
+  if (player._ovnitrixT > 0) {          // ya transformado: usa su ataque
+    if (_ovnitrixAbilityCd > 0) { toast(`⏳ Habilidad lista en ${Math.ceil(_ovnitrixAbilityCd)}s`, 800); return; }
+    usarHabilidadAlien();
+    return;
+  }
+  if (_ovnitrixTransformCd > 0) { toast(`⏳ Ovnitrix listo en ${Math.ceil(_ovnitrixTransformCd)}s`, 800); return; }
   const disponibles = aliensDisponibles();
   if (puedeElegir()) {
     abrirSelectorOvnitrix();
@@ -980,11 +993,23 @@ function usarHabilidadAlien() {
   toast(`${alien?.emoji || '🛸'} ${alien?.nombre || 'Este alien'} no tiene un ataque especial.`, 1400);
 }
 
-// Calorox: bola de lava que viaja hacia donde miras y explota
-function bolaDeLava() {
-  _poderCd = 3;
+// posición aproximada de la mano (para que los efectos salgan de ahí y no
+// de la cámara): un poco adelante, abajo y a un lado, como un brazo extendido
+function _posMano() {
   const dir = _dirMirada();
-  const o = new THREE.Vector3(player.pos.x, player.pos.y + player.eye, player.pos.z);
+  const right = new THREE.Vector3().crossVectors(dir, new THREE.Vector3(0, 1, 0)).normalize();
+  return new THREE.Vector3(player.pos.x, player.pos.y + player.height * 0.55, player.pos.z)
+    .addScaledVector(dir, 0.55).addScaledVector(right, 0.32);
+}
+
+// Calorox: bola de lava que sale de la mano, viaja hacia donde miras, golpea
+// a los enemigos y deja un charco de lava de verdad (que se enfría solo,
+// como cualquier lava del mundo) — sin perforar el suelo: solo ocupa aire,
+// nunca reemplaza el bloque sólido que golpeó.
+function bolaDeLava() {
+  _ovnitrixAbilityCd = 3;
+  const dir = _dirMirada();
+  const o = _posMano();
   const r = player.raycast(14);
   const dest = r
     ? new THREE.Vector3(r.hit.x + 0.5, r.hit.y + 0.5, r.hit.z + 0.5)
@@ -1003,12 +1028,23 @@ function bolaDeLava() {
     addFx(flash, 0.5, (m, k) => { m.scale.setScalar(1 + k * 5); m.material.opacity = 0.8 * (1 - k); });
     const n = mobs.dañoEnRadio(dest, 3.5, 16) + bosses.dañoEnRadio(dest, 3.5, 18)
       + gemas.dañoEnRadio(dest, 3.5, 18) + animals.dañoEnRadio(dest, 3.5, 14);
+    // charco de lava donde cayó: solo en celdas de aire (nunca perfora el
+    // bloque que golpeó), se enfría sola con el tiempo como cualquier lava
+    if (r) {
+      const { x, y, z } = r.place;
+      let colocados = 0;
+      for (const [dx, dz] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        if (colocados >= 3) break;
+        const bx = x + dx, by = y, bz = z + dz;
+        if (world.get(bx, by, bz) === AIR) { world.set(bx, by, bz, 14); registrarEdit(bx, by, bz, 14); colocados++; }
+      }
+    }
     audio.sfx('sonico');
     toast(n ? `🔥 ¡BOLA DE LAVA! ${n} golpeados` : '🔥 ¡BOLA DE LAVA!');
   }, dur * 1000);
 }
 
-// aliens grandes (Roquetón, Titanoide…) rompen un área a su medida para
+// aliens grandes (Diamantoide, Titanoide…) rompen un área a su medida para
 // poder pasar por el túnel que cavan, no solo el bloque apuntado
 function ovnitrixMineBonus() {
   if (player._ovnitrixT <= 0) return 0;
@@ -1026,7 +1062,7 @@ function abrirSelectorOvnitrix() {
 function transformarEnAlien(id) {
   const alien = alienDef(id);
   if (!alien) return;
-  _poderCd = 20;
+  _ovnitrixTransformCd = 2;
   player._ovnitrixT = OVNITRIX_DURACION_S;
   player._ovnitrixAlien = id;
   // se ve la transformación en tercera persona; luego vuelve a la vista de antes
@@ -1156,6 +1192,8 @@ function addFx(mesh, vida, fn, delay = 0) {
 function updateFx(dt) {
   _poderCd = Math.max(0, _poderCd - dt);
   _laserT = Math.max(0, _laserT - dt);
+  _ovnitrixTransformCd = Math.max(0, _ovnitrixTransformCd - dt);
+  _ovnitrixAbilityCd = Math.max(0, _ovnitrixAbilityCd - dt);
   for (let i = fx.length - 1; i >= 0; i--) {
     const m = fx[i];
     m.userData.t += dt;
@@ -1307,8 +1345,11 @@ export function aplicarPoderEquipado() {
     const alien = alienDef(player._ovnitrixAlien);
     const s = alien?.stats;
     if (s) {
-      if (s.sprintMul) player.sprintMul = Math.max(player.sprintMul, s.sprintMul);
-      if (s.jumpV) player.jumpV = Math.max(player.jumpV, s.jumpV);
+      // se ASIGNA (no "el mayor de los dos"): al transformarte, tu velocidad
+      // y salto pasan a ser los de ese alien, para arriba o para abajo — así
+      // un alien pesado y no ágil (Diamantoide) de verdad se siente lento
+      if (s.sprintMul) player.sprintMul = s.sprintMul;
+      if (s.jumpV) player.jumpV = s.jumpV;
       if (s.gemDano) player._gemDano = Math.max(player._gemDano || 1, s.gemDano);
       if (s.empuje != null) player._empuje = Math.min(player._empuje ?? 1, s.empuje);
       if (s.flying) player.flying = true;

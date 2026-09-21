@@ -1,6 +1,6 @@
 # Estado actual — El Mundo de Cristóbal
 
-_Actualizado: 2026-09-16_
+_Actualizado: 2026-09-16 (tarde)_
 
 Contexto y mapa del código: `docs/CLAUDE.md`. Este archivo describe **qué hay
 hecho hoy** (todo verificado en el navegador) y, al final, el **registro de
@@ -8,7 +8,7 @@ cambios** por tandas.
 
 Publicado en **GitHub Pages** (deploy automático al hacer `git push`) y en el
 **servidor casero ARGOS** por Tailscale (`http://100.111.194.61:8082`).
-Caché del service worker: `mundo-cristobal-v31`.
+Caché del service worker: `mundo-cristobal-v32`.
 
 ---
 
@@ -204,6 +204,20 @@ Caché del service worker: `mundo-cristobal-v31`.
   animación de caminar/girar que ya tenía cada parte, sin código nuevo de
   animación. `state.cosmeticos.equipados` se guarda; lo desbloqueado NO se
   guarda (se recalcula siempre desde `medallas`, no puede desincronizarse).
+- **Se puede tocar directo el muñeco 3D** para cambiarle la ropa (Richard: el
+  editor pixel-art "no se entiende", quería editar directo en 3D). La vista
+  previa de "Personajes" ahora es de cuerpo entero (antes estaba encuadrada
+  solo cabeza+torso) y tocarla cicla la prenda de esa franja: arriba de todo
+  = cabeza, luego cara, cuerpo, piernas (`FRANJAS` en `skin-editor.js`, son
+  franjas verticales simples por posición del toque en el canvas — se probó
+  primero con raycasting 3D real contra la malla, pero con el muñeco
+  girando solo y piernas/cara siendo blancos chicos resultaba muy impreciso
+  para tocar; las franjas son mucho más tolerantes, mejor para un chico
+  tocando una pantalla). La lista de abajo sigue estando, por si prefieren
+  tocar ahí. El **editor de colores (pixel a pixel)** sigue siendo la pantalla
+  de dibujo 2D — pasarlo a pintar directo sobre el 3D es un cambio de
+  arquitectura bastante más grande (raycasting a coordenadas de textura) que
+  no se abordó esta vez.
 
 ## Controles y ajustes
 
@@ -272,8 +286,8 @@ para observar, no para morir mirando). Botón "Limpiar arena".
 ## Ovnitrix
 
 - **10 aliens** (`game/powers/ovnitrix.js`, catálogo `ALIENS`): **3 base**
-  (Calorox 🔥, Rafaguero 💨, Roquetón 🪨) disponibles desde que desbloqueas el
-  poder, sin hacer nada. **7 de especímenes** (Voltarión, Sombrizo, Congelim,
+  (Calorox 🔥, Rafaguero 💨, Diamantoide 💎) disponibles desde que desbloqueas
+  el poder, sin hacer nada. **7 de especímenes** (Voltarión, Sombrizo, Congelim,
   Alado, Elastiko, Espinoide, Titanoide): son enemigos nuevos y raros
   (`alienigena: true` en `game/mobs.js`, spawnean mezclados con los demás según
   tu nivel) — al derrotar uno por primera vez queda escaneado para siempre
@@ -293,25 +307,40 @@ para observar, no para morir mirando). Botón "Limpiar arena".
   **elegir** cuál usar.
 - Cada alien da un combo de estadísticas pasivas (velocidad, salto, daño,
   resistencia al empuje, vuelo, invisibilidad o romper bloques al toque)
-  mientras dura la forma. **Calorox tiene además un ataque activo**: con ✨ ya
-  transformado lanza una **bola de lava** (`bolaDeLava()` en `main.js`) que
-  viaja hacia donde miras y explota en área (cooldown 3 s). Es el único con
-  ataque propio por ahora; el botón ✨ mientras estás transformado usa la
-  habilidad especial del alien si tiene una, si no avisa que no tiene.
-- **Minado a su tamaño**: los aliens grandes (tamaño > 1.2, Roquetón y
+  mientras dura la forma. **Estas ahora se ASIGNAN, no se suman al máximo**
+  (`sprintMul`/`jumpV` reemplazan al valor base en vez de `Math.max` con él) —
+  necesario para que un alien pesado pueda ser de verdad **más lento** que tu
+  forma normal, no solo "como mínimo igual".
+- **Calorox tiene un ataque activo**: con ✨ ya transformado lanza una **bola
+  de lava** (`bolaDeLava()` en `main.js`) que sale de su mano (no de la
+  cámara), viaja hacia donde miras, golpea a los enemigos y **deja** un
+  charco de lava de verdad en el mundo (hasta 3 bloques, solo en aire — nunca
+  perfora el bloque sólido que golpeó) que se enfría solo con el tiempo como
+  cualquier lava del juego. Cooldown propio de 3 s, **separado** del cooldown
+  de transformarse — antes compartían un mismo contador de 20 s y por eso
+  parecía que la bola de lava "no funcionaba" recién transformado (en
+  realidad el botón seguía bloqueado por el enfriamiento de la
+  transformación). Es el único alien con ataque propio por ahora.
+- **Minado a su tamaño**: los aliens grandes (tamaño > 1.2, Diamantoide y
   Titanoide) rompen un área de bloques (no solo el apuntado) al picar, para
   poder pasar por el túnel — reutiliza el mismo sistema de "área" que ya
   tienen los picos buenos (`ovnitrixMineBonus()` se suma al `area` de la
   herramienta en `actualizarMinado`).
+- **Diamantoide** (antes "Roquetón/roca"): pedido de Richard — pesado,
+  resistente y fuerte, pero **no ágil** (a propósito, es coherente con ser de
+  piedra preciosa maciza): `sprintMul: 0.75` y `jumpV: 6` — MÁS LENTO y con
+  MENOS salto que en tu forma normal — a cambio de `gemDano: 2.2` y
+  `empuje: 0.2` (casi no te mueven los golpes). Diseño anguloso/faceteado
+  (octaedros + conos brillantes en vez de "rocas apiladas"), color diamante.
 - **Diseños propios por alien** (`game/powers/alien-models.js`): cada uno
   tiene una silueta distinta (Calorox con corona de llamas, Rafaguero
-  aerodinámico con aletas, Roquetón de rocas apiladas con grietas
-  brillantes, Voltarión con núcleo y rayos en zigzag, Sombrizo fantasma sin
-  piernas, Congelim de cristales de hielo, Alado con alas grandes, Elastiko
-  con extremidades en cadena de segmentos, Espinoide cubierto de púas en
-  todas direcciones). Titanoide reutiliza la silueta de "El Gigante"
-  (`forma: 'gigante'`, ya tenía buen detalle). Se usan igual para el enemigo
-  salvaje y para la transformación del jugador (mismo `makeMesh()` en
+  aerodinámico con aletas, Diamantoide anguloso y faceteado, Voltarión con
+  núcleo y rayos en zigzag, Sombrizo fantasma sin piernas, Congelim de
+  cristales de hielo, Alado con alas grandes, Elastiko con extremidades en
+  cadena de segmentos, Espinoide cubierto de púas en todas direcciones).
+  Titanoide reutiliza la silueta de "El Gigante" (`forma: 'gigante'`, ya
+  tenía buen detalle). Se usan igual para el enemigo salvaje y para la
+  transformación del jugador (mismo `makeMesh()` en
   `game/mobs.js`, que delega a `alien-models.js` cuando la `forma` es una de
   estas).
 - `especimenesEscaneados()` filtra ids que ya no existan en el catálogo (por
@@ -448,3 +477,16 @@ para observar, no para morir mirando). Botón "Limpiar arena".
   "Personajes"; se ven puestas en el jugador (mallas propias colgadas del
   avatar). Empuja el pedido de "más realista" por el lado de la variedad
   visual (ropa de verdad) en vez de seguir esculpiendo el cuerpo base.
+- **Editar la ropa tocando el muñeco 3D, Diamantoide y arreglo de la bola de
+  lava** — tres pedidos de Richard tras probar la ropa con Cristóbal: (1) la
+  vista previa de "Personajes" ahora es de cuerpo entero y tocarla cicla la
+  prenda de esa zona (cabeza/cara/cuerpo/piernas), sin tener que usar la
+  lista de abajo. (2) Roquetón pasó a ser **Diamantoide**: diseño anguloso y
+  faceteado, y ahora de verdad es más lento y salta menos que tu forma normal
+  (antes las estadísticas del Ovnitrix solo podían "subir", nunca bajar la
+  velocidad/salto base — se cambió a asignar en vez de tomar el máximo). (3)
+  la bola de lava de Calorox no se podía lanzar recién transformado: compartía
+  el enfriamiento de 20 s de "transformarse" con el de "usar la habilidad".
+  Ahora tienen enfriamientos separados, la bola sale de la mano (no de la
+  cámara) y además deja un charco de lava real en el mundo (sin perforar el
+  suelo) que se enfría solo.
