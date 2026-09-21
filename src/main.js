@@ -16,9 +16,9 @@ import { mountPoderes } from './game/power-hud.js';
 import { mountPersonajes } from './skin/skin-editor.js';
 import { COSMETICOS, nivelTotal } from './skin/cosmeticos.js';
 import { applySkinToPlayer, updateAvatar } from './skin/skin-model.js';
-import { MobField } from './game/mobs.js';
-import { BossArena } from './game/bosses.js';
-import { AnimalField } from './game/animals.js';
+import { MobField, TYPES as MOB_TYPES } from './game/mobs.js';
+import { BossArena, BOSSES, makeBossMesh } from './game/bosses.js';
+import { AnimalField, ESPECIES, makeMesh as makeAnimalMesh } from './game/animals.js';
 import { mountMundos } from './ui/mundos.js';
 import { mountAjustes } from './ui/ajustes.js';
 import { mountCrafteo } from './ui/crafteo.js';
@@ -1787,6 +1787,9 @@ function openScreen(name) {
         onJefe: (id) => invocarJefePrueba(id),
         onAnimal: (id) => invocarAnimalPrueba(id),
         onLimpiar: () => { mobs.clear(); bosses.clear(); animals.clear(); toast('Arena limpia'); },
+        meshEnemigo: (t) => makeAlienBody(MOB_TYPES[t]),
+        meshJefe: (id) => makeBossMesh(BOSSES.find((b) => b.id === id)),
+        meshAnimal: (id) => makeAnimalMesh(ESPECIES[id]),
       });
     } else if (name === 'gemas') {
       screens[name] = mountGemas({

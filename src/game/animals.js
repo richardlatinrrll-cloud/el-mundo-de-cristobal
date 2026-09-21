@@ -209,7 +209,7 @@ function _sh(hex, f) {
 }
 
 // Modelos con más partes: cuerpo, cabeza, hocico, patas, cola, orejas…
-function makeMesh(def) {
+export function makeMesh(def) {
   const s = def.size;
   const g = new THREE.Group();
   const c = def.color, cD = _sh(c, 0.78), cL = _sh(c, 1.15);

@@ -111,9 +111,11 @@ por total de medallas, mallas propias colgadas del avatar).
 `menu.js`, `toast.js`, `crafteo.js` (libro de recetas), `tablero.js` (armado 3×3
 con guía fantasma), `gemas.js` (mapa + mini-mapa), `mundos.js`, `ajustes.js`,
 `clave.js`, `curar-trivia.js` (curarse en pelea de jefe), `pruebas.js` (Sala de
-pruebas, solo con clave maestra), `cofre.js` (guardar cosas; la mochila tiene
-tope `CARGA_MAX` en main.js), `ovnitrix.js` (elegir en qué alien transformarse,
-solo aparece con 3+ especies escaneadas).
+pruebas, solo con clave maestra — tocar un bicho muestra antes una vista
+previa 3D girando, con su `makeMesh()`/`makeBossMesh()` real, y un botón
+"Saltar a la lucha" recién ahí lo invoca en la arena), `cofre.js` (guardar
+cosas; la mochila tiene tope `CARGA_MAX` en main.js), `ovnitrix.js` (elegir en
+qué alien transformarse, solo aparece con 3+ especies escaneadas).
 
 ### `main.js`
 Arranque, bucle de juego (`frame`), navegación de pantallas, romper/poner

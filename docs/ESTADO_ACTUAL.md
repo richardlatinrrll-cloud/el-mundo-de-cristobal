@@ -8,7 +8,7 @@ cambios** por tandas.
 
 Publicado en **GitHub Pages** (deploy automático al hacer `git push`) y en el
 **servidor casero ARGOS** por Tailscale (`http://100.111.194.61:8082`).
-Caché del service worker: `mundo-cristobal-v34`.
+Caché del service worker: `mundo-cristobal-v35`.
 
 ---
 
@@ -519,3 +519,19 @@ para observar, no para morir mirando). Botón "Limpiar arena".
   verificó por inspección directa de geometría (bounding box, posición y
   rotación de las mallas nuevas) — mismo criterio que ya se usó antes en este
   proyecto y que funciona mejor que perseguir un pantallazo con la cámara.
+- **Vista previa 3D en la Sala de pruebas** (Richard: "me gustaría ver al
+  enemigo al seleccionarlo en 3D para ver su diseño y después de ahí saltar a
+  la lucha") — antes tocar un botón invocaba directo en la arena. Ahora abre
+  un panel con el modelo real girando (la MISMA malla con la que aparece en
+  el juego: `makeMesh()` de `mobs.js`/`animals.js`, `makeBossMesh()` de
+  `bosses.js`, ahora exportadas) y dos botones: "← Elegir otro" (vuelve a la
+  lista) y "⚔️ Saltar a la lucha" (recién ahí invoca en la arena, mismo
+  comportamiento de antes). La cámara se encuadra sola según el tamaño real
+  de cada bicho (de 0.4 al Braquiosaurio, ~26 de hocico a cola) usando el
+  "cilindro" que lo envuelve alrededor del eje Y (por el que gira solo el
+  muñeco) para que quepa entero en cualquier ángulo, no solo de frente — la
+  primera versión usaba la dimensión más larga sin importar el eje y dejaba
+  demasiado espacio vacío alrededor de bichos alargados. De paso esto dio la
+  primera confirmación VISUAL de esta sesión de que las alas y el cuello del
+  Dragón Tormenta (ver entrada anterior) se ven bien — antes solo se había
+  verificado por geometría porque el jefe vuela y no se dejaba fotografiar.

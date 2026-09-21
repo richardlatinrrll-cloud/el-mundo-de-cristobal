@@ -16,7 +16,7 @@ import { capsula, matCriatura } from '../engine/creature-parts.js';
 // - Los golpeas con clic/⛏️ apuntándoles de cerca, o con el GRITO SÓNICO en área.
 
 // Enemigos MUCHO más duros (aguantan más, pegan más, más rápidos, más cantidad).
-const TYPES = {
+export const TYPES = {
   sombra:    { nombre: 'Sombra',    hp: 7,  speed: 3.9, view: 16, lose: 26, knock: 5,  dano: 9,  color: 0x2b1e3a, eye: 0xff4d4d, size: 1.0, minNivel: 0,  peso: 5 },
   veloz:     { nombre: 'Espectro',  hp: 7,  speed: 6.2, view: 13, lose: 22, knock: 4,  dano: 8,  color: 0x1e2f3a, eye: 0x4dd2ff, size: 0.9, minNivel: 3,  peso: 3, verInvisible: false },
   saltarin:  { nombre: 'Brincón',   hp: 10, speed: 3.6, view: 15, lose: 24, knock: 6,  dano: 11, color: 0x143a1e, eye: 0xa8e10c, size: 0.95, minNivel: 6, peso: 3, salta: true },

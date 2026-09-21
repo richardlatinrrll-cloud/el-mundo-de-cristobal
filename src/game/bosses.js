@@ -233,7 +233,7 @@ function shade(hex, f) {
   return (r << 16) | (gr << 8) | b;
 }
 
-function makeBossMesh(def) {
+export function makeBossMesh(def) {
   const s = def.size;
   const g = new THREE.Group();
   const c = def.color;
