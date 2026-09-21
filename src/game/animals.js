@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { isSolid } from '../engine/blocks.js';
 import { SX, SZ, SY } from '../engine/world.js';
-import { capsula, matCriatura } from '../engine/creature-parts.js';
+import { capsula, matCriatura, cadena } from '../engine/creature-parts.js';
 
 // Animales pacíficos que vagan por el mundo. Algunos huyen del jugador,
 // otros lo ignoran, y un par pueden dar un empujón si te acercas demasiado.
@@ -228,6 +228,12 @@ function makeMesh(def) {
     g.add(m); mats.push(m.material); return m;
   };
   const ojo = (x, y, z) => { const e = new THREE.Mesh(new THREE.BoxGeometry(0.07 * s, 0.07 * s, 0.05), new THREE.MeshBasicMaterial({ color: 0x101010 })); e.position.set(x * s, y * s, z * s); g.add(e); };
+  // cuello/cola de una pieza de verdad (cadena de tramos que se afinan), en
+  // vez de cajas sueltas rotadas a mano que no terminan de calzar
+  const cuelloCola = (puntos, r0, r1, col) => {
+    const { material } = cadena(g, puntos.map(([x, y, z]) => [x * s, y * s, z * s]), r0 * s, r1 * s, col);
+    mats.push(material);
+  };
   const f = def.forma || 'peludo';
   let cuerpo;
   const patas = (bw, y, cols) => {
@@ -265,13 +271,16 @@ function makeMesh(def) {
     ojo(-0.2, 2.35, 1.45); ojo(0.2, 2.35, 1.45);
   } else if (f === 'cuellolargo') {
     cuerpo = box(1.0, 1.1, 2.0, c, 0, 1.5, 0);
-    box(0.4, 0.4, 1.6, c, 0, 2.3, 1.0, [-0.5, 0, 0]); // cuello inclinado
-    box(0.42, 0.4, 1.3, c, 0, 3.1, 1.7, [-0.7, 0, 0]);
-    box(0.5, 0.45, 0.6, cL, 0, 3.8, 2.2);            // cabecita
-    box(0.24, 0.24, 2.4, c, 0, 1.2, -1.7);           // cola larga
-    box(0.14, 0.14, 1.0, cD, 0, 1.1, -3.2, [0.2, 0, 0]);
+    box(0.85, 0.55, 1.9, cL, 0, 1.15, 0);             // vientre claro
+    // cuello curvo de una pieza, se afina hacia la cabeza (antes: 2 cajas
+    // sueltas rotadas a mano que quedaban "flotando")
+    cuelloCola([[0, 1.85, 0.9], [0, 2.5, 1.35], [0, 3.15, 1.85], [0, 3.6, 2.15]], 0.26, 0.16, c);
+    box(0.42, 0.34, 0.55, cL, 0, 3.78, 2.42);         // cabecita
+    box(0.2, 0.16, 0.3, cD, 0, 3.68, 2.7);            // hocico
+    // cola curva que se afina hasta la punta (antes: 2 cajas sueltas)
+    cuelloCola([[0, 1.35, -0.95], [0, 1.15, -2.0], [0, 0.95, -2.9], [0, 0.85, -3.5]], 0.2, 0.04, c);
     for (const [px, pz] of [[-0.4, 0.55], [0.4, 0.55], [-0.4, -0.55], [0.4, -0.55]]) boxR(0.42, 1.5, 0.42, cD, px, 0.75, pz);
-    ojo(-0.16, 3.9, 2.4); ojo(0.16, 3.9, 2.4);
+    ojo(-0.14, 3.85, 2.6); ojo(0.14, 3.85, 2.6);
   } else if (f === 'trike') {
     cuerpo = box(1.1, 1.0, 1.7, c, 0, 1.0, 0);
     box(0.9, 0.5, 1.5, cL, 0, 0.7, 0);

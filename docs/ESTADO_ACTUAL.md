@@ -8,7 +8,7 @@ cambios** por tandas.
 
 Publicado en **GitHub Pages** (deploy automático al hacer `git push`) y en el
 **servidor casero ARGOS** por Tailscale (`http://100.111.194.61:8082`).
-Caché del service worker: `mundo-cristobal-v33`.
+Caché del service worker: `mundo-cristobal-v34`.
 
 ---
 
@@ -502,3 +502,20 @@ para observar, no para morir mirando). Botón "Limpiar arena".
   `pack-5-skills`) contra la del juego — el esquema base (navy + dorado) ya
   calzaba bien con lo que esa librería recomienda para trivia/arcade, así que
   no se cambió de raíz, solo estos dos agregados puntuales.
+- **Cuello/cola de una pieza y alas con silueta real** (Richard: "el dinosaurio
+  de cuello largo... muy feo y poco definido, así mismo con los dragones") —
+  antes el cuello y la cola del Braquiosaurio y del Dragón Tormenta eran 2
+  cajas sueltas rotadas a mano, mal encajadas. Helpers nuevos en
+  `engine/creature-parts.js`: `cadena(out, puntos, r0, r1, color)` conecta una
+  lista de puntos con cilindros que se afinan (grosor r0→r1) más una esferita
+  en cada unión para que no se note el borde recto — una curva de verdad en
+  vez de segmentos rectos. `ala(puntosAla, color)` dibuja una membrana con
+  silueta recortada (dedos, no un rectángulo) usando `THREE.Shape`. Aplicado
+  al cuello y cola del Braquiosaurio (`animals.js`) y del Dragón Tormenta
+  (`bosses.js`, que además ganó alas con hueso delantero + membrana en vez del
+  rectángulo plano anterior; la animación de aleteo existente se mantiene
+  intacta encima). Verificado con screenshot para el Braquiosaurio (curva lisa
+  y continua); para el dragón, que vuela y no se queda quieto para la foto, se
+  verificó por inspección directa de geometría (bounding box, posición y
+  rotación de las mallas nuevas) — mismo criterio que ya se usó antes en este
+  proyecto y que funciona mejor que perseguir un pantallazo con la cámara.

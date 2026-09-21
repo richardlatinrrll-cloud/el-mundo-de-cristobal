@@ -29,3 +29,48 @@ export function capsula(w, h, d, color, opts = {}) {
   const largo = Math.max(0.02, h - radius * 2);
   return new THREE.Mesh(new THREE.CapsuleGeometry(radius, largo, 4, 8), matCriatura(color, opts));
 }
+
+// un tramo que conecta DOS PUNTOS cualquiera (no solo vertical), con radio
+// distinto en cada punta — para cuellos/colas que de verdad se vean de una
+// pieza en vez de cajas sueltas "flotando" a ojo en ángulos raros.
+function tramo(p0, p1, r0, r1, mat) {
+  const dir = new THREE.Vector3().subVectors(p1, p0);
+  const len = dir.length() || 0.001;
+  const mesh = new THREE.Mesh(new THREE.CylinderGeometry(r1, r0, len, 8), mat);
+  mesh.position.copy(p0).addScaledVector(dir, 0.5);
+  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+  return mesh;
+}
+
+// cadena de tramos entre una lista de puntos [[x,y,z], ...], con el radio
+// afinándose de r0 a r1 a lo largo de la cadena (cuello/cola de dinosaurio o
+// dragón, curva de verdad en vez de 2 cajas rotadas a mano). `out` es el
+// array/grupo donde se agregan las piezas. Devuelve `{ juntas, material }` —
+// TODOS los tramos comparten `material` (una sola pieza para el flash de
+// golpe), aunque la cadena tenga un solo tramo y ninguna unión.
+export function cadena(out, puntos, r0, r1, color, opts = {}) {
+  const mat = matCriatura(color, opts);
+  const n = puntos.length - 1;
+  const juntas = [];
+  for (let i = 0; i < n; i++) {
+    const a = new THREE.Vector3(...puntos[i]), b = new THREE.Vector3(...puntos[i + 1]);
+    const ra = r0 + (r1 - r0) * (i / n), rb = r0 + (r1 - r0) * ((i + 1) / n);
+    out.add(tramo(a, b, ra, rb, mat));
+    // esferita en la unión para que no se note el borde recto del cilindro
+    if (i > 0) { const j = new THREE.Mesh(new THREE.SphereGeometry(ra, 8, 6), mat); j.position.copy(a); out.add(j); juntas.push(j); }
+  }
+  return { juntas, material: mat };
+}
+
+// ala tipo membrana (silueta con "dedos", no un rectángulo plano): un hueso
+// delantero (cápsula) + una membrana con muescas hecha con THREE.Shape.
+// `puntosAla` son [x,y] en el plano local del ala, punta del hombro en (0,0).
+export function ala(puntosAla, color, opts = {}) {
+  const shape = new THREE.Shape();
+  shape.moveTo(puntosAla[0][0], puntosAla[0][1]);
+  for (let i = 1; i < puntosAla.length; i++) shape.lineTo(puntosAla[i][0], puntosAla[i][1]);
+  shape.closePath();
+  const geo = new THREE.ShapeGeometry(shape);
+  const mat = matCriatura(color, { side: THREE.DoubleSide, ...opts });
+  return new THREE.Mesh(geo, mat);
+}

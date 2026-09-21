@@ -6,7 +6,7 @@ import { audio } from './audio.js';
 import { powerById, cumpleRequisito } from './powers/registry.js';
 import { toast } from '../ui/toast.js';
 import { ARMADURA_JEFE, JEFE_ARMADURA } from './recetas.js';
-import { capsula, matCriatura } from '../engine/creature-parts.js';
+import { capsula, matCriatura, cadena, ala } from '../engine/creature-parts.js';
 
 // Zonas con jefes. Aparecen (una torre-baliza de color en el mapa) cuando
 // desbloqueas el poder asociado. Al acercarte empieza la pelea.
@@ -273,6 +273,26 @@ function makeBossMesh(def) {
   const eyeMat = new THREE.MeshBasicMaterial({ color: def.eye });
   const eye = (x, y, z, sz = 0.16) => { const e = new THREE.Mesh(new THREE.BoxGeometry(sz * s, sz * s, 0.06), eyeMat); e.position.set(x * s, y * s, z * s); g.add(e); };
   const pincho = (color, x, y, z, len, rot) => add(0.12, len, 0.12, color, x, y, z, rot);
+  // cuello/cola de una pieza de verdad (cadena de tramos que se van afinando),
+  // en vez de 2 cajas sueltas rotadas a mano
+  const cuelloCola = (puntos, r0, r1, color) => {
+    const { juntas, material } = cadena(g, puntos.map(([x, y, z]) => [x * s, y * s, z * s]), r0 * s, r1 * s, color);
+    mats.push(material);
+    return juntas;
+  };
+  // ala tipo membrana con "dedos" (silueta real, no un rectángulo plano) +
+  // hueso delantero que le da estructura
+  const alaMembrana = (lado, hombro, puntos2D, color) => {
+    const signo = lado === 'izq' ? -1 : 1;
+    const pts = puntos2D.map(([x, y]) => [signo * x * s, y * s]);
+    const m = ala(pts, color);
+    m.position.set(hombro[0] * s, hombro[1] * s, hombro[2] * s);
+    m.rotation.x = -Math.PI / 2;
+    g.add(m); mats.push(m.material);
+    const punta = puntos2D[Math.floor(puntos2D.length / 2)];
+    cuelloCola([hombro, [hombro[0] + signo * punta[0], hombro[1] + punta[1] * 0.3, hombro[2]]], 0.07, 0.03, 0x27406b);
+    return m;
+  };
 
   if (def.forma === 'trol') {
     add(1.5, 1.5, 1.0, c, 0, 1.1, 0);                 // torso
@@ -293,18 +313,21 @@ function makeBossMesh(def) {
   } else if (def.forma === 'dragon') {
     add(1.1, 0.95, 1.7, c, 0, 1.0, 0);                // cuerpo
     add(0.9, 0.5, 1.5, cL, 0, 0.6, 0.05);             // vientre claro (escamas)
-    add(0.38, 0.4, 1.3, c, 0, 1.35, 1.05);            // cuello
-    add(0.34, 0.34, 1.2, c, 0, 1.75, 1.35, [0.5, 0, 0]);
+    // cuello curvo de una pieza (antes: 2 cajas sueltas que no calzaban)
+    cuelloCola([[0, 1.25, 0.9], [0, 1.55, 1.5], [0, 1.85, 1.95]], 0.24, 0.17, c);
     add(0.58, 0.5, 0.72, cL, 0, 1.9, 2.05);           // cabeza
     add(0.5, 0.2, 0.4, cD, 0, 1.72, 2.35);            // hocico
     pincho(cD, 0, 2.25, 1.9, 0.4, [0.3, 0, 0]);       // cuernos
     pincho(cD, -0.18, 2.2, 1.85, 0.35, [0.4, 0, -0.2]);
     pincho(cD, 0.18, 2.2, 1.85, 0.35, [0.4, 0, 0.2]);
     for (let i = 0; i < 4; i++) pincho(cD, 0, 1.55 - i * 0.05, 0.7 - i * 0.55, 0.3, [0.2, 0, 0]); // cresta
-    add(0.26, 0.24, 1.6, c, 0, 0.85, -1.4);           // cola
-    add(0.14, 0.14, 0.5, cD, 0, 0.85, -2.3, [0.3, 0, 0]); // punta de cola
-    const wL = add(1.6, 0.07, 1.0, 0x27406b, -1.05, 1.35, -0.1);
-    const wR = add(1.6, 0.07, 1.0, 0x27406b, 1.05, 1.35, -0.1);
+    // cola curva que se afina hasta la punta (antes: 2 cajas sueltas)
+    cuelloCola([[0, 0.95, -0.5], [0, 0.85, -1.4], [0, 0.82, -2.1], [0, 0.8, -2.6]], 0.16, 0.03, c);
+    // alas con silueta real (membrana con "dedos" + hueso delantero), no un
+    // rectángulo plano
+    const puntosAla = [[0.05, 0.2], [0.55, 0.42], [1.15, 0.28], [0.95, -0.12], [0.5, -0.28], [0.1, -0.08]];
+    const wL = alaMembrana('izq', [-0.55, 1.35, -0.1], puntosAla, 0x27406b);
+    const wR = alaMembrana('der', [0.55, 1.35, -0.1], puntosAla, 0x27406b);
     addR(0.35, 1.0, 0.35, cD, -0.55, 0.5, 0.3);       // patas
     addR(0.35, 1.0, 0.35, cD, 0.55, 0.5, 0.3);
     g.userData.alas = [wL, wR];
