@@ -1,6 +1,6 @@
 # Estado actual — El Mundo de Cristóbal
 
-_Actualizado: 2026-09-21_
+_Actualizado: 2026-09-27_
 
 Contexto y mapa del código: `docs/CLAUDE.md`. Este archivo describe **qué hay
 hecho hoy** (todo verificado en el navegador) y, al final, el **registro de
@@ -8,7 +8,7 @@ cambios** por tandas.
 
 Publicado en **GitHub Pages** (deploy automático al hacer `git push`) y en el
 **servidor casero ARGOS** por Tailscale (`http://100.111.194.61:8082`).
-Caché del service worker: `mundo-cristobal-v35`.
+Caché del service worker: `mundo-cristobal-v36`.
 
 ---
 
@@ -114,6 +114,42 @@ Caché del service worker: `mundo-cristobal-v35`.
   púas**, columna de energía + onda, y queda con **aura amarilla** ~15 s
   (+velocidad, +salto, daño ×2,2, casi no te empujan). El gesto de grito es
   **solo al activar**; después se mueve normal conservando pelo y aura.
+
+## 📖 Mis lecturas (preparar pruebas de libros)
+
+- Botón **📖 Mis lecturas** en el menú. Primer libro: **El jardín secreto**
+  (Frances Hodgson Burnett), **126 preguntas** escritas a partir del PDF
+  completo, en orden de capítulos (I–XXVII), cada una con su capítulo como
+  pista.
+- **Minijuego de plataformas 2D** (`src/lecturas/plataformas.js`, estilo
+  plataformas clásico pero todo propio y con tema de jardín): el niño corre y
+  salta hoyos, escaleras, plataformas y bloques "?" con monedas, y aplasta
+  caracoles. Cada tramo termina en una **puerta de hiedra** (muro de suelo a
+  cielo, no se puede saltar) con el petirrojo encima. Al tocarla sale la
+  pregunta y **no se abre hasta acertar**: si se equivoca, NO se le dice cuál
+  era, ve "Pista: capítulo X", espera 3 s y la misma pregunta vuelve con las
+  opciones barajadas. Al abrirse florece una rosa y ese punto pasa a ser el
+  de reaparición (caer a un hoyo o tocar un caracol = volver ahí). Al final
+  del nivel hay un jardín florido y la meta.
+- **Modo dominio** (pedido de Richard): cada nivel = ronda de hasta 20
+  preguntas. Entran primero las **falladas antes** y el resto son nuevas, en
+  orden del libro. **Acertar al primer intento = dominada, no vuelve**. Fallar
+  = sigue pendiente para las rondas siguientes. **Salir a mitad de nivel =
+  se pierde la ronda** (solo se guarda al llegar a la meta). Libro
+  **dominado 🏆** cuando todas quedan dominadas.
+- **Obligatorio**: con un libro obligatorio sin dominar, "Jugar" queda con
+  🔒 y lleva a Mis lecturas (también si se intenta crear un mundo). Solo con
+  la **clave maestra** se puede quitar/asignar la obligatoria, reiniciar el
+  avance o repasar un libro ya dominado; esos cambios se guardan aunque sea
+  modo maestro (`saveLecturas()`), y lo jugado en modo maestro no cuenta.
+  El jardín secreto queda obligatorio automáticamente la primera vez.
+- Celular: botones táctiles ◀ ▶ y ⤒, aviso de girar el teléfono, y la
+  pregunta con las opciones en 2 columnas cuando la pantalla es baja.
+- Verificado en el navegador con un bot que jugó un nivel entero (20
+  puertas, fallando a propósito 4): quedaron 16 dominadas y 4 pendientes, y la
+  ronda siguiente empezó con esas 4. También se verificaron la salida con
+  aviso (la ronda no se guarda), el candado de "Jugar" y los controles del
+  papá.
 
 ## Combate, vida y enemigos
 
@@ -519,6 +555,13 @@ para observar, no para morir mirando). Botón "Limpiar arena".
   verificó por inspección directa de geometría (bounding box, posición y
   rotación de las mallas nuevas) — mismo criterio que ya se usó antes en este
   proyecto y que funciona mejor que perseguir un pantallazo con la cámara.
+- **📖 Mis lecturas + El jardín secreto** (Richard: preparar a Cristóbal
+  para la prueba del libro con un minijuego tipo plataformas, obligatorio
+  hasta dominarlo). Minijuego 2D con puertas-pregunta en bucle, modo dominio
+  (descarta las acertadas al primer intento, repite las falladas), libro
+  obligatorio que bloquea "Jugar" y controles del papá con la clave maestra.
+  126 preguntas del libro. Ver sección "Mis lecturas" arriba y
+  `docs/COMO_AGREGAR_LIBROS.md`.
 - **Vista previa 3D en la Sala de pruebas** (Richard: "me gustaría ver al
   enemigo al seleccionarlo en 3D para ver su diseño y después de ahí saltar a
   la lucha") — antes tocar un botón invocaba directo en la arena. Ahora abre

@@ -572,3 +572,75 @@ canvas { display: block; touch-action: none; }
   background: var(--panel-2); color: var(--ink); font: inherit; flex: none;
 }
 .aj a.btn { text-decoration: none; display: inline-flex; align-items: center; flex: none; min-width: 0; }
+
+/* ---------- Mis lecturas ---------- */
+.menu-lectura { color: var(--accent); font-size: 13px; font-weight: 700; max-width: 300px; margin: -4px auto 0; }
+.screen.lecturas { justify-content: flex-start; padding-top: 70px; }
+.lect-aviso {
+  background: #ffd16622; border: 1px solid var(--accent); color: var(--ink);
+  border-radius: 12px; padding: 10px 14px; max-width: 620px; font-size: 14px; text-align: left;
+}
+.lect-lista { display: flex; flex-direction: column; gap: 12px; width: min(620px, 100%); }
+.lect-card {
+  display: flex; gap: 14px; text-align: left; background: var(--panel);
+  border: 1px solid #ffffff1a; border-radius: 16px; padding: 14px;
+}
+.lect-card.hecho { border-color: var(--oro); }
+.lect-emoji { font-size: 40px; line-height: 1; }
+.lect-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.lect-tit { font-size: 19px; font-weight: 800; }
+.lect-autor { color: var(--muted); font-size: 13px; margin-top: -4px; }
+.lect-chip { font-size: 11px; background: var(--accent); color: #1a1a1a; border-radius: 6px; padding: 2px 6px; vertical-align: middle; }
+.lect-num { color: var(--muted); font-size: 13px; }
+.lect-acc, .lect-papa { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.lect-papa { border-top: 1px dashed #ffffff26; padding-top: 8px; font-size: 13px; color: var(--muted); }
+.lect-ok { color: var(--oro); font-weight: 800; }
+.lect-como { max-width: 620px; font-size: 13px; text-align: left; }
+.lj-prog { height: 8px; background: #ffffff18; border-radius: 5px; overflow: hidden; }
+.lj-prog > i { display: block; height: 100%; background: linear-gradient(90deg, var(--ok), var(--accent)); }
+
+/* minijuego de plataformas */
+.lectura-juego { position: fixed; inset: 0; z-index: 40; background: #6ec3ff; touch-action: none; user-select: none; -webkit-user-select: none; }
+.lectura-juego canvas { position: absolute; inset: 0; }
+.lj-hud {
+  position: absolute; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: 12px;
+  padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) 8px max(10px, env(safe-area-inset-left));
+  color: #fff; text-shadow: 0 1px 2px #0008; font-weight: 800; pointer-events: none;
+}
+.lj-hud button { pointer-events: auto; }
+.lj-salir { background: #1b263bcc; color: #fff; border: none; border-radius: 10px; padding: 8px 12px; font: inherit; font-weight: 700; cursor: pointer; }
+.lj-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.lj-titulo { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lj-barra { height: 7px; background: #0004; border-radius: 5px; overflow: hidden; max-width: 360px; }
+.lj-barra > i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--glow)); transition: width .3s; }
+.lj-cont { font-size: 15px; white-space: nowrap; background: #1b263b99; border-radius: 10px; padding: 6px 10px; }
+.lj-touch { display: none; }
+@media (pointer: coarse) {
+  .lj-touch { display: block; }
+  .lj-pad { position: absolute; left: max(14px, env(safe-area-inset-left)); bottom: 16px; display: flex; gap: 12px; }
+  .lj-touch button {
+    width: 74px; height: 74px; border-radius: 50%; border: 2px solid #ffffff66;
+    background: #1b263b88; color: #fff; font-size: 30px; font-weight: 800; touch-action: none;
+  }
+  .lj-touch button.on { background: #ffd166cc; color: #1a1a1a; }
+  .lj-touch .lj-saltar { position: absolute; right: max(18px, env(safe-area-inset-right)); bottom: 18px; width: 88px; height: 88px; }
+}
+.lj-rotar { display: none; }
+@media (pointer: coarse) and (orientation: portrait) {
+  .lj-rotar {
+    display: flex; position: absolute; inset: 0; z-index: 5; align-items: center; justify-content: center;
+    text-align: center; background: #0d1b2aee; color: #fff; font-size: 22px; font-weight: 800; line-height: 1.6;
+  }
+}
+.lectura-juego .lj-modal { position: absolute; z-index: 6; overflow-y: auto; align-items: safe center; }
+.lectura-juego .lj-modal .modal { max-height: none; }
+@media (max-height: 480px) {
+  .lectura-juego .lj-modal { padding: 8px; }
+  .lectura-juego .lj-modal .modal { padding: 12px 14px; }
+  .lectura-juego .modal .q-text { font-size: 16px; margin-bottom: 8px; }
+  .lectura-juego .modal .options { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .lectura-juego .modal .opt { padding: 8px 10px; font-size: 14px; }
+  .lectura-juego .modal .feedback { margin-top: 8px; }
+}
+.lj-fin { text-align: center; }
+.lj-fin .hint { text-align: center; margin: 6px 0; }

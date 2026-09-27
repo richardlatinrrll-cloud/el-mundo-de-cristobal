@@ -1,8 +1,9 @@
 import { state, nivelTema } from '../game/state.js';
 import { TOPICS } from '../game/topics.js';
 import { POWERS, poderDesbloqueado } from '../game/powers/registry.js';
+import { lecturaObligatoriaPendiente, resumen } from '../lecturas/progreso.js';
 
-export function mountMenu({ onJugar, onAprender, onPersonajes, onPoderes, onMundos, onAjustes, onCrafteo, onGemas, onPruebas }) {
+export function mountMenu({ onJugar, onAprender, onLecturas, onPersonajes, onPoderes, onMundos, onAjustes, onCrafteo, onGemas, onPruebas }) {
   const el = document.createElement('div');
   el.className = 'screen';
   el.innerHTML = `
@@ -10,6 +11,8 @@ export function mountMenu({ onJugar, onAprender, onPersonajes, onPoderes, onMund
     <p class="sub">Construye tu mundo. Desbloquea superpoderes respondiendo preguntas.</p>
     <div class="menu-buttons">
       <button class="btn" data-a="jugar">▶️ Jugar</button>
+      <button class="btn secondary" data-a="lecturas">📖 Mis lecturas</button>
+      <p class="menu-lectura" data-role="lectura" hidden></p>
       <button class="btn secondary" data-a="aprender">📚 Aprender y desbloquear</button>
       <button class="btn secondary" data-a="poderes">✨ Mis poderes</button>
       <button class="btn secondary" data-a="crafteo">📖 Recetas y armado</button>
@@ -23,6 +26,7 @@ export function mountMenu({ onJugar, onAprender, onPersonajes, onPoderes, onMund
   `;
   el.querySelector('[data-a=jugar]').addEventListener('click', onJugar);
   el.querySelector('[data-a=aprender]').addEventListener('click', onAprender);
+  el.querySelector('[data-a=lecturas]').addEventListener('click', onLecturas);
   el.querySelector('[data-a=poderes]').addEventListener('click', onPoderes);
   el.querySelector('[data-a=crafteo]').addEventListener('click', onCrafteo);
   el.querySelector('[data-a=gemas]').addEventListener('click', onGemas);
@@ -33,6 +37,16 @@ export function mountMenu({ onJugar, onAprender, onPersonajes, onPoderes, onMund
 
   el.refresh = () => {
     el.querySelector('[data-a=pruebas]').hidden = !state.maestro;
+    // lectura obligatoria pendiente: "Jugar" queda con candado (salvo clave maestra)
+    const oblig = lecturaObligatoriaPendiente();
+    const bloqueado = oblig && !state.maestro;
+    el.querySelector('[data-a=jugar]').textContent = bloqueado ? '🔒 Jugar' : '▶️ Jugar';
+    const aviso = el.querySelector('[data-role=lectura]');
+    aviso.hidden = !oblig;
+    if (oblig) {
+      const r = resumen(oblig);
+      aviso.textContent = `${oblig.emoji || '📖'} Primero termina tu lectura: ${oblig.titulo} (${r.dominadas}/${r.total} dominadas)`;
+    }
     const temas = TOPICS.filter((t) => nivelTema(t.id) !== 'none').length;
     const pod = POWERS.filter((p) => poderDesbloqueado(p, state)).length;
     const m = state.mundo || {};

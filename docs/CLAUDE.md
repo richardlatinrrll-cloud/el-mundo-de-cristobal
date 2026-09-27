@@ -101,6 +101,18 @@ La clave se pide **cada vez** que se abre el juego. Solo se guardan los hashes.
 `quiz-ui.js` (modal), `progress-ui.js` (pantalla "Aprender"),
 `banks/*.json` (**677 preguntas**, un archivo por tema, ~20 por nivel, 7º–8º básico).
 
+### `lecturas/` — "📖 Mis lecturas" (preparar pruebas de libros)
+Minijuego de **plataformas 2D** (canvas propio, el 3D se pausa con
+`mode = 'lectura'`). Cada puerta de hiedra es una pregunta del libro y no se
+abre hasta acertarla. **Modo dominio**: las acertadas al primer intento se
+descartan, las falladas vuelven en la ronda siguiente; el libro queda dominado
+cuando no quedan preguntas. Un libro **obligatorio** sin dominar bloquea
+"Jugar" (solo el papá, con la clave maestra, lo libera).
+`libros/*.json` (un archivo por libro, se cargan solos), `libros.js`
+(catálogo + barajar), `progreso.js` (rondas, avance, obligatoria),
+`plataformas.js` (el minijuego), `lecturas-ui.js` (pantalla).
+Agregar libros: `docs/COMO_AGREGAR_LIBROS.md`.
+
 ### `skin/` — personajes
 `skin-editor.js` (editor pixel-art 64×64 + sección "Ropa y accesorios"),
 `skin-model.js` (avatar 3D + pelo dorado del Súper Saya + engancha la ropa
@@ -130,6 +142,7 @@ bloques, combate, acciones de cada poder, HUD, Sala de pruebas.
 ## Editar contenido sin programar
 
 - Preguntas → `docs/COMO_EDITAR_PREGUNTAS.md`
+- Libros de lectura → `docs/COMO_AGREGAR_LIBROS.md`
 - Personajes / skins → `docs/COMO_EDITAR_PERSONAJES.md`
 - Publicar → `docs/DESPLIEGUE_SERVIDOR.md`
 
@@ -139,6 +152,8 @@ bloques, combate, acciones de cada poder, HUD, Sala de pruebas.
   world, player, mobs, bosses, animals, gemas, actions }`
 - `window.__game.actions` → `{ romper, poner, poder, comer, dañar }`
 - `window.__step(n)` → avanza n pasos de simulación
+- `window.__lectura` → `{ jug, nivel, keys, paso(n) }` del minijuego 2D en curso
+  (`paso(n)` simula sin depender de requestAnimationFrame)
 
 ## Notas para trabajar aquí
 

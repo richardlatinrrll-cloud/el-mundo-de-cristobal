@@ -59,6 +59,10 @@ const DEFAULT = {
   stats: { preguntasOk: 0, preguntasTotal: 0, intentos: 0, derrotados: 0, jefes: 0 },
   // regalo único: antorcha de mano + materiales (para partidas ya empezadas)
   regaloAntorcha: false,
+  // "Mis lecturas": libro obligatorio (id o null) + avance por libro:
+  // { [libroId]: { dominadas: [p], pendientes: [p], rondas, completado, fecha } }
+  // `init` = ya se asignó el libro obligatorio inicial (una sola vez).
+  lecturas: { obligatoria: null, libros: {}, init: false },
 };
 
 export const LIMITE_EDITS = 6000; // tope para no llenar el almacenamiento
@@ -86,6 +90,7 @@ function load() {
       salud: parsed.salud ?? 100,
       saludMax: parsed.saludMax ?? 100,
       maestro: false,   // el modo maestro nunca se recuerda: se activa con su clave
+      lecturas: { ...DEFAULT.lecturas, ...(parsed.lecturas || {}), libros: { ...(parsed.lecturas?.libros || {}) } },
       ajustes: { ...DEFAULT.ajustes, ...(parsed.ajustes || {}) },
       stats: { ...DEFAULT.stats, ...(parsed.stats || {}) } };
   } catch {
@@ -96,6 +101,19 @@ function load() {
 export function save() {
   if (state.maestro) return;   // modo prueba: no tocar el avance real
   try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {}
+}
+
+// Guarda SOLO `lecturas` aunque esté activo el modo maestro: así el papá puede
+// asignar / liberar / reiniciar un libro con la clave maestra y que quede
+// guardado, sin que el resto de lo que se prueba en modo maestro se grabe.
+export function saveLecturas() {
+  if (!state.maestro) { save(); return; }
+  try {
+    const raw = localStorage.getItem(KEY);
+    const guardado = raw ? JSON.parse(raw) : structuredClone(DEFAULT);
+    guardado.lecturas = state.lecturas;
+    localStorage.setItem(KEY, JSON.stringify(guardado));
+  } catch {}
 }
 
 export function resetAll() {

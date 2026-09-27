@@ -37,6 +37,10 @@ import { DayNight } from './game/daynight.js';
 import { TOOLS, tool, tiempoRomper, danoGolpe } from './game/tools.js';
 import { ViewModel } from './game/viewmodel.js';
 import { toast } from './ui/toast.js';
+import { mountLecturas } from './lecturas/lecturas-ui.js';
+import { jugarLectura } from './lecturas/plataformas.js';
+import { libroById } from './lecturas/libros.js';
+import { initLecturas, armarRonda, registrarRonda, lecturaObligatoriaPendiente, PREGUNTAS_POR_RONDA } from './lecturas/progreso.js';
 
 const app = document.getElementById('app');
 
@@ -1380,6 +1384,7 @@ resize();
 
 let _wasGround = true, _pasoT = 0, _lavaCd = 0, _eraNoche = false, _fluidoT = 0.3;
 function frame(dt) {
+  if (mode === 'lectura') return;   // el minijuego 2D usa su propio canvas: el 3D descansa
   if (mode === 'jugar') {
     player.update(dt, controls.state);
 
@@ -1574,6 +1579,13 @@ function showMenu() {
 }
 
 export function jugar() {
+  // lectura obligatoria sin terminar → el mundo espera (la clave maestra pasa igual)
+  const oblig = lecturaObligatoriaPendiente();
+  if (oblig && !state.maestro) {
+    openScreen('lecturas');
+    toast(`🔒 Primero domina «${oblig.titulo}» para volver al mundo`, 2600);
+    return;
+  }
   mode = 'jugar';
   menuScreen.classList.add('hidden');
   closeAllScreens();
@@ -1724,6 +1736,7 @@ function pedirPantallaCompleta() {
 const menuScreen = mountMenu({
   onJugar: () => jugar(),
   onAprender: () => openScreen('aprender'),
+  onLecturas: () => openScreen('lecturas'),
   onPersonajes: () => openScreen('personajes'),
   onPoderes: () => openScreen('poderes'),
   onMundos: () => openScreen('mundos'),
@@ -1744,6 +1757,11 @@ function openScreen(name) {
       screens[name] = mountAprender({
         onVolver: () => showMenu(),
         onJugarTema: (topicId) => startQuiz(topicId),
+      });
+    } else if (name === 'lecturas') {
+      screens[name] = mountLecturas({
+        onVolver: () => showMenu(),
+        onJugarLibro: (id, opts) => jugarLibro(id, opts),
       });
     } else if (name === 'poderes') {
       screens[name] = mountPoderes({
@@ -1819,6 +1837,28 @@ function closeAllScreens() {
   for (const s of Object.values(screens)) s.classList.add('hidden');
 }
 
+// "Mis lecturas": encadena rondas del minijuego 2D mientras pida "Siguiente nivel"
+async function jugarLibro(id, { repaso = false } = {}) {
+  const libro = libroById(id);
+  if (!libro) return;
+  mode = 'lectura';
+  controls.disable();
+  menuScreen.classList.add('hidden');
+  closeAllScreens();
+  pedirPantallaCompleta();
+  for (;;) {
+    const preguntas = repaso
+      ? [...libro.preguntas].sort(() => Math.random() - 0.5).slice(0, PREGUNTAS_POR_RONDA)
+      : armarRonda(libro);
+    if (!preguntas.length) break;
+    const res = await jugarLectura({ libro, preguntas, registrar: (r) => registrarRonda(libro, r) });
+    if (res.accion !== 'otra') break;
+  }
+  mode = 'menu';
+  last = performance.now();
+  openScreen('lecturas');
+}
+
 async function startQuiz(topicId) {
   closeAllScreens();
   const nivelAntes = nivelTotal(state);
@@ -1853,6 +1893,7 @@ function activarMaestro() {
   state.inventario = { ...state.inventario, flecha: 128, carne_cocida: 20 };
   toast('🔓 Modo maestro: todo desbloqueado (tu avance normal NO se toca)', 2600);
 }
+initLecturas();   // 1ª vez: deja asignado el libro obligatorio inicial
 mode = 'menu';
 menuScreen.classList.add('hidden');
 mountClave(({ maestro }) => { if (maestro) activarMaestro(); showMenu(); });
