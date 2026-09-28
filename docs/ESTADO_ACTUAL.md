@@ -8,7 +8,7 @@ cambios** por tandas.
 
 Publicado en **GitHub Pages** (deploy automático al hacer `git push`) y en el
 **servidor casero ARGOS** por Tailscale (`http://100.111.194.61:8082`).
-Caché del service worker: `mundo-cristobal-v36`.
+Caché del service worker: `mundo-cristobal-v37`.
 
 ---
 
@@ -143,6 +143,25 @@ Caché del service worker: `mundo-cristobal-v36`.
   avance o repasar un libro ya dominado; esos cambios se guardan aunque sea
   modo maestro (`saveLecturas()`), y lo jugado en modo maestro no cuenta.
   El jardín secreto queda obligatorio automáticamente la primera vez.
+- **Jefe final en cada nivel** (pedido de Richard, 2026-09-28): después de la
+  última puerta hay una arena con el **Guardián de la Hiedra** (gigante de
+  hojas con ojos de brasa y corona de espinas, todo dibujado en canvas).
+  Pelea por turnos: carga y lanza una **bola de espinas con "?"** que se
+  detiene a medio camino y sale una pregunta del nivel, **primero las que
+  falló en las puertas**. Si acierta, el niño **salta y la esquiva** y le
+  **lanza una rosa** (−1 vida al jefe, que tiene 5). Si falla, **recibe el
+  golpe** (−1 corazón de 3, la pantalla tiembla) y ve la pista del capítulo.
+  Esa pregunta vuelve más tarde en la pelea y **deja de contar como
+  dominada** en esta ronda. Si pierde los 3 corazones: "¡Te ganó!" y la
+  pelea se repite completa (el nivel no termina hasta vencerlo). Al vencerlo,
+  la arena se llena de flores y sale el resumen. Constantes `JEFE_VIDA`,
+  `CORAZONES`, `ARENA` en `plataformas.js`. Se puede nombrar un jefe por
+  libro con `"jefe": { "nombre": "..." }` en el `.json`.
+- **Obligatorio de verdad** (mismo pedido): con la lectura pendiente, **todo
+  el menú** queda con 🔒 (Jugar, Aprender, Poderes, Recetas, Gemas,
+  Personajes, Mundos). Tocar cualquiera lleva a Mis lecturas. Solo quedan
+  libres Mis lecturas y Ajustes. En Mis lecturas tampoco se puede jugar otro
+  libro que no sea el obligatorio. La clave maestra pasa todo.
 - Celular: botones táctiles ◀ ▶ y ⤒, aviso de girar el teléfono, y la
   pregunta con las opciones en 2 columnas cuando la pantalla es baja.
 - Verificado en el navegador con un bot que jugó un nivel entero (20
@@ -562,6 +581,12 @@ para observar, no para morir mirando). Botón "Limpiar arena".
   obligatorio que bloquea "Jugar" y controles del papá con la clave maestra.
   126 preguntas del libro. Ver sección "Mis lecturas" arriba y
   `docs/COMO_AGREGAR_LIBROS.md`.
+- **Jefe final + menú entero bloqueado** — cada nivel de Mis lecturas termina
+  con el Guardián de la Hiedra (preguntas-ataque: aciertas → esquivas y
+  contraatacas; fallas → te da; 3 golpes → se repite la pelea). Con la
+  lectura obligatoria pendiente se bloquea todo el menú salvo Mis lecturas y
+  Ajustes. Verificado en el navegador: ataque, contraataque, derrota con
+  reinicio, victoria y guardado.
 - **Vista previa 3D en la Sala de pruebas** (Richard: "me gustaría ver al
   enemigo al seleccionarlo en 3D para ver su diseño y después de ahí saltar a
   la lucha") — antes tocar un botón invocaba directo en la arena. Ahora abre

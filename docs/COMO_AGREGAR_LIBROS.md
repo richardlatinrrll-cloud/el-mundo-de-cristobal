@@ -44,6 +44,7 @@ libro a Mis lecturas". Claude lo lee y escribe las preguntas.
   vuelva. **Fallar** hace que se repita en las rondas siguientes (entran
   primero las falladas y el resto se completa con preguntas nuevas, siempre en
   el orden del libro).
+- Al final de cada nivel hay un **jefe** (Guardián de la Hiedra) que ataca con preguntas del nivel (primero las falladas): acertar = esquivar y contraatacar; fallar = recibir el golpe y esa pregunta deja de contar como dominada. 3 golpes = la pelea se repite. Nombre del jefe por libro: `"jefe": { "nombre": "..." }` en el .json.
 - Si **sale a mitad de un nivel**, pierde esa ronda y la vuelve a empezar
   (solo se guarda al llegar a la meta).
 - El libro queda **dominado** 🏆 cuando todas sus preguntas están dominadas.
@@ -51,7 +52,7 @@ libro a Mis lecturas". Claude lo lee y escribe las preguntas.
 ## Lectura obligatoria (control del papá)
 
 - Mientras haya un libro **obligatorio** sin dominar, "Jugar" (el mundo 3D)
-  tiene candado y lleva a "Mis lecturas".
+  y todo el resto del menú (salvo Mis lecturas y Ajustes) tienen candado y llevan a "Mis lecturas"; tampoco se puede jugar otro libro.
 - Con la **clave maestra**, en "Mis lecturas" aparece la fila "👨 Papá" con:
   *Hacer obligatoria*, *Quitar obligatoria*, *Reiniciar avance* y
   *Repasar igual* (si ya está dominado). Estos cambios **sí se guardan**

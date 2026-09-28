@@ -2,6 +2,9 @@ import { state, nivelTema } from '../game/state.js';
 import { TOPICS } from '../game/topics.js';
 import { POWERS, poderDesbloqueado } from '../game/powers/registry.js';
 import { lecturaObligatoriaPendiente, resumen } from '../lecturas/progreso.js';
+import { toast } from './toast.js';
+
+const LIBRES = new Set(['lecturas', 'ajustes', 'pruebas']);
 
 export function mountMenu({ onJugar, onAprender, onLecturas, onPersonajes, onPoderes, onMundos, onAjustes, onCrafteo, onGemas, onPruebas }) {
   const el = document.createElement('div');
@@ -24,6 +27,15 @@ export function mountMenu({ onJugar, onAprender, onLecturas, onPersonajes, onPod
     </div>
     <p class="hint" data-role="resumen"></p>
   `;
+  // lectura obligatoria pendiente: todo queda con candado salvo lecturas y ajustes
+  el.addEventListener('click', (e) => {
+    const b = e.target.closest('.btn[data-a]');
+    if (!b || !el._bloqueado || LIBRES.has(b.dataset.a)) return;
+    e.stopImmediatePropagation();
+    const oblig = lecturaObligatoriaPendiente();
+    toast(`🔒 Primero domina «${oblig?.titulo || 'tu lectura'}»`, 2200);
+    onLecturas();
+  }, true);
   el.querySelector('[data-a=jugar]').addEventListener('click', onJugar);
   el.querySelector('[data-a=aprender]').addEventListener('click', onAprender);
   el.querySelector('[data-a=lecturas]').addEventListener('click', onLecturas);
@@ -40,7 +52,13 @@ export function mountMenu({ onJugar, onAprender, onLecturas, onPersonajes, onPod
     // lectura obligatoria pendiente: "Jugar" queda con candado (salvo clave maestra)
     const oblig = lecturaObligatoriaPendiente();
     const bloqueado = oblig && !state.maestro;
-    el.querySelector('[data-a=jugar]').textContent = bloqueado ? '🔒 Jugar' : '▶️ Jugar';
+    el._bloqueado = bloqueado;
+    for (const b of el.querySelectorAll('.menu-buttons .btn[data-a]')) {
+      if (LIBRES.has(b.dataset.a)) continue;
+      b.dataset.txt ||= b.textContent;
+      b.classList.toggle('bloqueado', !!bloqueado);
+      b.textContent = bloqueado ? `🔒 ${b.dataset.txt.replace(/^\S+\s/, '')}` : b.dataset.txt;
+    }
     const aviso = el.querySelector('[data-role=lectura]');
     aviso.hidden = !oblig;
     if (oblig) {

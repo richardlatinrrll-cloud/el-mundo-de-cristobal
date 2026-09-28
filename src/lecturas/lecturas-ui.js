@@ -16,6 +16,7 @@ export function mountLecturas({ onVolver, onJugarLibro }) {
     <div class="lect-lista" data-lista></div>
     <p class="hint lect-como">Cada nivel es un camino con puertas: cada puerta tiene una pregunta del libro y no se abre hasta que la respondas bien.
       Las que aciertas <b>al primer intento</b> ya no vuelven; las que fallas se repiten en las rondas siguientes.
+      Al final de cada nivel te espera un <b>jefe</b> que te lanza preguntas: si aciertas, esquivas y contraatacas; si fallas, te da.
       El libro queda <b>dominado</b> cuando respondes bien todas. Si sales a mitad de un nivel, lo empiezas de nuevo.</p>`;
   el.querySelector('[data-volver]').addEventListener('click', onVolver);
 
@@ -32,6 +33,8 @@ export function mountLecturas({ onVolver, onJugarLibro }) {
       const r = resumen(libro);
       const esOblig = state.lecturas.obligatoria === libro.id;
       const ronda = armarRonda(libro).length;
+      // con un libro obligatorio pendiente no se puede jugar otro (salvo el papá)
+      const cerrado = oblig && oblig.id !== libro.id && !state.maestro;
       const card = document.createElement('div');
       card.className = 'lect-card' + (r.completado ? ' hecho' : '');
       card.innerHTML = `
@@ -44,7 +47,9 @@ export function mountLecturas({ onVolver, onJugarLibro }) {
           <div class="row lect-acc">
             ${r.completado
               ? '<span class="lect-ok">¡Libro dominado!</span>'
-              : `<button class="btn small" data-jugar>▶️ Jugar nivel (${ronda} puertas)</button>`}
+              : cerrado
+                ? `<button class="btn small" disabled>🔒 Primero termina «${esc(oblig.titulo)}»</button>`
+                : `<button class="btn small" data-jugar>▶️ Jugar nivel (${ronda} puertas + jefe)</button>`}
           </div>
           ${state.maestro ? `
           <div class="row lect-papa">

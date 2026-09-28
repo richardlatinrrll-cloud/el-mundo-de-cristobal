@@ -644,3 +644,17 @@ canvas { display: block; touch-action: none; }
 }
 .lj-fin { text-align: center; }
 .lj-fin .hint { text-align: center; margin: 6px 0; }
+/* jefe final del minijuego */
+.lj-jefe {
+  position: absolute; top: 52px; left: 50%; transform: translateX(-50%); width: min(420px, 70vw);
+  display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: none;
+  color: #fff; font-weight: 800; text-shadow: 0 1px 2px #000a;
+}
+.lj-jefe-nom { font-size: 14px; }
+.lj-jefe-vida { width: 100%; height: 10px; background: #0006; border-radius: 6px; overflow: hidden; border: 1px solid #fff5; }
+.lj-jefe-vida > i { display: block; height: 100%; background: linear-gradient(90deg, #3d7a3f, #9be15d); transition: width .35s; }
+.lj-corazones { font-size: 18px; letter-spacing: 2px; }
+.lectura-juego .lj-modal-jefe { background: #2a0a0acc; }
+.lectura-juego .lj-modal-jefe .modal { border-color: #ff6b6b88; }
+/* menú bloqueado por lectura obligatoria */
+.btn.bloqueado { opacity: .5; }
