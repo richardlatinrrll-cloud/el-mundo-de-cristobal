@@ -14,7 +14,9 @@ const VACIO = 0, TIERRA = 1, LADRILLO = 2, SORPRESA = 3, USADO = 4, PUERTA = 5;
 const G = 40, SALTO = 16.5, VEL = 7, ACEL = 45;
 const ESPERA_REINTENTO = 3;   // segundos de pausa tras equivocarse
 const ARENA = 20;             // ancho de la arena del jefe (casillas)
-const JEFE_VIDA = 5;          // respuestas buenas para derrotar al jefe
+const JEFE_VIDA = 8;          // golpes para derrotar al jefe (a la mitad se enfurece)
+const TIEMPO_NORMAL = 15;     // segundos para responder cada ataque (fase 1)
+const TIEMPO_FURIA = 10;      // … y ya enfurecido (fase 2)
 const CORAZONES = 3;          // golpes que aguanta el niño antes de repetir la pelea
 
 const rnd = (a, b) => a + Math.random() * (b - a);
@@ -106,10 +108,12 @@ export function jugarLectura({ libro, preguntas, registrar }) {
     let corazones = CORAZONES, golpes = 0, derrotas = 0, congelado = false, sacudir = 0;
     const timers = [];            // esperas en tiempo de juego (se congelan con el menú de salir)
     const vuelos = [];            // proyectiles animados { x0,y0,x1,y1,t,dur,tipo,res }
+    const raices = [];            // raíces que brotan del suelo { x, t, alto }
+    const semillas = [];          // semillas rodantes que hay que saltar { x, y, vx, pego }
     let esquive = null;           // animación de salto para esquivar { t, dur }
     const esperar = (s) => new Promise((res) => timers.push({ t: s, res }));
     const volar = (v) => new Promise((res) => vuelos.push({ t: 0, ...v, res }));
-    window.__lectura = { jug, nivel, keys: null, jefe };   // para depurar desde la consola
+    window.__lectura = { jug, nivel, keys: null, jefe, semillas, forzar: (a) => { forzado = a; } };   // para depurar desde la consola
 
     // ----- DOM -----
     const root = document.createElement('div');
@@ -369,6 +373,146 @@ export function jugarLectura({ libro, preguntas, registrar }) {
       root.querySelector('[data-cor]').textContent = '❤️'.repeat(corazones) + '🖤'.repeat(CORAZONES - corazones);
     }
 
+    // --- helpers de la pelea ---
+    function flotar(o) { const v = { t: 0, dur: 1e9, res: () => {}, ...o, x1: o.x0, y1: o.y0 }; vuelos.push(v); return v; }
+    function quitar(v) { const i = vuelos.indexOf(v); if (i >= 0) vuelos.splice(i, 1); }
+    async function cargar(s) { jefe.estado = 'carga'; jefe.carga = 0; await esperar(s); jefe.estado = 'quieto'; }
+    function golpear(n) {
+      corazones = Math.max(0, corazones - n); golpes++; jug.inv = 1.1; audio.sfx('dano');
+      sacudir = 0.35 + 0.2 * n; hudJefe();
+    }
+    async function contraataque(n = 1) {
+      for (let k = 0; k < n && jefe.vida > 0; k++) {
+        await volar({ tipo: 'rosa', x0: jug.x + 0.6, y0: jug.y + 0.4, x1: jefe.x + 1.2, y1: jefe.y + 1.6, dur: 0.45 });
+        jefe.vida = Math.max(0, jefe.vida - 1); jefe.flash = 0.5; audio.sfx('golpe');
+        for (let i = 0; i < 14; i++) particulas.push({ x: jefe.x + 1.2, y: jefe.y + 1.6, vx: rnd(-4, 4), vy: rnd(-7, -1), vida: rnd(0.4, 0.9), tipo: 'hoja' });
+        hudJefe();
+      }
+      await esperar(0.5);
+    }
+    function anunciar(texto, s = 1.6) {
+      const d = document.createElement('div');
+      d.className = 'lj-anuncio';
+      d.textContent = texto;
+      root.appendChild(d);
+      setTimeout(() => d.remove(), s * 1000);
+    }
+
+    let cola = [];
+    async function preguntar(titulo) {
+      if (!cola.length) cola = colaJefe();
+      const q = cola.shift();
+      const ok = await preguntaJefe(q, { titulo, tiempo: jefe.furia ? TIEMPO_FURIA : TIEMPO_NORMAL });
+      if (!ok) cola.push(q);                                   // vuelve más adelante en la pelea
+      return ok;
+    }
+
+    // --- los ataques ---
+    const ATAQUES = {
+      async bola() {
+        await cargar(jefe.furia ? 0.5 : 0.8);
+        const mx = (jug.x + jefe.x) / 2 + 1, my = SUELO - 3;
+        await volar({ tipo: 'espina', x0: jefe.x - 0.2, y0: jefe.y + 1.4, x1: mx, y1: my, dur: 0.5 });
+        const b = flotar({ tipo: 'espina', x0: mx, y0: my });
+        const ok = await preguntar('🌰 ¡Bola de espinas!');
+        quitar(b);
+        if (ok) {
+          esquive = { t: 0, dur: 0.7 }; audio.sfx('saltar');
+          await volar({ tipo: 'espina', x0: mx, y0: my, x1: jug.x - 6, y1: SUELO - 0.6, dur: 0.6 });
+          await contraataque(1);
+        } else {
+          await volar({ tipo: 'espina', x0: mx, y0: my, x1: jug.x + 0.35, y1: jug.y + 0.6, dur: 0.3 });
+          golpear(1); await esperar(0.8);
+        }
+      },
+      async lluvia() {
+        await cargar(0.9);
+        const gotas = [-0.9, 0.3, 1.5].map((dx, i) => flotar({ tipo: 'espina', x0: jug.x + dx, y0: 1.2 + (i % 2) * 0.6 }));
+        const ok = await preguntar('🌧️ ¡Lluvia de espinas!');
+        gotas.forEach(quitar);
+        if (ok) {
+          esquive = { t: 0, dur: 0.7 }; audio.sfx('saltar');
+          await Promise.all(gotas.map((g, i) => volar({ tipo: 'espina', x0: g.x0, y0: g.y0, x1: g.x0 + (i - 1) * 3, y1: SUELO + 1, dur: 0.6 })));
+          await contraataque(1);
+        } else {
+          await Promise.all(gotas.map((g) => volar({ tipo: 'espina', x0: g.x0, y0: g.y0, x1: jug.x + 0.35, y1: jug.y + 0.5, dur: 0.35 })));
+          golpear(1); await esperar(0.8);
+        }
+      },
+      async raices() {
+        await cargar(0.8);
+        sacudir = 0.6; audio.sfx('jefe');
+        let buenas = 0;
+        for (let k = 1; k <= 2; k++) {
+          const r = { x: jug.x + 0.35, t: 0, alto: 0.25 };        // brote que avisa
+          raices.push(r);
+          const ok = await preguntar(`🌱 ¡Raíces del suelo! (${k}/2)`);
+          if (ok) { buenas++; esquive = { t: 0, dur: 0.7 }; audio.sfx('saltar'); r.alto = 2.2; r.t = 0; await esperar(0.8); }
+          else { r.alto = 2.2; r.t = 0; await esperar(0.2); golpear(1); await esperar(0.7); }
+          raices.splice(raices.indexOf(r), 1);
+          if (corazones <= 0) return;
+        }
+        if (buenas === 2) { anunciar('💥 ¡Doble contraataque!'); await contraataque(2); }
+        else if (buenas === 1) await contraataque(1);
+      },
+      async ola() {
+        await cargar(1.1);
+        const mx = (jug.x + jefe.x) / 2 + 0.5;
+        await volar({ tipo: 'ola', x0: jefe.x - 0.5, y0: SUELO, x1: mx, y1: SUELO, dur: 0.6 });
+        const o = flotar({ tipo: 'ola', x0: mx, y0: SUELO });
+        const ok = await preguntar('🌊 ¡Ola de hiedra! Si fallas pierdes 2 ❤️');
+        quitar(o);
+        if (ok) {
+          esquive = { t: 0, dur: 0.9, alto: 3.6 }; audio.sfx('saltar');
+          await volar({ tipo: 'ola', x0: mx, y0: SUELO, x1: nivel.arenaX - 4, y1: SUELO, dur: 0.8 });
+          await contraataque(1);
+        } else {
+          await volar({ tipo: 'ola', x0: mx, y0: SUELO, x1: jug.x, y1: SUELO, dur: 0.3 });
+          golpear(2); await esperar(0.9);
+        }
+      },
+      async curar() {
+        jefe.curo = true; jefe.curando = true;
+        anunciar('💚 ¡Se está curando!');
+        await esperar(0.8);
+        const ok = await preguntar('💚 ¡Se cura! Acierta para impedirlo');
+        jefe.curando = false;
+        if (ok) { anunciar('✋ ¡Lo interrumpiste!'); await contraataque(1); }
+        else {
+          jefe.vida = Math.min(JEFE_VIDA, jefe.vida + 2); audio.sfx('nivel');
+          for (let i = 0; i < 20; i++) particulas.push({ x: jefe.x + 1.5, y: jefe.y + 2, vx: rnd(-2, 2), vy: rnd(-6, -2), vida: rnd(0.5, 1), tipo: 'cura' });
+          hudJefe(); await esperar(1);
+        }
+      },
+      // sin pregunta: hay que saltar de verdad con los controles
+      async semillas() {
+        anunciar('🏃 ¡Salta las semillas! (⤒ / espacio)', 2.2);
+        await cargar(0.9);
+        pausa = false;
+        const n = jefe.furia ? 5 : 3;
+        for (let k = 0; k < n; k++) {
+          semillas.push({ x: jefe.x - 0.3, y: SUELO - 0.45, vx: -(jefe.furia ? 8 : 6.5), pego: false });
+          audio.sfx('poner');
+          await esperar(rnd(0.9, 1.5));
+        }
+        while (semillas.length) await esperar(0.1);
+        while (!jug.suelo) await esperar(0.05);
+        pausa = true; soltarTodo(); jug.vx = 0;
+        await esperar(0.4);
+      },
+    };
+
+    let forzado = null;           // prueba: window.__lectura.forzar('semillas')
+    function elegirAtaque(prev) {
+      if (forzado) return forzado;
+      if (!prev) return 'bola';                                  // el primero, para entender la mecánica
+      if (jefe.furia && !jefe.curo && jefe.vida <= 3 && Math.random() < 0.5) return 'curar';
+      const lista = jefe.furia ? ['bola', 'lluvia', 'raices', 'ola', 'ola', 'semillas'] : ['bola', 'bola', 'lluvia', 'raices', 'semillas'];
+      let a;
+      do a = lista[irnd(0, lista.length - 1)]; while (a === prev && (a === 'semillas' || a === 'ola'));
+      return a;
+    }
+
     async function peleaJefe() {
       fase = 'jefe';
       pausa = true;
@@ -380,49 +524,23 @@ export function jugarLectura({ libro, preguntas, registrar }) {
       hudJefe();
       await esperar(1.2);
       jefe.estado = 'quieto';
-      let cola = colaJefe();
+      cola = colaJefe();
+      let prev = null;
       while (jefe.vida > 0) {
         if (corazones <= 0) {                                  // lo derrotó: se repite la pelea
           derrotas++;
           await avisoDerrota();
-          corazones = CORAZONES; jefe.vida = JEFE_VIDA; cola = colaJefe(); hudJefe();
+          corazones = CORAZONES; jefe.vida = JEFE_VIDA; jefe.furia = false; jefe.curo = false;
+          cola = colaJefe(); prev = null; hudJefe();
           await esperar(0.6);
         }
-        if (!cola.length) cola = colaJefe();
-        const q = cola.shift();
-        // carga y lanza una bola de espinas que se detiene a medio camino
-        jefe.estado = 'carga'; jefe.carga = 0;
-        await esperar(0.8);
-        jefe.estado = 'quieto';
-        const bx = jefe.x - 0.2, by = jefe.y + 1.4;
-        const mx = (jug.x + bx) / 2 + 1, my = SUELO - 3;
-        const bola = { tipo: 'espina', x0: bx, y0: by, x1: mx, y1: my, dur: 0.6 };
-        await volar(bola);
-        const quieta = { tipo: 'espina', x0: mx, y0: my, x1: mx, y1: my, dur: 1e9 };  // flota mientras pregunta
-        vuelos.push({ t: 0, ...quieta, res: () => {} });
-        const ok = await preguntaJefe(q);
-        vuelos.splice(vuelos.findIndex((v) => v.x0 === mx && v.dur === 1e9), 1);
-        if (ok) {
-          // esquiva saltando: la bola pasa por debajo y sigue de largo
-          esquive = { t: 0, dur: 0.7 };
-          audio.sfx('saltar');
-          await volar({ tipo: 'espina', x0: mx, y0: my, x1: jug.x - 6, y1: SUELO - 0.6, dur: 0.6 });
-          await esperar(0.15);
-          // contraataque: le lanza una rosa
-          await volar({ tipo: 'rosa', x0: jug.x + 0.6, y0: jug.y + 0.4, x1: jefe.x + 1.2, y1: jefe.y + 1.6, dur: 0.5 });
-          jefe.vida--; jefe.flash = 0.5; audio.sfx('golpe');
-          for (let k = 0; k < 14; k++) particulas.push({ x: jefe.x + 1.2, y: jefe.y + 1.6, vx: rnd(-4, 4), vy: rnd(-7, -1), vida: rnd(0.4, 0.9), tipo: 'hoja' });
-          hudJefe();
-          await esperar(0.6);
-        } else {
-          // le llega el ataque directo
-          cola.push(q);                                         // vuelve más adelante
-          await volar({ tipo: 'espina', x0: mx, y0: my, x1: jug.x + 0.35, y1: jug.y + 0.6, dur: 0.3 });
-          corazones--; golpes++; jug.inv = 1; audio.sfx('dano');
-          sacudir = 0.4;
-          hudJefe();
-          await esperar(0.9);
+        if (!jefe.furia && jefe.vida <= JEFE_VIDA / 2) {       // fase 2
+          jefe.furia = true; sacudir = 0.9; audio.sfx('jefe');
+          anunciar(`😡 ¡El ${jefe.nombre} se enfureció!`, 2);
+          await esperar(1.6);
         }
+        prev = elegirAtaque(prev);
+        await ATAQUES[prev]();
       }
       // ¡derrotado!
       jefe.estado = 'muere'; jefe.muerte = 0;
@@ -435,15 +553,16 @@ export function jugarLectura({ libro, preguntas, registrar }) {
       terminar();
     }
 
-    // una sola oportunidad por ataque: la pelea misma es el "bucle"
-    function preguntaJefe(base) {
+    // una sola oportunidad por ataque, con reloj: si se acaba el tiempo, cuenta como error
+    function preguntaJefe(base, { titulo, tiempo }) {
       return new Promise((res) => {
         const q = barajarPregunta(base);
         const wrap = document.createElement('div');
         wrap.className = 'modal-wrap lj-modal lj-modal-jefe';
         wrap.innerHTML = `
           <div class="modal">
-            <div class="q-head"><span>⚔️ ¡Ataque del ${escapeHtml(jefe.nombre)}!</span><span>${'❤️'.repeat(corazones)}</span></div>
+            <div class="q-head"><span>${titulo}</span><span>${'❤️'.repeat(corazones)} · ⏱️ <b data-seg>${tiempo}</b></span></div>
+            <div class="lj-reloj"><i></i></div>
             <div class="q-text">${escapeHtml(q.p)}</div>
             <div class="options"></div>
             <div class="feedback"></div>
@@ -451,25 +570,40 @@ export function jugarLectura({ libro, preguntas, registrar }) {
         root.appendChild(wrap);
         const box = wrap.querySelector('.options');
         const fb = wrap.querySelector('.feedback');
+        const barra = wrap.querySelector('.lj-reloj > i');
+        const seg = wrap.querySelector('[data-seg]');
+        let restante = tiempo, listo = false;
+        const iv = setInterval(() => {
+          if (listo || congelado) return;
+          restante -= 0.1;
+          barra.style.width = `${Math.max(0, restante / tiempo) * 100}%`;
+          seg.textContent = Math.max(0, Math.ceil(restante));
+          if (restante <= 3) barra.classList.add('poco');
+          if (restante <= 0) responder(-1);
+        }, 100);
+        function responder(idx) {
+          if (listo) return;
+          listo = true;
+          clearInterval(iv);
+          [...box.children].forEach((x) => (x.disabled = true));
+          const ok = idx === q.correcta;
+          if (idx >= 0) box.children[idx].classList.add(ok ? 'correct' : 'wrong');
+          if (ok) { fb.className = 'feedback ok'; fb.textContent = '✅ ¡Correcto! ¡Esquívalo y contraataca!'; audio.sfx('acierto'); }
+          else {
+            // si la falla ante el jefe, esa pregunta tampoco cuenta como dominada
+            const r = resultados.find((x) => x.q === base);
+            if (r) r.primeraOk = false;
+            fb.className = 'feedback bad';
+            fb.textContent = `${idx < 0 ? '⏰ ¡Se acabó el tiempo!' : '❌ ¡Te va a dar!'}${base.cap ? ` Pista: capítulo ${base.cap}.` : ''} Esta pregunta volverá.`;
+            audio.sfx('fallo');
+          }
+          setTimeout(() => { wrap.remove(); res(ok); }, ok ? 800 : 1800);
+        }
         q.opciones.forEach((op, idx) => {
           const b = document.createElement('button');
           b.className = 'opt';
           b.textContent = op;
-          b.addEventListener('click', () => {
-            [...box.children].forEach((x) => (x.disabled = true));
-            const ok = idx === q.correcta;
-            b.classList.add(ok ? 'correct' : 'wrong');
-            if (ok) { fb.className = 'feedback ok'; fb.textContent = '✅ ¡Correcto! ¡Esquívala y contraataca!'; audio.sfx('acierto'); }
-            else {
-              // si la falla ante el jefe, esa pregunta tampoco cuenta como dominada
-              const r = resultados.find((x) => x.q === base);
-              if (r) r.primeraOk = false;
-              fb.className = 'feedback bad';
-              fb.textContent = `❌ ¡Cuidado, te va a dar!${base.cap ? ` Pista: capítulo ${base.cap}.` : ''} Esta pregunta volverá.`;
-              audio.sfx('fallo');
-            }
-            setTimeout(() => { wrap.remove(); res(ok); }, ok ? 900 : 1800);
-          });
+          b.addEventListener('click', () => responder(idx));
           box.appendChild(b);
         });
       });
@@ -566,6 +700,17 @@ export function jugarLectura({ libro, preguntas, registrar }) {
         recogerMonedas();
         revisarPuerta();
         if (fase === 'camino' && !siguientePuerta() && jug.x > nivel.arenaX + 2) peleaJefe();
+        if (fase === 'jefe') jug.x = Math.max(nivel.arenaX + 0.5, Math.min(jefe.x - 1, jug.x));   // no sale de la arena
+      }
+      if (!congelado && fase === 'jefe') {
+        for (let i = semillas.length - 1; i >= 0; i--) {
+          const sm = semillas[i];
+          sm.x += sm.vx * dt;
+          const toca = Math.abs(sm.x - (jug.x + jug.w / 2)) < 0.55 && jug.y + jug.h > sm.y - 0.35;
+          if (toca && !sm.pego && jug.inv <= 0) { sm.pego = true; golpear(1); }
+          if (sm.x < nivel.arenaX - 3) semillas.splice(i, 1);
+        }
+        for (const r of raices) r.t += dt;
       }
       if (jug.inv > 0) jug.inv -= dt;
       if (!congelado) {
@@ -662,6 +807,7 @@ export function jugarLectura({ libro, preguntas, registrar }) {
         const k = Math.min(1, v.t / v.dur);
         const vx = v.x0 + (v.x1 - v.x0) * k, vy = v.y0 + (v.y1 - v.y0) * k - (v.tipo === 'rosa' ? Math.sin(k * Math.PI) * 1.5 : 0);
         if (v.tipo === 'rosa') rosaVolando(X(vx), Y(vy), s, t);
+        else if (v.tipo === 'ola') ola(X(vx), Y(SUELO), s, t);
         else espina(X(vx), Y(vy) + (v.dur > 1e6 ? Math.sin(t * 6) * s * 0.08 : 0), s, t);
       }
       // al vencer al jefe, la arena se llena de flores
@@ -688,12 +834,16 @@ export function jugarLectura({ libro, preguntas, registrar }) {
       for (const p of particulas) {
         ctx.globalAlpha = Math.max(0, Math.min(1, p.vida * 2));
         if (p.tipo === 'moneda') { ctx.fillStyle = '#ffcc00'; ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), s * 0.25, 0, 7); ctx.fill(); }
+        else if (p.tipo === 'cura') { ctx.fillStyle = '#7dff9b'; ctx.font = `bold ${s * 0.45}px system-ui`; ctx.textAlign = 'center'; ctx.fillText('+', X(p.x), Y(p.y)); }
         else if (p.tipo === 'petalo') { ctx.fillStyle = '#ff5c8a'; ctx.beginPath(); ctx.ellipse(X(p.x), Y(p.y), s * 0.14, s * 0.08, p.x, 0, 7); ctx.fill(); }
         else { ctx.fillStyle = '#4caf50'; ctx.fillRect(X(p.x), Y(p.y), s * 0.22, s * 0.14); }
       }
       ctx.globalAlpha = 1;
       // jugador (parpadea si está recién reaparecido)
-      const alzar = esquive ? Math.sin((esquive.t / esquive.dur) * Math.PI) * 2.6 : 0;   // salto de esquive
+      const alzar = esquive ? Math.sin((esquive.t / esquive.dur) * Math.PI) * (esquive.alto || 2.6) : 0;   // salto de esquive
+      // raíces y semillas rodantes
+      for (const r of raices) raiz(X(r.x), Y(SUELO), s, r.alto * Math.min(1, r.t / 0.2), t);
+      for (const sm of semillas) espina(X(sm.x), Y(sm.y), s * 0.8, -sm.x * 1.5, false);
       if (jug.inv <= 0 || Math.floor(t * 12) % 2) nino(X(jug.x), Y(jug.y - alzar), s, jug);
       ctx.restore();
 
@@ -707,6 +857,11 @@ export function jugarLectura({ libro, preguntas, registrar }) {
         const top = base - alto + bob * s;
         ctx.save();
         if (jefe.flash > 0 && Math.floor(t * 20) % 2) ctx.globalAlpha = 0.45;
+        // aura: verde si se está curando, roja si está enfurecido
+        if (jefe.curando || jefe.furia) {
+          ctx.fillStyle = jefe.curando ? `rgba(90,255,140,${0.25 + 0.15 * Math.sin(t * 8)})` : `rgba(255,60,40,${0.12 + 0.08 * Math.sin(t * 6)})`;
+          ctx.beginPath(); ctx.ellipse(cx, top + alto * 0.55, ancho * 0.75, alto * 0.65, 0, 0, 7); ctx.fill();
+        }
         // cuerpo
         ctx.fillStyle = '#24502a';
         ctx.beginPath(); ctx.ellipse(cx, top + alto * 0.55, ancho * 0.5, alto * 0.48, 0, 0, 7); ctx.fill();
@@ -729,7 +884,7 @@ export function jugarLectura({ libro, preguntas, registrar }) {
         ctx.beginPath(); ctx.moveTo(cx + ancho * 0.4, top + alto * 0.5); ctx.lineTo(cx + ancho * 0.8, top + alto * 0.8); ctx.stroke();
         if (levanta > 0) { ctx.fillStyle = `rgba(190,120,255,${0.35 + 0.3 * Math.sin(t * 20)})`; ctx.beginPath(); ctx.arc(cx - ancho * 0.85, top + alto * (0.75 - levanta * 0.65), s * 0.5 * levanta, 0, 7); ctx.fill(); }
         // ojos de brasa (miran al niño)
-        ctx.fillStyle = jefe.flash > 0 ? '#ffffff' : '#ffb703';
+        ctx.fillStyle = jefe.flash > 0 ? '#ffffff' : jefe.furia ? '#ff2d2d' : '#ffb703';
         for (const dx of [-0.18, 0.18]) { ctx.beginPath(); ctx.ellipse(cx + ancho * dx, top + alto * 0.35, s * 0.2 * m, s * 0.13 * m, 0, 0, 7); ctx.fill(); }
         ctx.fillStyle = '#7a1f00';
         for (const dx of [-0.18, 0.18]) { ctx.beginPath(); ctx.arc(cx + ancho * dx - s * 0.06, top + alto * 0.35, s * 0.07 * m, 0, 7); ctx.fill(); }
@@ -750,7 +905,7 @@ export function jugarLectura({ libro, preguntas, registrar }) {
       }
     }
 
-    function espina(x, y, s, t) {
+    function espina(x, y, s, t, conPregunta = true) {
       // bola de espinas del jefe con un "?" (es una pregunta que viene volando)
       ctx.save(); ctx.translate(x, y); ctx.rotate(t * 3);
       ctx.fillStyle = '#5b3a1e';
@@ -760,8 +915,28 @@ export function jugarLectura({ libro, preguntas, registrar }) {
       }
       ctx.fillStyle = '#6a2c91'; ctx.beginPath(); ctx.arc(0, 0, s * 0.36, 0, 7); ctx.fill();
       ctx.restore();
+      if (!conPregunta) return;
       ctx.fillStyle = '#fff'; ctx.font = `bold ${s * 0.45}px system-ui`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText('?', x, y + s * 0.02);
+    }
+    function raiz(x, suelo, s, alto, t) {
+      if (alto <= 0) return;
+      ctx.fillStyle = '#6b4226';
+      for (const dx of [-0.35, 0, 0.35]) {
+        const h = alto * (dx === 0 ? 1 : 0.7) * s;
+        ctx.beginPath(); ctx.moveTo(x + dx * s - s * 0.14, suelo); ctx.lineTo(x + dx * s + Math.sin(t * 9 + dx) * s * 0.05, suelo - h); ctx.lineTo(x + dx * s + s * 0.14, suelo); ctx.fill();
+      }
+      ctx.fillStyle = '#3d7a3f';
+      ctx.beginPath(); ctx.ellipse(x + s * 0.12, suelo - alto * s * 0.55, s * 0.14, s * 0.07, 0.6, 0, 7); ctx.fill();
+    }
+    function ola(x, suelo, s, t) {
+      // ola de hiedra: una cresta verde de 3 casillas de alto
+      const h = 3.2 * s, w = 1.8 * s;
+      ctx.fillStyle = '#2f6b35';
+      ctx.beginPath(); ctx.moveTo(x + w, suelo); ctx.quadraticCurveTo(x + w, suelo - h, x, suelo - h);
+      ctx.quadraticCurveTo(x - w * 0.4, suelo - h * 0.85, x - w * 0.2, suelo - h * 0.65); ctx.quadraticCurveTo(x - w * 0.6, suelo - h * 0.3, x - w, suelo); ctx.fill();
+      ctx.fillStyle = '#4caf50';
+      for (let k = 0; k < 6; k++) { ctx.beginPath(); ctx.ellipse(x - w * 0.5 + (k % 3) * w * 0.5, suelo - h * (0.2 + 0.25 * Math.floor(k / 2)) + Math.sin(t * 8 + k) * s * 0.05, s * 0.2, s * 0.1, k, 0, 7); ctx.fill(); }
     }
     function rosaVolando(x, y, s, t) {
       ctx.save(); ctx.translate(x, y); ctx.rotate(t * 10);

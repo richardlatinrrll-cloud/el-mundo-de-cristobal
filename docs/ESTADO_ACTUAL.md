@@ -8,7 +8,7 @@ cambios** por tandas.
 
 Publicado en **GitHub Pages** (deploy automático al hacer `git push`) y en el
 **servidor casero ARGOS** por Tailscale (`http://100.111.194.61:8082`).
-Caché del service worker: `mundo-cristobal-v37`.
+Caché del service worker: `mundo-cristobal-v38`.
 
 ---
 
@@ -157,6 +157,16 @@ Caché del service worker: `mundo-cristobal-v37`.
   la arena se llena de flores y sale el resumen. Constantes `JEFE_VIDA`,
   `CORAZONES`, `ARENA` en `plataformas.js`. Se puede nombrar un jefe por
   libro con `"jefe": { "nombre": "..." }` en el `.json`.
+- **Jefe más difícil y con más ataques** (Richard, 2026-09-28): 8 de vida,
+  **reloj en cada pregunta** (15 s; 10 s enfurecido; si se acaba = error) y
+  **fase 2 "enfurecido"** al llegar a la mitad (ojos rojos, aura roja, ataca
+  más rápido). Ataques (`ATAQUES` en `plataformas.js`, `elegirAtaque()`):
+  🌰 bola de espinas (−1❤️), 🌧️ lluvia de espinas (−1❤️), 🌱 raíces del
+  suelo (2 preguntas seguidas; las dos bien = doble contraataque), 🌊 ola de
+  hiedra (solo fase 2, −2❤️), 💚 curación (fase 2, una vez: si no acierta el
+  jefe recupera 2) y 🏃 **semillas rodantes** (sin pregunta: hay que saltarlas
+  de verdad con ⤒/espacio, 3 o 5 según la fase). Prueba:
+  `window.__lectura.forzar('semillas')`.
 - **Obligatorio de verdad** (mismo pedido): con la lectura pendiente, **todo
   el menú** queda con 🔒 (Jugar, Aprender, Poderes, Recetas, Gemas,
   Personajes, Mundos). Tocar cualquiera lleva a Mis lecturas. Solo quedan
