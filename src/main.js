@@ -40,7 +40,7 @@ import { toast } from './ui/toast.js';
 import { mountLecturas } from './lecturas/lecturas-ui.js';
 import { jugarLectura } from './lecturas/plataformas.js';
 import { libroById } from './lecturas/libros.js';
-import { initLecturas, armarRonda, registrarRonda, lecturaObligatoriaPendiente, PREGUNTAS_POR_RONDA } from './lecturas/progreso.js';
+import { initLecturas, armarRonda, registrarRonda, PREGUNTAS_POR_RONDA } from './lecturas/progreso.js';
 
 const app = document.getElementById('app');
 
@@ -1579,13 +1579,6 @@ function showMenu() {
 }
 
 export function jugar() {
-  // lectura obligatoria sin terminar → el mundo espera (la clave maestra pasa igual)
-  const oblig = lecturaObligatoriaPendiente();
-  if (oblig && !state.maestro) {
-    openScreen('lecturas');
-    toast(`🔒 Primero domina «${oblig.titulo}» para volver al mundo`, 2600);
-    return;
-  }
   mode = 'jugar';
   menuScreen.classList.add('hidden');
   closeAllScreens();

@@ -8,7 +8,7 @@ cambios** por tandas.
 
 Publicado en **GitHub Pages** (deploy automático al hacer `git push`) y en el
 **servidor casero ARGOS** por Tailscale (`http://100.111.194.61:8082`).
-Caché del service worker: `mundo-cristobal-v38`.
+Caché del service worker: `mundo-cristobal-v39`.
 
 ---
 
@@ -137,12 +137,14 @@ Caché del service worker: `mundo-cristobal-v38`.
   = sigue pendiente para las rondas siguientes. **Salir a mitad de nivel =
   se pierde la ronda** (solo se guarda al llegar a la meta). Libro
   **dominado 🏆** cuando todas quedan dominadas.
-- **Obligatorio**: con un libro obligatorio sin dominar, "Jugar" queda con
-  🔒 y lleva a Mis lecturas (también si se intenta crear un mundo). Solo con
-  la **clave maestra** se puede quitar/asignar la obligatoria, reiniciar el
-  avance o repasar un libro ya dominado; esos cambios se guardan aunque sea
-  modo maestro (`saveLecturas()`), y lo jugado en modo maestro no cuenta.
-  El jardín secreto queda obligatorio automáticamente la primera vez.
+- **Ya NO es obligatorio** (Richard, 2026-11-10: sacó el bloqueo): "Mis
+  lecturas" es una opción más del menú, no bloquea "Jugar" ni el resto del
+  menú aunque haya un libro sin dominar. Con la **clave maestra** se puede
+  quitar/asignar la obligatoria, reiniciar el avance o repasar un libro ya
+  dominado; esos cambios se guardan aunque sea modo maestro
+  (`saveLecturas()`), y lo jugado en modo maestro no cuenta. El jardín
+  secreto queda asignado como obligatoria automáticamente la primera vez,
+  pero ese estado ya no bloquea nada (ver Registro de cambios).
 - **Jefe final en cada nivel** (pedido de Richard, 2026-09-28): después de la
   última puerta hay una arena con el **Guardián de la Hiedra** (gigante de
   hojas con ojos de brasa y corona de espinas, todo dibujado en canvas).
@@ -167,11 +169,10 @@ Caché del service worker: `mundo-cristobal-v38`.
   jefe recupera 2) y 🏃 **semillas rodantes** (sin pregunta: hay que saltarlas
   de verdad con ⤒/espacio, 3 o 5 según la fase). Prueba:
   `window.__lectura.forzar('semillas')`.
-- **Obligatorio de verdad** (mismo pedido): con la lectura pendiente, **todo
-  el menú** queda con 🔒 (Jugar, Aprender, Poderes, Recetas, Gemas,
-  Personajes, Mundos). Tocar cualquiera lleva a Mis lecturas. Solo quedan
-  libres Mis lecturas y Ajustes. En Mis lecturas tampoco se puede jugar otro
-  libro que no sea el obligatorio. La clave maestra pasa todo.
+- ~~Obligatorio de verdad: todo el menú quedaba con 🔒~~ — sacado el
+  2026-11-10 (ver el bullet "Ya NO es obligatorio" más arriba). En Mis
+  lecturas tampoco se puede jugar otro libro que no sea el obligatorio
+  (eso sigue igual, no se tocó).
 - Celular: botones táctiles ◀ ▶ y ⤒, aviso de girar el teléfono, y la
   pregunta con las opciones en 2 columnas cuando la pantalla es baja.
 - Verificado en el navegador con un bot que jugó un nivel entero (20
@@ -613,3 +614,15 @@ para observar, no para morir mirando). Botón "Limpiar arena".
   primera confirmación VISUAL de esta sesión de que las alas y el cuello del
   Dragón Tormenta (ver entrada anterior) se ven bien — antes solo se había
   verificado por geometría porque el jefe vuela y no se dejaba fotografiar.
+- **Se sacó el bloqueo obligatorio de "Mis lecturas"** (Richard, 2026-11-10:
+  "hay que sacar el modo libro") — el 28 de septiembre se había agregado a
+  pedido suyo que, con un libro obligatorio sin dominar, se bloqueara todo
+  el menú (candado 🔒 en Jugar/Aprender/Poderes/Recetas/Gemas/Personajes/
+  Mundos, solo dejando entrar a Mis lecturas o Ajustes). Richard pidió
+  revertir esa parte. Se sacó el interceptor de clics y el candado en
+  `ui/menu.js`, y el redirect a "Mis lecturas" al llamar `jugar()` en
+  `main.js` (incluye crear un mundo nuevo, que llama a `jugar()` por
+  dentro). "📖 Mis lecturas" sigue en el menú como una opción normal, sin
+  bloquear nada — el libro obligatorio, el modo dominio, el minijuego de
+  plataformas y el jefe Guardián de la Hiedra siguen intactos, solo dejaron
+  de ser obligatorios para poder jugar lo demás. sw v38→v39.

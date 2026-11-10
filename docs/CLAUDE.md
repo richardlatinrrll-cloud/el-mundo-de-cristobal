@@ -106,8 +106,10 @@ Minijuego de **plataformas 2D** (canvas propio, el 3D se pausa con
 `mode = 'lectura'`). Cada puerta de hiedra es una pregunta del libro y no se
 abre hasta acertarla. **Modo dominio**: las acertadas al primer intento se
 descartan, las falladas vuelven en la ronda siguiente; el libro queda dominado
-cuando no quedan preguntas. Un libro **obligatorio** sin dominar bloquea
-"Jugar" (solo el papá, con la clave maestra, lo libera).
+cuando no quedan preguntas. Hay un libro **obligatorio** (`progreso.js`),
+pero desde 2026-11-10 ya NO bloquea nada fuera de la propia pantalla de
+Mis lecturas (donde sigue sin poder jugarse otro libro mientras esté
+pendiente) — antes bloqueaba todo el menú, se sacó a pedido de Richard.
 `libros/*.json` (un archivo por libro, se cargan solos), `libros.js`
 (catálogo + barajar), `progreso.js` (rondas, avance, obligatoria),
 `plataformas.js` (el minijuego), `lecturas-ui.js` (pantalla).
